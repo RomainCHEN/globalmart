@@ -7,11 +7,16 @@ const router = Router();
 // GET /api/products — list with search, filter, pagination
 router.get('/', async (req, res) => {
     try {
-        const { search, category, min_price, max_price, sort, page = 1, limit = 20, tag } = req.query;
+        const { search, category, min_price, max_price, sort, page = 1, limit = 20, tag, include_disabled } = req.query;
 
         let query = supabaseAdmin
             .from('products')
             .select('*, categories(name, slug), product_images(url, sort_order)', { count: 'exact' });
+
+        // Only filter enabled for storefront (not when seller requests all)
+        if (!include_disabled) {
+            query = query.eq('enabled', true);
+        }
 
         if (search) {
             query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
@@ -178,4 +183,93 @@ router.delete('/:id', requireAuth, async (req, res) => {
     }
 });
 
+// PATCH /api/products/:id/toggle — enable/disable product (seller)
+router.patch('/:id/toggle', requireAuth, async (req, res) => {
+    try {
+        const { enabled } = req.body;
+        const { data: product } = await supabaseAdmin
+            .from('products')
+            .select('seller_id')
+            .eq('id', req.params.id)
+            .single();
+
+        if (!product) return res.status(404).json({ error: 'Product not found' });
+
+        // Check if admin or owner
+        const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('role')
+            .eq('id', req.user.id)
+            .single();
+
+        if (product.seller_id !== req.user.id && profile?.role !== 'admin') {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('products')
+            .update({ enabled: !!enabled })
+            .eq('id', req.params.id)
+            .select()
+            .single();
+
+        if (error) return res.status(400).json({ error: error.message });
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PATCH /api/products/:id/images/reorder — set primary image / reorder
+router.patch('/:id/images/reorder', requireAuth, async (req, res) => {
+    try {
+        const { imageIds } = req.body; // ordered array of image IDs, first = primary
+        if (!imageIds || !Array.isArray(imageIds)) {
+            return res.status(400).json({ error: 'imageIds array required' });
+        }
+
+        // Verify product ownership
+        const { data: product } = await supabaseAdmin.from('products').select('seller_id').eq('id', req.params.id).single();
+        if (!product) return res.status(404).json({ error: 'Product not found' });
+        const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', req.user.id).single();
+        if (product.seller_id !== req.user.id && profile?.role !== 'admin') {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        // Update sort_order for each image
+        for (let i = 0; i < imageIds.length; i++) {
+            await supabaseAdmin.from('product_images').update({ sort_order: i }).eq('id', imageIds[i]);
+        }
+
+        // Also update product.image to the first image's URL
+        const { data: primaryImg } = await supabaseAdmin.from('product_images')
+            .select('url').eq('id', imageIds[0]).single();
+        if (primaryImg) {
+            await supabaseAdmin.from('products').update({ image: primaryImg.url }).eq('id', req.params.id);
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// DELETE /api/products/:id/images/:imageId — delete an image
+router.delete('/:id/images/:imageId', requireAuth, async (req, res) => {
+    try {
+        const { data: product } = await supabaseAdmin.from('products').select('seller_id').eq('id', req.params.id).single();
+        if (!product) return res.status(404).json({ error: 'Product not found' });
+        const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', req.user.id).single();
+        if (product.seller_id !== req.user.id && profile?.role !== 'admin') {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        await supabaseAdmin.from('product_images').delete().eq('id', req.params.imageId);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 export default router;
+

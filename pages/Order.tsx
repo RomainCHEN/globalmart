@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../context';
-import { useI18n } from '../i18n';
+import { useI18n, localized } from '../i18n';
 import { api } from '../api';
 import { Order } from '../types';
 
 export const Cart = () => {
     const { cart, removeFromCart, updateQuantity, cartTotal, isLoggedIn } = useApp();
-    const { t } = useI18n();
+    const { t, lang } = useI18n();
     const navigate = useNavigate();
+
+    // A2: If not logged in and cart is empty prompt, redirect to login on checkout
+    const handleCheckout = () => {
+        if (!isLoggedIn) {
+            navigate('/login');
+        } else {
+            navigate('/checkout');
+        }
+    };
 
     return (
         <div className="max-w-[1440px] mx-auto px-6 py-12" role="main" aria-label={t('cart.title')}>
@@ -30,14 +39,19 @@ export const Cart = () => {
                     <div className="w-full lg:flex-1">
                         {cart.map(item => (
                             <div key={item.id} className="flex flex-col sm:flex-row gap-8 py-8 border-b-4 border-black first:pt-0">
-                                <div className="shrink-0 border-4 border-black shadow-brutal overflow-hidden">
+                                {/* A8: Cart item image clickable to product detail */}
+                                <Link to={`/product/${item.id}`} className="shrink-0 border-4 border-black shadow-brutal overflow-hidden hover:shadow-brutal-lg transition-all">
                                     <div className="bg-center bg-no-repeat bg-cover w-full sm:w-48 h-48" style={{ backgroundImage: `url("${item.image}")` }}></div>
-                                </div>
+                                </Link>
                                 <div className="flex flex-1 flex-col justify-between">
                                     <div className="flex justify-between items-start gap-4">
                                         <div>
-                                            <h3 className="text-2xl font-black mb-2 uppercase font-display">{item.name}</h3>
+                                            {/* A8: Cart item name clickable to product detail */}
+                                            <Link to={`/product/${item.id}`} className="hover:text-brutal-blue transition-colors">
+                                                <h3 className="text-2xl font-black mb-2 uppercase font-display">{localized(item, 'name', lang)}</h3>
+                                            </Link>
                                             {item.categories && <p className="text-sm font-bold bg-black text-white px-2 py-1 inline-block uppercase mb-4">{item.categories.name}</p>}
+                                            <p className="text-sm font-bold text-gray-500">{t('cart.unitPrice')}: ${item.price.toFixed(2)}</p>
                                         </div>
                                         <button onClick={() => removeFromCart(item.id)} className="bg-brutal-red border-4 border-black p-3 shadow-brutal hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all flex items-center gap-2 font-bold uppercase text-sm text-white" aria-label={`${t('cart.remove')}: ${item.name}`}>
                                             <span className="material-symbols-outlined text-[20px]">delete</span>
@@ -87,7 +101,7 @@ export const Cart = () => {
                                     <span className="font-black text-5xl font-display">${cartTotal.toFixed(2)}</span>
                                 </div>
                                 <button
-                                    onClick={() => isLoggedIn ? navigate('/checkout') : navigate('/login')}
+                                    onClick={handleCheckout}
                                     className="w-full bg-brutal-yellow border-4 border-black py-6 text-2xl font-black uppercase shadow-brutal-lg hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-4"
                                 >
                                     {t('cart.checkout')}
@@ -103,11 +117,21 @@ export const Cart = () => {
 };
 
 export const Checkout = () => {
-    const { cart, cartTotal, clearCart, isLoggedIn } = useApp();
+    const { cart, cartTotal, clearCart, isLoggedIn, user } = useApp();
     const { t } = useI18n();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [shipping, setShipping] = useState({ name: '', street: '', city: '', zip: '', country: '' });
+    // Pre-fill shipping from user profile if available
+    const [shipping, setShipping] = useState(() => {
+        const addr = (user as any)?.shipping_address;
+        return {
+            name: addr?.name || user?.name || '',
+            street: addr?.street || '',
+            city: addr?.city || '',
+            zip: addr?.zip || '',
+            country: addr?.country || ''
+        };
+    });
     const [paymentMethod, setPaymentMethod] = useState('credit_card');
 
     useEffect(() => {
@@ -292,10 +316,13 @@ export const Checkout = () => {
 };
 
 export const OrderDetails = () => {
-    const { t } = useI18n();
+    const { t, lang } = useI18n();
     const { id } = useParams();
+    const { isLoggedIn } = useApp();
+    const navigate = useNavigate();
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
+    const [cancelling, setCancelling] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -306,18 +333,32 @@ export const OrderDetails = () => {
             .finally(() => setLoading(false));
     }, [id]);
 
-    const statusSteps = ['ordered', 'shipped', 'out_for_delivery', 'delivered'];
+    const handleCancel = async () => {
+        if (!order || !confirm(t('order.cancelConfirm'))) return;
+        setCancelling(true);
+        try {
+            const updated = await api.cancelOrder(order.id);
+            setOrder(updated);
+        } catch (err: any) {
+            alert(err.message || 'Failed to cancel order');
+        }
+        setCancelling(false);
+    };
+
+    const statusSteps = ['pending', 'shipped', 'delivered'];
     const statusLabels: Record<string, string> = {
-        ordered: t('order.ordered'),
+        pending: t('order.pending'),
         shipped: t('order.shipped'),
-        out_for_delivery: t('order.outForDelivery'),
         delivered: t('order.delivered'),
+        hold: t('order.hold'),
+        cancelled: t('order.cancelled'),
     };
     const statusIcons: Record<string, string> = {
-        ordered: 'shopping_cart',
+        pending: 'hourglass_top',
         shipped: 'local_shipping',
-        out_for_delivery: 'box',
-        delivered: 'home',
+        delivered: 'check_circle',
+        hold: 'pause_circle',
+        cancelled: 'cancel',
     };
 
     if (loading) {
@@ -340,12 +381,17 @@ export const OrderDetails = () => {
         );
     }
 
-    const currentStepIndex = statusSteps.indexOf(order.status);
+    const currentStepIndex = order.status === 'cancelled' || order.status === 'hold'
+        ? -1
+        : statusSteps.indexOf(order.status);
+    const canCancel = order.status === 'pending' || order.status === 'hold';
 
     return (
         <div className="px-4 md:px-10 py-8 w-full max-w-[1400px] mx-auto" role="main" aria-label={`${t('order.title')} ${order.id.slice(0, 8)}`}>
             <div className="mb-8 font-bold uppercase text-xs flex gap-2">
                 <Link to="/" className="bg-black text-white px-2 py-1">{t('footer.home')}</Link>
+                <span className="py-1">/</span>
+                <Link to="/dashboard" className="bg-white border-2 border-black px-2 py-1">{t('dash.myOrders')}</Link>
                 <span className="py-1">/</span>
                 <span className="bg-white border-2 border-black px-2 py-1">{t('order.title')} #{order.id.slice(0, 8)}</span>
             </div>
@@ -355,53 +401,147 @@ export const OrderDetails = () => {
                     <div className="flex flex-wrap gap-4 text-lg font-bold">
                         <span className="bg-brutal-pink text-white px-3 py-1 border-4 border-black">{new Date(order.created_at).toLocaleDateString()}</span>
                         <span className="bg-brutal-blue text-white px-3 py-1 border-4 border-black">{t('cart.total')}: ${order.total}</span>
+                        <span className={`px-3 py-1 border-4 border-black font-black uppercase ${order.status === 'delivered' ? 'bg-brutal-green' : order.status === 'cancelled' ? 'bg-brutal-red text-white' : order.status === 'hold' ? 'bg-orange-400' : order.status === 'shipped' ? 'bg-brutal-blue text-white' : 'bg-brutal-yellow'}`}>{statusLabels[order.status] || order.status}</span>
                     </div>
                 </div>
+                {canCancel && (
+                    <button onClick={handleCancel} disabled={cancelling} className="border-4 border-black bg-brutal-red text-white px-6 py-3 font-black uppercase shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50 flex items-center gap-2">
+                        <span className="material-symbols-outlined">cancel</span>
+                        {cancelling ? t('general.loading') : t('order.cancelOrder')}
+                    </button>
+                )}
             </div>
 
-            {/* Status Tracker */}
-            <div className="border-4 border-black shadow-brutal p-8 md:p-12 mb-12 overflow-hidden bg-white">
-                <h3 className="text-3xl font-black uppercase mb-12 italic underline decoration-4 decoration-brutal-yellow font-display">{t('order.status')}</h3>
-                <div className="relative pt-12">
-                    <div className="absolute top-[4.25rem] left-0 w-full flex items-center px-8 z-0">
-                        {statusSteps.slice(0, -1).map((step, i) => (
-                            <div key={step} className={`flex-1 h-4 ${i <= currentStepIndex - 1 ? 'bg-black' : 'border-4 border-black bg-gray-100'}`}></div>
-                        ))}
-                    </div>
-                    <div className="relative z-10 flex justify-between">
-                        {statusSteps.map((step, i) => (
-                            <div key={step} className={`flex flex-col items-center gap-4 text-center ${i > currentStepIndex ? 'opacity-50' : ''}`}>
-                                <div className={`w-16 h-16 border-4 border-black flex items-center justify-center ${i === currentStepIndex ? 'bg-brutal-pink text-white scale-110' : i < currentStepIndex ? 'bg-brutal-yellow' : 'bg-white border-dashed'}`}>
-                                    <span className="material-symbols-outlined text-4xl font-bold">{statusIcons[step]}</span>
-                                </div>
-                                <div className={`mt-2 ${i === currentStepIndex ? 'bg-white p-1 border-2 border-black' : ''}`}>
-                                    <p className={`font-black uppercase ${i === currentStepIndex ? 'text-lg italic' : 'text-sm'}`}>{statusLabels[step]}</p>
-                                </div>
+            {/* Status Tracker — only show for non-cancelled/non-hold */}
+            {order.status !== 'cancelled' && (
+                <div className="border-4 border-black shadow-brutal p-8 md:p-12 mb-12 overflow-hidden bg-white">
+                    <h3 className="text-3xl font-black uppercase mb-12 italic underline decoration-4 decoration-brutal-yellow font-display">{t('order.status')}</h3>
+                    {order.status === 'hold' ? (
+                        <div className="flex items-center gap-4 p-6 bg-orange-100 border-4 border-orange-400">
+                            <span className="material-symbols-outlined text-4xl text-orange-600">pause_circle</span>
+                            <div>
+                                <p className="font-black text-xl uppercase">{t('order.hold')}</p>
+                                <p className="text-sm font-bold text-gray-600">{t('order.holdDesc')}</p>
+                                {order.hold_at && <p className="text-xs font-bold text-gray-500 mt-1">{new Date(order.hold_at).toLocaleString()}</p>}
                             </div>
-                        ))}
+                        </div>
+                    ) : (
+                        <div className="relative pt-12">
+                            <div className="absolute top-[4.25rem] left-0 w-full flex items-center px-8 z-0">
+                                {statusSteps.slice(0, -1).map((step, i) => (
+                                    <div key={step} className={`flex-1 h-4 ${i <= currentStepIndex - 1 ? 'bg-black' : 'border-4 border-black bg-gray-100'}`}></div>
+                                ))}
+                            </div>
+                            <div className="relative z-10 flex justify-between">
+                                {statusSteps.map((step, i) => (
+                                    <div key={step} className={`flex flex-col items-center gap-4 text-center ${i > currentStepIndex ? 'opacity-50' : ''}`}>
+                                        <div className={`w-16 h-16 border-4 border-black flex items-center justify-center ${i === currentStepIndex ? 'bg-brutal-pink text-white scale-110' : i < currentStepIndex ? 'bg-brutal-yellow' : 'bg-white border-dashed'}`}>
+                                            <span className="material-symbols-outlined text-4xl font-bold">{statusIcons[step]}</span>
+                                        </div>
+                                        <div className={`mt-2 ${i === currentStepIndex ? 'bg-white p-1 border-2 border-black' : ''}`}>
+                                            <p className={`font-black uppercase ${i === currentStepIndex ? 'text-lg italic' : 'text-sm'}`}>{statusLabels[step]}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Cancelled status */}
+            {order.status === 'cancelled' && (
+                <div className="border-4 border-black shadow-brutal p-8 mb-12 bg-brutal-red/10">
+                    <div className="flex items-center gap-4">
+                        <span className="material-symbols-outlined text-4xl text-brutal-red">cancel</span>
+                        <div>
+                            <p className="font-black text-xl uppercase text-brutal-red">{t('order.cancelled')}</p>
+                            {order.cancelled_at && <p className="text-sm font-bold text-gray-600">{t('order.cancelledAt')}: {new Date(order.cancelled_at).toLocaleString()}</p>}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                {/* A13: Shipping Address Detail */}
+                <div className="border-4 border-black shadow-brutal p-6 bg-white">
+                    <h3 className="text-lg font-black uppercase mb-4 border-b-4 border-black pb-2 flex items-center gap-2">
+                        <span className="material-symbols-outlined">local_shipping</span>
+                        {t('order.shippingInfo')}
+                    </h3>
+                    <div className="space-y-2 text-sm font-bold">
+                        <p><span className="font-black">{t('checkout.name')}:</span> {order.shipping_name || '—'}</p>
+                        <p><span className="font-black">{t('checkout.street')}:</span> {order.shipping_street || '—'}</p>
+                        <p><span className="font-black">{t('checkout.city')}:</span> {order.shipping_city || '—'}</p>
+                        <p><span className="font-black">{t('checkout.zip')}:</span> {order.shipping_zip || '—'}</p>
+                        <p><span className="font-black">{t('checkout.country')}:</span> {order.shipping_country || '—'}</p>
+                    </div>
+                </div>
+
+                {/* Order Info */}
+                <div className="border-4 border-black shadow-brutal p-6 bg-white">
+                    <h3 className="text-lg font-black uppercase mb-4 border-b-4 border-black pb-2 flex items-center gap-2">
+                        <span className="material-symbols-outlined">receipt_long</span>
+                        {t('order.orderInfo')}
+                    </h3>
+                    <div className="space-y-2 text-sm font-bold">
+                        <p><span className="font-black">{t('order.poNumber')}:</span> {order.id}</p>
+                        <p><span className="font-black">{t('order.date')}:</span> {new Date(order.created_at).toLocaleString()}</p>
+                        <p><span className="font-black">{t('order.paymentMethod')}:</span> {order.payment_method === 'credit_card' ? t('checkout.creditCard') : t('checkout.eWallet')}</p>
+                        <p><span className="font-black">{t('cart.total')}:</span> <span className="text-lg">${order.total}</span></p>
+                    </div>
+                </div>
+
+                {/* B4: Status Dates */}
+                <div className="border-4 border-black shadow-brutal p-6 bg-white">
+                    <h3 className="text-lg font-black uppercase mb-4 border-b-4 border-black pb-2 flex items-center gap-2">
+                        <span className="material-symbols-outlined">schedule</span>
+                        {t('order.statusDates')}
+                    </h3>
+                    <div className="space-y-2 text-sm font-bold">
+                        <p><span className="font-black">{t('order.pending')}:</span> {new Date(order.created_at).toLocaleString()}</p>
+                        {order.shipped_at && <p><span className="font-black">{t('order.shipped')}:</span> {new Date(order.shipped_at).toLocaleString()}</p>}
+                        {order.delivered_at && <p><span className="font-black">{t('order.delivered')}:</span> {new Date(order.delivered_at).toLocaleString()}</p>}
+                        {order.hold_at && <p><span className="font-black">{t('order.hold')}:</span> {new Date(order.hold_at).toLocaleString()}</p>}
+                        {order.cancelled_at && <p><span className="font-black">{t('order.cancelled')}:</span> {new Date(order.cancelled_at).toLocaleString()}</p>}
                     </div>
                 </div>
             </div>
 
-            {/* Order Items */}
+            {/* Order Items (A13: show name, qty, unit price, subtotal) */}
             {order.order_items && order.order_items.length > 0 && (
                 <div className="border-4 border-black shadow-brutal p-8 bg-white">
-                    <h3 className="text-2xl font-black uppercase mb-8 border-b-4 border-black pb-4">Order Items</h3>
-                    <div className="space-y-6">
+                    <h3 className="text-2xl font-black uppercase mb-8 border-b-4 border-black pb-4">{t('order.items')}</h3>
+                    <div className="space-y-0">
+                        {/* Table header */}
+                        <div className="hidden md:grid grid-cols-12 gap-4 pb-4 border-b-4 border-black text-xs font-black uppercase text-gray-600">
+                            <div className="col-span-5">{t('order.productName')}</div>
+                            <div className="col-span-2 text-right">{t('order.unitPrice')}</div>
+                            <div className="col-span-2 text-center">{t('order.qty')}</div>
+                            <div className="col-span-3 text-right">{t('order.subtotal')}</div>
+                        </div>
                         {order.order_items.map(item => (
-                            <div key={item.id} className="flex gap-6 items-center border-b-2 border-black pb-6 last:border-0">
-                                {item.product_image && (
-                                    <div className="w-24 h-24 border-4 border-black overflow-hidden bg-gray-100 shrink-0">
-                                        <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" />
+                            <Link key={item.id} to={`/product/${item.product_id}`} className="block border-b-2 border-black last:border-0 hover:bg-brutal-yellow/10 transition-colors">
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center py-4">
+                                    <div className="col-span-5 flex items-center gap-4">
+                                        {item.product_image && (
+                                            <div className="w-16 h-16 border-3 border-black overflow-hidden bg-gray-100 shrink-0">
+                                                <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" />
+                                            </div>
+                                        )}
+                                        <h4 className="font-black uppercase text-sm">{item.product_name}</h4>
                                     </div>
-                                )}
-                                <div className="flex-1">
-                                    <h4 className="font-black uppercase text-lg">{item.product_name}</h4>
-                                    <p className="font-bold">Qty: {item.quantity} × ${item.price}</p>
+                                    <div className="col-span-2 text-right font-bold">${item.price.toFixed(2)}</div>
+                                    <div className="col-span-2 text-center font-bold">×{item.quantity}</div>
+                                    <div className="col-span-3 text-right text-xl font-black">${(item.price * item.quantity).toFixed(2)}</div>
                                 </div>
-                                <div className="text-2xl font-black">${(item.price * item.quantity).toFixed(2)}</div>
-                            </div>
+                            </Link>
                         ))}
+                        {/* Total row */}
+                        <div className="grid grid-cols-12 gap-4 pt-6 border-t-4 border-black">
+                            <div className="col-span-9 text-right font-black uppercase text-lg">{t('cart.total')}</div>
+                            <div className="col-span-3 text-right text-3xl font-black font-display">${order.total}</div>
+                        </div>
                     </div>
                 </div>
             )}

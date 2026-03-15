@@ -33,7 +33,7 @@ export const LoginPage = () => {
                     <h1 className="text-5xl font-black uppercase tracking-tighter font-display" aria-label={t('auth.login')}>
                         {t('auth.login')}
                     </h1>
-                    <p className="text-lg font-bold mt-2 opacity-80">Access your GlobalMart account</p>
+                    <p className="text-lg font-bold mt-2 opacity-80">{t('auth.loginDesc')}</p>
                 </div>
                 <form onSubmit={handleSubmit} className="bg-white border-4 border-black p-8 shadow-brutal space-y-6" role="form" aria-label="Login form">
                     {error && (
@@ -50,7 +50,7 @@ export const LoginPage = () => {
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             className="w-full p-4 border-4 border-black focus:ring-0 focus:border-brutal-blue text-lg font-bold"
-                            placeholder="you@example.com"
+                            placeholder={t('auth.emailPlaceholder')}
                             aria-required="true"
                         />
                     </div>
@@ -94,13 +94,15 @@ export const RegisterPage = () => {
     const [role, setRole] = useState('user');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [address, setAddress] = useState({ street: '', city: '', zip: '', country: '' });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setLoading(true);
         try {
-            await register(email, password, name, role);
+            const shipping = { name, ...address };
+            await register(email, password, name, role, shipping);
             navigate('/');
         } catch (err: any) {
             setError(err.message || 'Registration failed');
@@ -111,12 +113,12 @@ export const RegisterPage = () => {
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-            <div className="w-full max-w-md">
+            <div className="w-full max-w-lg">
                 <div className="bg-brutal-pink text-white p-6 border-4 border-black shadow-brutal-lg mb-8">
                     <h1 className="text-5xl font-black uppercase tracking-tighter font-display" aria-label={t('auth.register')}>
                         {t('auth.register')}
                     </h1>
-                    <p className="text-lg font-bold mt-2 opacity-80">Join the GlobalMart community</p>
+                    <p className="text-lg font-bold mt-2 opacity-80">{t('auth.registerDesc')}</p>
                 </div>
                 <form onSubmit={handleSubmit} className="bg-white border-4 border-black p-8 shadow-brutal space-y-6" role="form" aria-label="Registration form">
                     {error && (
@@ -133,7 +135,7 @@ export const RegisterPage = () => {
                             value={name}
                             onChange={e => setName(e.target.value)}
                             className="w-full p-4 border-4 border-black focus:ring-0 focus:border-brutal-pink text-lg font-bold"
-                            placeholder="Your Name"
+                            placeholder={t('auth.namePlaceholder')}
                             aria-required="true"
                         />
                     </div>
@@ -146,7 +148,7 @@ export const RegisterPage = () => {
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             className="w-full p-4 border-4 border-black focus:ring-0 focus:border-brutal-pink text-lg font-bold"
-                            placeholder="you@example.com"
+                            placeholder={t('auth.emailPlaceholder')}
                             aria-required="true"
                         />
                     </div>
@@ -164,14 +166,16 @@ export const RegisterPage = () => {
                             aria-required="true"
                         />
                     </div>
+
+                    {/* Account Type - moved above shipping so we can conditionally show address */}
                     <div className="space-y-2">
-                        <label className="text-sm font-black uppercase">Account Type</label>
+                        <label className="text-sm font-black uppercase">{t('auth.accountType')}</label>
                         <div className="grid grid-cols-2 gap-4">
                             <label className="cursor-pointer">
                                 <input type="radio" name="role" value="user" checked={role === 'user'} onChange={() => setRole('user')} className="hidden" />
                                 <div className={`p-4 border-4 border-black text-center font-black uppercase transition-all ${role === 'user' ? 'bg-brutal-yellow shadow-none translate-x-1 translate-y-1' : 'shadow-brutal hover:bg-gray-50'}`}>
                                     <span className="material-symbols-outlined block mb-1">person</span>
-                                    Buyer
+                                    {t('auth.buyerRegister')}
                                 </div>
                             </label>
                             <label className="cursor-pointer">
@@ -183,6 +187,58 @@ export const RegisterPage = () => {
                             </label>
                         </div>
                     </div>
+
+                    {/* Shipping Address — only for buyers */}
+                    {role === 'user' && (
+                    <div className="border-4 border-black p-4 bg-gray-50">
+                        <h3 className="text-sm font-black uppercase mb-4 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-lg">local_shipping</span>
+                            {t('auth.shippingAddress')}
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="md:col-span-2 space-y-1">
+                                <label className="text-xs font-bold uppercase text-gray-600">{t('checkout.street')}</label>
+                                <input
+                                    type="text"
+                                    value={address.street}
+                                    onChange={e => setAddress(a => ({ ...a, street: e.target.value }))}
+                                    className="w-full p-3 border-3 border-black focus:ring-0 text-sm font-bold"
+                                    placeholder="123 Main St"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold uppercase text-gray-600">{t('checkout.city')}</label>
+                                <input
+                                    type="text"
+                                    value={address.city}
+                                    onChange={e => setAddress(a => ({ ...a, city: e.target.value }))}
+                                    className="w-full p-3 border-3 border-black focus:ring-0 text-sm font-bold"
+                                    placeholder="City"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold uppercase text-gray-600">{t('checkout.zip')}</label>
+                                <input
+                                    type="text"
+                                    value={address.zip}
+                                    onChange={e => setAddress(a => ({ ...a, zip: e.target.value }))}
+                                    className="w-full p-3 border-3 border-black focus:ring-0 text-sm font-bold"
+                                    placeholder="Zip"
+                                />
+                            </div>
+                            <div className="md:col-span-2 space-y-1">
+                                <label className="text-xs font-bold uppercase text-gray-600">{t('checkout.country')}</label>
+                                <input
+                                    type="text"
+                                    value={address.country}
+                                    onChange={e => setAddress(a => ({ ...a, country: e.target.value }))}
+                                    className="w-full p-3 border-3 border-black focus:ring-0 text-sm font-bold"
+                                    placeholder="Country"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    )}
                     <button
                         type="submit"
                         disabled={loading}
@@ -191,8 +247,8 @@ export const RegisterPage = () => {
                         {loading ? t('general.loading') : t('auth.register')}
                     </button>
                     <p className="text-center font-bold">
-                        {t('auth.haveAccount')}{' '}
-                        <Link to="/login" className="text-brutal-blue underline font-black">{t('auth.login')}</Link>
+                        {t('auth.hasAccount')}{' '}
+                        <Link to="/login" className="text-brutal-pink underline font-black">{t('auth.login')}</Link>
                     </p>
                 </form>
             </div>

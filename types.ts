@@ -18,6 +18,7 @@ export interface Product {
     store_id?: string;
     stores?: { id: string; name: string; logo: string; verified: boolean } | null;
     product_images?: ProductImage[];
+    enabled?: boolean;
     created_at?: string;
 }
 
@@ -34,7 +35,7 @@ export interface CartItem extends Product {
 export interface Order {
     id: string;
     user_id: string;
-    status: 'ordered' | 'shipped' | 'out_for_delivery' | 'delivered' | 'cancelled';
+    status: 'pending' | 'shipped' | 'delivered' | 'hold' | 'cancelled';
     total: number;
     shipping_name: string;
     shipping_street: string;
@@ -44,7 +45,12 @@ export interface Order {
     payment_method: string;
     created_at: string;
     updated_at: string;
+    shipped_at?: string;
+    cancelled_at?: string;
+    hold_at?: string;
+    delivered_at?: string;
     order_items?: OrderItem[];
+    profiles?: { name: string; email: string };
 }
 
 export interface OrderItem {
@@ -71,6 +77,7 @@ export interface User {
     email: string;
     avatar: string;
     role: 'user' | 'admin' | 'seller';
+    shipping_address?: Address;
 }
 
 export interface Review {

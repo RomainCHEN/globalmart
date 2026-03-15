@@ -7,7 +7,7 @@ const router = Router();
 // Register (auto-confirms email via admin API)
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, name, role } = req.body;
+        const { email, password, name, role, shipping_address } = req.body;
 
         // Create user with admin API (auto-confirms email)
         const { data: adminData, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -17,6 +17,14 @@ router.post('/register', async (req, res) => {
             user_metadata: { name, role: role || 'user' }
         });
         if (createError) return res.status(400).json({ error: createError.message });
+
+        // Save shipping address to profile if provided
+        if (shipping_address && adminData.user) {
+            await supabaseAdmin
+                .from('profiles')
+                .update({ shipping_address })
+                .eq('id', adminData.user.id);
+        }
 
         // Immediately sign them in so we return a session
         const { data: loginData, error: loginError } = await supabaseAdmin.auth.signInWithPassword({
@@ -70,10 +78,11 @@ router.get('/me', requireAuth, async (req, res) => {
 // Update profile
 router.put('/me', requireAuth, async (req, res) => {
     try {
-        const { name, avatar } = req.body;
+        const { name, avatar, shipping_address } = req.body;
         const updates = {};
         if (name !== undefined) updates.name = name;
         if (avatar !== undefined) updates.avatar = avatar;
+        if (shipping_address !== undefined) updates.shipping_address = shipping_address;
 
         const { data, error } = await supabaseAdmin
             .from('profiles')

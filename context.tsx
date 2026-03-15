@@ -7,7 +7,7 @@ interface AppContextType {
     user: User | null;
     isLoggedIn: boolean;
     login: (email: string, password: string) => Promise<void>;
-    register: (email: string, password: string, name: string, role?: string) => Promise<void>;
+    register: (email: string, password: string, name: string, role?: string, shipping_address?: any) => Promise<void>;
     logout: () => void;
     authLoading: boolean;
     // Cart
@@ -47,12 +47,32 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
         localStorage.setItem('gm_cart', JSON.stringify(cart));
     }, [cart]);
 
+    // Helper: load server cart and convert to CartItem[]
+    const loadServerCart = async () => {
+        try {
+            const serverCart = await api.getCart();
+            if (Array.isArray(serverCart)) {
+                const items: CartItem[] = serverCart
+                    .filter((ci: any) => ci.products)
+                    .map((ci: any) => ({
+                        ...ci.products,
+                        quantity: ci.quantity,
+                    }));
+                setCart(items);
+            }
+        } catch { /* ignore if cart API fails */ }
+    };
+
     // Check auth on mount
     useEffect(() => {
         const session = localStorage.getItem('gm_session');
         if (session) {
             api.getMe()
-                .then(profile => setUser(profile))
+                .then(async (profile) => {
+                    setUser(profile);
+                    // Load server cart on auth restore
+                    await loadServerCart();
+                })
                 .catch(() => {
                     localStorage.removeItem('gm_session');
                     setUser(null);
@@ -86,14 +106,41 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
         localStorage.setItem('gm_session', JSON.stringify(data.session));
         const profile = await api.getMe();
         setUser(profile);
+
+        // Sync localStorage cart to server, then load merged server cart
+        const localCart = cart;
+        if (localCart.length > 0) {
+            const items = localCart.map(item => ({ product_id: item.id, quantity: item.quantity }));
+            try {
+                const syncedCart = await api.syncCart(items);
+                if (Array.isArray(syncedCart)) {
+                    const merged: CartItem[] = syncedCart
+                        .filter((ci: any) => ci.products)
+                        .map((ci: any) => ({
+                            ...ci.products,
+                            quantity: ci.quantity,
+                        }));
+                    setCart(merged);
+                }
+            } catch {
+                await loadServerCart();
+            }
+        } else {
+            await loadServerCart();
+        }
     };
 
-    const register = async (email: string, password: string, name: string, role = 'user') => {
-        const data = await api.register(email, password, name, role);
+    const register = async (email: string, password: string, name: string, role = 'user', shipping_address?: any) => {
+        const data = await api.register(email, password, name, role, shipping_address);
         if (data.session) {
             localStorage.setItem('gm_session', JSON.stringify(data.session));
             const profile = await api.getMe();
             setUser(profile);
+            // Sync cart after registration too
+            if (cart.length > 0) {
+                const items = cart.map(item => ({ product_id: item.id, quantity: item.quantity }));
+                try { await api.syncCart(items); await loadServerCart(); } catch { }
+            }
         }
     };
 
@@ -101,6 +148,7 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
         api.logout().catch(() => { });
         localStorage.removeItem('gm_session');
         setUser(null);
+        setCart([]);
         setWishlist([]);
     };
 
@@ -112,18 +160,33 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
             }
             return [...prev, { ...product, quantity }];
         });
+        // Sync to server if logged in
+        if (user) {
+            api.addCartItem(product.id, quantity).catch(() => { });
+        }
     };
 
     const removeFromCart = (productId: string) => {
         setCart(prev => prev.filter(p => p.id !== productId));
+        if (user) {
+            api.removeCartItem(productId).catch(() => { });
+        }
     };
 
     const updateQuantity = (productId: string, quantity: number) => {
         if (quantity < 1) return;
         setCart(prev => prev.map(p => p.id === productId ? { ...p, quantity } : p));
+        if (user) {
+            api.updateCartItem(productId, quantity).catch(() => { });
+        }
     };
 
-    const clearCart = () => setCart([]);
+    const clearCart = () => {
+        setCart([]);
+        if (user) {
+            api.clearCart().catch(() => { });
+        }
+    };
 
     const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 

@@ -16,18 +16,30 @@ export const UserDashboard = () => {
     const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
     const [activeTab, setActiveTab] = useState<'orders' | 'wishlist'>('orders');
     const [loading, setLoading] = useState(true);
+    const [statusFilter, setStatusFilter] = useState('all');
+
+    const loadOrders = async (status?: string) => {
+        const params: Record<string, string> = {};
+        if (status && status !== 'all') params.status = status;
+        const o = await api.getOrders(params).catch(() => []);
+        setOrders(o);
+    };
 
     useEffect(() => {
         if (!isLoggedIn) { navigate('/login'); return; }
         setLoading(true);
         Promise.all([
-            api.getOrders().catch(() => []),
+            loadOrders(statusFilter),
             api.getWishlist().catch(() => []),
-        ]).then(([o, w]) => {
-            setOrders(o);
-            setWishlistItems(w);
+        ]).then(([, w]) => {
+            setWishlistItems(w as any);
         }).finally(() => setLoading(false));
     }, [isLoggedIn, navigate]);
+
+    const handleFilterChange = async (status: string) => {
+        setStatusFilter(status);
+        await loadOrders(status);
+    };
 
     if (!user) return null;
 
@@ -81,8 +93,16 @@ export const UserDashboard = () => {
                         <div className="text-center py-12"><span className="font-black uppercase animate-pulse text-xl">{t('general.loading')}</span></div>
                     ) : activeTab === 'orders' ? (
                         <div className="space-y-6">
+                            {/* B3: Order status filter */}
+                            <div className="flex flex-wrap gap-2">
+                                {['all', 'pending', 'shipped', 'delivered', 'hold', 'cancelled'].map(s => (
+                                    <button key={s} onClick={() => handleFilterChange(s)} className={`px-4 py-2 border-2 border-black font-black uppercase text-xs transition-all ${statusFilter === s ? 'bg-black text-white shadow-none' : 'bg-white shadow-brutal hover:bg-brutal-yellow'}`}>
+                                        {s === 'all' ? t('order.all') : t(`order.${s}`)}
+                                    </button>
+                                ))}
+                            </div>
                             {orders.length === 0 ? (
-                                <div className="border-4 border-dashed border-black p-12 text-center"><p className="text-xl font-black uppercase text-gray-500">No orders yet</p></div>
+                                <div className="border-4 border-dashed border-black p-12 text-center"><p className="text-xl font-black uppercase text-gray-500">{t('order.noOrders')}</p></div>
                             ) : orders.map(order => (
                                 <Link to={`/order/${order.id}`} key={order.id} className="block bg-white border-4 border-black shadow-brutal p-6 hover:-translate-x-1 hover:-translate-y-1 hover:shadow-brutal-lg transition-all">
                                     <div className="flex flex-wrap justify-between items-center gap-4">
@@ -91,7 +111,7 @@ export const UserDashboard = () => {
                                             <p className="text-sm font-bold text-gray-500">{new Date(order.created_at).toLocaleDateString()}</p>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <span className={`px-3 py-1 border-2 border-black font-black uppercase text-sm ${order.status === 'delivered' ? 'bg-brutal-green' : order.status === 'shipped' ? 'bg-brutal-blue text-white' : order.status === 'out_for_delivery' ? 'bg-brutal-pink text-white' : 'bg-brutal-yellow'}`}>{order.status}</span>
+                                            <span className={`px-3 py-1 border-2 border-black font-black uppercase text-sm ${order.status === 'delivered' ? 'bg-brutal-green' : order.status === 'cancelled' ? 'bg-brutal-red text-white' : order.status === 'hold' ? 'bg-orange-400' : order.status === 'shipped' ? 'bg-brutal-blue text-white' : 'bg-brutal-yellow'}`}>{t(`order.${order.status}`)}</span>
                                             <span className="text-2xl font-black">${order.total}</span>
                                         </div>
                                     </div>
@@ -413,7 +433,7 @@ export const AdminDashboard = () => {
                                             <div className="flex flex-wrap justify-between items-start gap-4 mb-3">
                                                 <div>
                                                     <h3 className="font-black text-lg">#{o.id.slice(0, 8)}</h3>
-                                                    <p className="text-sm font-bold text-gray-500">Buyer: {o.profiles?.name || o.profiles?.email || 'Unknown'}</p>
+                                                    <p className="text-sm font-bold text-gray-500">Buyer: {o.profiles?.name || o.profiles?.email || t('general.unknown')}</p>
                                                     <p className="text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</p>
                                                 </div>
                                                 <div className="text-right">
@@ -423,8 +443,8 @@ export const AdminDashboard = () => {
                                             </div>
                                             {o.order_items && <p className="text-sm font-bold text-gray-600 mb-3">{o.order_items.map((item: any) => `${item.product_name} ×${item.quantity}`).join(', ')}</p>}
                                             <div className="flex gap-2 flex-wrap">
-                                                {['ordered', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'].map(s => (
-                                                    <button key={s} disabled={o.status === s} onClick={() => handleOrderStatus(o.id, s)} className={`px-3 py-1 border-2 border-black text-xs font-black uppercase transition-all ${o.status === s ? 'bg-black text-white' : 'bg-white hover:bg-brutal-yellow'}`}>{s.replace(/_/g, ' ')}</button>
+                                                {['pending', 'shipped', 'delivered', 'hold', 'cancelled'].map(s => (
+                                                    <button key={s} disabled={o.status === s} onClick={() => handleOrderStatus(o.id, s)} className={`px-3 py-1 border-2 border-black text-xs font-black uppercase transition-all ${o.status === s ? 'bg-black text-white' : 'bg-white hover:bg-brutal-yellow'}`}>{t(`order.${s}`)}</button>
                                                 ))}
                                             </div>
                                         </div>
@@ -448,6 +468,7 @@ export const SellerDashboard = () => {
     const navigate = useNavigate();
     const [tab, setTab] = useState<'dashboard' | 'store' | 'products' | 'orders'>('dashboard');
     const [products, setProducts] = useState<Product[]>([]);
+    const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<any[]>([]);
     const [store, setStore] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -465,6 +486,9 @@ export const SellerDashboard = () => {
     const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload');
     const [uploading, setUploading] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [productSearch, setProductSearch] = useState('');
+    const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+    const [productImages, setProductImages] = useState<any[]>([]);
 
     useEffect(() => { if (!isLoggedIn) { navigate('/login'); return; } loadData(); }, [isLoggedIn]);
 
@@ -473,14 +497,16 @@ export const SellerDashboard = () => {
         try {
             const [storeRes, prodRes, orderRes, catRes] = await Promise.all([
                 api.getStores().catch(() => []),
-                api.getProducts({ limit: '100' }).catch(() => ({ products: [] })),
+                api.getProducts({ limit: '100', include_disabled: 'true' }).catch(() => ({ products: [] })),
                 api.getSellerOrders().catch(() => ({ orders: [] })),
                 api.getCategories().catch(() => []),
             ]);
             const myStore = (storeRes as any[]).find((s: any) => s.seller_id === user?.id);
             setStore(myStore || null);
             if (myStore) { setStoreName(myStore.name || ''); setStoreNameZh(myStore.name_zh || ''); setStoreDesc(myStore.description || ''); setStoreDescZh(myStore.description_zh || ''); setStoreLogo(myStore.logo || ''); }
-            setProducts(((prodRes as any).products || []).filter((p: any) => p.seller_id === user?.id));
+            const myProds = ((prodRes as any).products || []).filter((p: any) => p.seller_id === user?.id || (myStore && p.store_id === myStore.id));
+            setAllProducts(myProds);
+            setProducts(myProds);
             setOrders((orderRes as any).orders || []);
             setCategories(catRes as any[]);
         } catch { }
@@ -520,7 +546,33 @@ export const SellerDashboard = () => {
 
     const handleDeleteProduct = async (id: string) => { if (!confirm(t('admin.deleteConfirm'))) return; await api.deleteProduct(id); await loadData(); };
     const handleOrderStatus = async (orderId: string, status: string) => { await api.updateOrderStatus(orderId, status); await loadData(); };
-    const openEdit = (p: Product) => { setEditingProduct(p); setPf({ name: p.name, name_zh: (p as any).name_zh || '', description: p.description || '', description_zh: (p as any).description_zh || '', price: String(p.price), original_price: String(p.original_price || ''), category_id: p.category_id || '', stock: String(p.stock || 0), image: p.image || '', tags: (p.tags || []).join(', ') }); setShowAddProduct(true); };
+    const openEdit = async (p: Product) => {
+        setEditingProduct(p);
+        setPf({ name: p.name, name_zh: (p as any).name_zh || '', description: p.description || '', description_zh: (p as any).description_zh || '', price: String(p.price), original_price: String(p.original_price || ''), category_id: p.category_id || '', stock: String(p.stock || 0), image: p.image || '', tags: (p.tags || []).join(', ') });
+        setShowAddProduct(true);
+        // Load product images
+        try {
+            const detail = await api.getProduct(p.id);
+            const imgs = (detail.product_images || []).sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
+            setProductImages(imgs);
+        } catch { setProductImages([]); }
+    };
+    const handleToggleProduct = async (p: Product) => {
+        const newEnabled = !(p as any).enabled;
+        await api.toggleProduct(p.id, newEnabled);
+        await loadData();
+    };
+
+    // A14/A15: Product search filter
+    const handleProductSearch = (query: string) => {
+        setProductSearch(query);
+        if (!query.trim()) {
+            setProducts(allProducts);
+        } else {
+            const q = query.toLowerCase();
+            setProducts(allProducts.filter(p => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)));
+        }
+    };
 
     const tabs = [
         { key: 'dashboard', icon: 'dashboard', label: t('seller.dashboard') },
@@ -736,6 +788,44 @@ export const SellerDashboard = () => {
                                                         <button type="button" onClick={() => setPf({ ...pf, image: '' })} className="absolute -top-2 -right-2 w-6 h-6 bg-brutal-red text-white border-2 border-black flex items-center justify-center font-black text-xs hover:scale-110 transition-transform">✕</button>
                                                     </div>
                                                 )}
+                                                {/* Multi-image gallery management */}
+                                                {editingProduct && productImages.length > 0 && (
+                                                    <div className="mt-4 border-3 border-dashed border-gray-400 p-3 bg-gray-50">
+                                                        <h4 className="font-black text-xs uppercase mb-3 flex items-center gap-1">
+                                                            <span className="material-symbols-outlined text-sm">photo_library</span>
+                                                            {t('seller.productImages')} ({productImages.length})
+                                                        </h4>
+                                                        <div className="flex flex-wrap gap-3">
+                                                            {productImages.map((img: any, idx: number) => (
+                                                                <div key={img.id} className={`relative group w-20 h-20 border-3 ${idx === 0 ? 'border-brutal-blue ring-2 ring-brutal-blue' : 'border-black'} overflow-hidden bg-white`}>
+                                                                    <img src={img.url} alt="" className="w-full h-full object-contain" />
+                                                                    {idx === 0 && <span className="absolute top-0 left-0 bg-brutal-blue text-white text-[8px] font-black px-1">{t('seller.primary')}</span>}
+                                                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                                                                        {idx !== 0 && (
+                                                                            <button onClick={async () => {
+                                                                                const newOrder = [img.id, ...productImages.filter((i: any) => i.id !== img.id).map((i: any) => i.id)];
+                                                                                await api.reorderProductImages(editingProduct!.id, newOrder);
+                                                                                const detail = await api.getProduct(editingProduct!.id);
+                                                                                setProductImages((detail.product_images || []).sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)));
+                                                                                setPf(prev => ({ ...prev, image: img.url }));
+                                                                            }} className="text-[9px] font-black bg-brutal-blue text-white px-2 py-0.5 border border-white">
+                                                                                ★ {t('seller.setPrimary')}
+                                                                            </button>
+                                                                        )}
+                                                                        <button onClick={async () => {
+                                                                            if (!confirm(t('admin.deleteConfirm') || 'Delete this?')) return;
+                                                                            await api.deleteProductImage(editingProduct!.id, img.id);
+                                                                            setProductImages(prev => prev.filter((i: any) => i.id !== img.id));
+                                                                        }} className="text-[9px] font-black bg-brutal-red text-white px-2 py-0.5 border border-white">
+                                                                            ✕ {t('general.delete').toUpperCase()}
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <p className="text-[10px] text-gray-500 font-bold mt-2">{t('seller.imageHoverHint')}</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         {/* Bilingual Description Fields */}
@@ -769,24 +859,47 @@ export const SellerDashboard = () => {
                                         <button onClick={handleSaveProduct} className="w-full border-4 border-black bg-brutal-green py-3 font-black uppercase shadow-brutal hover:-translate-y-1 transition-all">{editingProduct ? t('seller.saveChanges') : t('seller.createProduct')}</button>
                                     </div>
                                 )}
+
+                                {/* A14/A15: Product search */}
+                                <div className="flex gap-4 items-center">
+                                    <div className="flex-1 flex items-center border-4 border-black bg-white shadow-brutal">
+                                        <span className="material-symbols-outlined p-3 text-gray-500">search</span>
+                                        <input
+                                            type="text"
+                                            value={productSearch}
+                                            onChange={e => handleProductSearch(e.target.value)}
+                                            placeholder={t('seller.searchProducts')}
+                                            className="flex-1 p-3 border-none font-bold text-sm focus:ring-0"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="bg-white border-4 border-black shadow-brutal overflow-x-auto">
                                     <table className="w-full">
                                         <thead><tr className="border-b-4 border-black bg-gray-100">
+                                            <th className="text-left p-4 font-black uppercase text-xs">ID</th>
                                             <th className="text-left p-4 font-black uppercase text-xs">{t('seller.products')}</th>
                                             <th className="text-left p-4 font-black uppercase text-xs">{t('seller.category')}</th>
                                             <th className="text-right p-4 font-black uppercase text-xs">{t('seller.price')}</th>
                                             <th className="text-right p-4 font-black uppercase text-xs">{t('seller.stock')}</th>
+                                            <th className="text-center p-4 font-black uppercase text-xs">{t('seller.status')}</th>
                                             <th className="text-right p-4 font-black uppercase text-xs">{t('admin.actions')}</th>
                                         </tr></thead>
                                         <tbody>
                                             {products.length === 0 ? (
-                                                <tr><td colSpan={5} className="p-8 text-center font-bold text-gray-500">{t('seller.noProducts')}</td></tr>
+                                                <tr><td colSpan={7} className="p-8 text-center font-bold text-gray-500">{t('seller.noProducts')}</td></tr>
                                             ) : products.map(p => (
-                                                <tr key={p.id} className="border-b-2 border-black hover:bg-brutal-yellow/10">
+                                                <tr key={p.id} className={`border-b-2 border-black hover:bg-brutal-yellow/10 ${(p as any).enabled === false ? 'opacity-50' : ''}`}>
+                                                    <td className="p-4 font-mono text-xs text-gray-500">{p.id.slice(0, 8)}</td>
                                                     <td className="p-4"><div className="flex items-center gap-3"><div className="w-12 h-12 border-2 border-black overflow-hidden bg-gray-100">{p.image && <img src={p.image} alt={p.name} className="w-full h-full object-contain" />}</div><span className="font-black text-sm">{p.name}</span></div></td>
                                                     <td className="p-4 text-sm font-bold text-gray-600">{(p as any).categories?.name || '—'}</td>
                                                     <td className="p-4 text-right font-black">${p.price}</td>
                                                     <td className="p-4 text-right"><span className={`px-2 py-0.5 border-2 border-black text-xs font-black ${(p.stock || 0) > 0 ? 'bg-brutal-green' : 'bg-brutal-red text-white'}`}>{p.stock || 0}</span></td>
+                                                    <td className="p-4 text-center">
+                                                        <button onClick={() => handleToggleProduct(p)} className={`px-3 py-1 border-2 border-black text-xs font-black uppercase transition-all ${(p as any).enabled !== false ? 'bg-brutal-green hover:bg-brutal-red hover:text-white' : 'bg-gray-300 hover:bg-brutal-green'}`}>
+                                                            {(p as any).enabled !== false ? t('seller.enabled') : t('seller.disabled')}
+                                                        </button>
+                                                    </td>
                                                     <td className="p-4 text-right space-x-2">
                                                         <button onClick={() => openEdit(p)} className="border-2 border-black px-3 py-1 font-bold text-xs uppercase hover:bg-brutal-blue hover:text-white">{t('general.edit')}</button>
                                                         <button onClick={() => handleDeleteProduct(p.id)} className="border-2 border-black px-3 py-1 font-bold text-xs uppercase hover:bg-brutal-red hover:text-white">{t('general.delete')}</button>
@@ -799,7 +912,7 @@ export const SellerDashboard = () => {
                             </div>
                         )}
 
-                        {/* ORDERS */}
+                        {/* ORDERS — A20/B2 */}
                         {tab === 'orders' && (
                             <div className="space-y-6">
                                 <h1 className="text-5xl font-black uppercase tracking-tighter">{t('seller.orders')}</h1>
@@ -807,24 +920,114 @@ export const SellerDashboard = () => {
                                     {orders.length === 0 ? (
                                         <div className="p-12 text-center"><p className="font-bold text-gray-500">{t('seller.noOrders')}</p></div>
                                     ) : orders.map((o: any) => (
-                                        <div key={o.id} className="border-b-4 border-black p-6 last:border-0">
-                                            <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
-                                                <div>
-                                                    <h3 className="font-black text-lg">Order #{o.id.slice(0, 8)}</h3>
-                                                    <p className="text-sm font-bold text-gray-500">Buyer: {o.profiles?.name || o.profiles?.email || 'Unknown'}</p>
-                                                    <p className="text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</p>
+                                        <div key={o.id} className="border-b-4 border-black last:border-0">
+                                            {/* Order header — clickable to expand */}
+                                            <button onClick={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)} className="w-full p-6 text-left hover:bg-brutal-yellow/10 transition-colors">
+                                                <div className="flex flex-wrap justify-between items-start gap-4">
+                                                    <div>
+                                                        <h3 className="font-black text-lg flex items-center gap-2">
+                                                            <span className="material-symbols-outlined text-sm">{expandedOrder === o.id ? 'expand_less' : 'expand_more'}</span>
+                                                            Order #{o.id.slice(0, 8)}
+                                                        </h3>
+                                                        <p className="text-sm font-bold text-gray-500">{t('seller.buyer')}: {o.profiles?.name || o.profiles?.email || t('general.unknown')}</p>
+                                                        <p className="text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-2xl font-black">${o.total}</p>
+                                                        <span className={`inline-block px-2 py-0.5 border-2 border-black text-xs font-black uppercase mt-1 ${o.status === 'delivered' ? 'bg-brutal-green' : o.status === 'cancelled' ? 'bg-brutal-red text-white' : o.status === 'hold' ? 'bg-orange-400' : o.status === 'shipped' ? 'bg-brutal-blue text-white' : 'bg-brutal-yellow'}`}>{t(`order.${o.status}`)}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="text-2xl font-black">${o.total}</p>
-                                                    <span className={`inline-block px-2 py-0.5 border-2 border-black text-xs font-black uppercase mt-1 ${o.status === 'delivered' ? 'bg-brutal-green' : o.status === 'shipped' ? 'bg-brutal-blue text-white' : 'bg-brutal-yellow'}`}>{o.status}</span>
+                                            </button>
+
+                                            {/* Expanded detail — A20 */}
+                                            {expandedOrder === o.id && (
+                                                <div className="px-6 pb-6 border-t-2 border-black bg-gray-50">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 mb-6">
+                                                        {/* Shipping Info */}
+                                                        <div className="border-2 border-black p-4 bg-white">
+                                                            <h4 className="font-black text-xs uppercase mb-2 flex items-center gap-1">
+                                                                <span className="material-symbols-outlined text-sm">local_shipping</span>
+                                                                {t('order.shippingInfo')}
+                                                            </h4>
+                                                            <div className="text-sm font-bold space-y-1">
+                                                                <p>{o.shipping_name || '—'}</p>
+                                                                <p>{o.shipping_street || '—'}</p>
+                                                                <p>{o.shipping_city} {o.shipping_zip}</p>
+                                                                <p>{o.shipping_country || '—'}</p>
+                                                            </div>
+                                                        </div>
+                                                        {/* Status Dates */}
+                                                        <div className="border-2 border-black p-4 bg-white">
+                                                            <h4 className="font-black text-xs uppercase mb-2 flex items-center gap-1">
+                                                                <span className="material-symbols-outlined text-sm">schedule</span>
+                                                                {t('order.statusDates')}
+                                                            </h4>
+                                                            <div className="text-sm font-bold space-y-1">
+                                                                <p>{t('order.pending')}: {new Date(o.created_at).toLocaleString()}</p>
+                                                                {o.shipped_at && <p>{t('order.shipped')}: {new Date(o.shipped_at).toLocaleString()}</p>}
+                                                                {o.delivered_at && <p>{t('order.delivered')}: {new Date(o.delivered_at).toLocaleString()}</p>}
+                                                                {o.hold_at && <p>{t('order.hold')}: {new Date(o.hold_at).toLocaleString()}</p>}
+                                                                {o.cancelled_at && <p>{t('order.cancelled')}: {new Date(o.cancelled_at).toLocaleString()}</p>}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Line Items */}
+                                                    {o.order_items && (
+                                                        <div className="border-2 border-black bg-white mb-4">
+                                                            <div className="grid grid-cols-12 gap-2 p-3 border-b-2 border-black bg-gray-100 text-xs font-black uppercase">
+                                                                <div className="col-span-5">{t('order.productName')}</div>
+                                                                <div className="col-span-2 text-right">{t('order.unitPrice')}</div>
+                                                                <div className="col-span-2 text-center">{t('order.qty')}</div>
+                                                                <div className="col-span-3 text-right">{t('order.subtotal')}</div>
+                                                            </div>
+                                                            {o.order_items.map((item: any) => (
+                                                                <div key={item.id} className="grid grid-cols-12 gap-2 p-3 items-center border-b border-black last:border-0">
+                                                                    <div className="col-span-5 flex items-center gap-2">
+                                                                        {item.product_image && <div className="w-10 h-10 border border-black overflow-hidden shrink-0"><img src={item.product_image} alt="" className="w-full h-full object-cover" /></div>}
+                                                                        <span className="font-bold text-sm">{item.product_name}</span>
+                                                                    </div>
+                                                                    <div className="col-span-2 text-right font-bold text-sm">${item.price}</div>
+                                                                    <div className="col-span-2 text-center font-bold text-sm">×{item.quantity}</div>
+                                                                    <div className="col-span-3 text-right font-black">${(item.price * item.quantity).toFixed(2)}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* B2: Status workflow buttons */}
+                                                    <div className="flex gap-2 flex-wrap">
+                                                        {o.status === 'pending' && (
+                                                            <>
+                                                                <button onClick={() => handleOrderStatus(o.id, 'shipped')} className="px-4 py-2 border-2 border-black text-xs font-black uppercase bg-brutal-blue text-white hover:shadow-brutal transition-all flex items-center gap-1">
+                                                                    <span className="material-symbols-outlined text-sm">local_shipping</span> {t('order.actionShip')}
+                                                                </button>
+                                                                <button onClick={() => handleOrderStatus(o.id, 'hold')} className="px-4 py-2 border-2 border-black text-xs font-black uppercase bg-orange-400 hover:shadow-brutal transition-all flex items-center gap-1">
+                                                                    <span className="material-symbols-outlined text-sm">pause_circle</span> {t('order.actionHold')}
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        {o.status === 'hold' && (
+                                                            <button onClick={() => handleOrderStatus(o.id, 'shipped')} className="px-4 py-2 border-2 border-black text-xs font-black uppercase bg-brutal-blue text-white hover:shadow-brutal transition-all flex items-center gap-1">
+                                                                <span className="material-symbols-outlined text-sm">local_shipping</span> {t('order.actionShip')}
+                                                            </button>
+                                                        )}
+                                                        {o.status === 'shipped' && (
+                                                            <button onClick={() => handleOrderStatus(o.id, 'delivered')} className="px-4 py-2 border-2 border-black text-xs font-black uppercase bg-brutal-green hover:shadow-brutal transition-all flex items-center gap-1">
+                                                                <span className="material-symbols-outlined text-sm">check_circle</span> {t('order.actionDeliver')}
+                                                            </button>
+                                                        )}
+                                                        {(o.status === 'pending' || o.status === 'hold') && (
+                                                            <button onClick={() => handleOrderStatus(o.id, 'cancelled')} className="px-4 py-2 border-2 border-black text-xs font-black uppercase bg-brutal-red text-white hover:shadow-brutal transition-all flex items-center gap-1">
+                                                                <span className="material-symbols-outlined text-sm">cancel</span> {t('order.actionCancel')}
+                                                            </button>
+                                                        )}
+                                                        {(o.status === 'delivered' || o.status === 'cancelled') && (
+                                                            <span className="px-4 py-2 text-xs font-black uppercase text-gray-400">{t('order.noActions')}</span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            {o.order_items && <p className="text-sm font-bold text-gray-600 mb-3">{o.order_items.map((item: any) => `${item.product_name} ×${item.quantity}`).join(', ')}</p>}
-                                            <div className="flex gap-2 flex-wrap">
-                                                {['ordered', 'shipped', 'out_for_delivery', 'delivered'].map(s => (
-                                                    <button key={s} disabled={o.status === s} onClick={() => handleOrderStatus(o.id, s)} className={`px-3 py-1 border-2 border-black text-xs font-black uppercase transition-all ${o.status === s ? 'bg-black text-white' : 'bg-white hover:bg-brutal-yellow'}`}>{s.replace(/_/g, ' ')}</button>
-                                                ))}
-                                            </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>

@@ -25,13 +25,13 @@ async function request(path: string, options: RequestInit = {}): Promise<any> {
 // Auth
 export const api = {
     // Auth
-    register: (email: string, password: string, name: string, role = 'user') =>
-        request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, name, role }) }),
+    register: (email: string, password: string, name: string, role = 'user', shipping_address?: any) =>
+        request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, name, role, shipping_address }) }),
     login: (email: string, password: string) =>
         request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
     logout: () => request('/auth/logout', { method: 'POST' }),
     getMe: () => request('/auth/me'),
-    updateProfile: (data: { name?: string; avatar?: string }) =>
+    updateProfile: (data: { name?: string; avatar?: string; shipping_address?: any }) =>
         request('/auth/me', { method: 'PUT', body: JSON.stringify(data) }),
 
     // Products
@@ -46,6 +46,8 @@ export const api = {
         request(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteProduct: (id: string) =>
         request(`/products/${id}`, { method: 'DELETE' }),
+    toggleProduct: (id: string, enabled: boolean) =>
+        request(`/products/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
 
     // Categories
     getCategories: () => request('/categories'),
@@ -53,10 +55,27 @@ export const api = {
     // Orders
     createOrder: (data: any) =>
         request('/orders', { method: 'POST', body: JSON.stringify(data) }),
-    getOrders: () => request('/orders'),
+    getOrders: (params?: Record<string, string>) => {
+        const q = params ? '?' + new URLSearchParams(params).toString() : '';
+        return request(`/orders${q}`);
+    },
     getOrder: (id: string) => request(`/orders/${id}`),
     updateOrderStatus: (id: string, status: string) =>
         request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    cancelOrder: (id: string) =>
+        request(`/orders/${id}/cancel`, { method: 'PATCH' }),
+
+    // Cart (server-side)
+    getCart: () => request('/cart'),
+    addCartItem: (product_id: string, quantity = 1) =>
+        request('/cart', { method: 'POST', body: JSON.stringify({ product_id, quantity }) }),
+    updateCartItem: (product_id: string, quantity: number) =>
+        request(`/cart/${product_id}`, { method: 'PUT', body: JSON.stringify({ quantity }) }),
+    removeCartItem: (product_id: string) =>
+        request(`/cart/${product_id}`, { method: 'DELETE' }),
+    clearCart: () => request('/cart', { method: 'DELETE' }),
+    syncCart: (items: { product_id: string; quantity: number }[]) =>
+        request('/cart/sync', { method: 'POST', body: JSON.stringify({ items }) }),
 
     // Reviews
     getReviews: (productId: string) => request(`/reviews?product_id=${productId}`),
@@ -81,7 +100,16 @@ export const api = {
         request('/stores', { method: 'POST', body: JSON.stringify(data) }),
 
     // Seller
-    getSellerOrders: () => request('/orders/seller'),
+    getSellerOrders: (params?: Record<string, string>) => {
+        const q = params ? '?' + new URLSearchParams(params).toString() : '';
+        return request(`/orders/seller${q}`);
+    },
+    toggleProduct: (id: string, enabled: boolean) =>
+        request(`/products/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
+    reorderProductImages: (productId: string, imageIds: string[]) =>
+        request(`/products/${productId}/images/reorder`, { method: 'PATCH', body: JSON.stringify({ imageIds }) }),
+    deleteProductImage: (productId: string, imageId: string) =>
+        request(`/products/${productId}/images/${imageId}`, { method: 'DELETE' }),
 
     // Admin
     getAdminStats: () => request('/admin/stats'),

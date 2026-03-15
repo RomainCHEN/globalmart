@@ -8,10 +8,12 @@ import { Product, Review } from '../types';
 export const ShopHome = () => {
     const { categories, addToCart, toggleWishlist, isInWishlist, isLoggedIn } = useApp();
     const { t, lang } = useI18n();
+    const navigate = useNavigate();
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [sort, setSort] = useState('newest');
     const [priceRange, setPriceRange] = useState({ min: '', max: '' });
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     // Local pagination state
     const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -145,23 +147,31 @@ export const ShopHome = () => {
                             </div>
                         ) : (
                             <>
-                                {/* Product counter */}
-                                <div className="mb-6 flex items-center justify-between">
+                                {/* Product counter & View Toggle */}
+                                <div className="mb-6 flex items-center justify-between border-b-4 border-black pb-4">
                                     <p className="font-black text-lg uppercase">
                                         {lang === 'zh'
                                             ? `显示 ${allProducts.length} / ${totalProducts} 件商品`
                                             : `Showing ${allProducts.length} of ${totalProducts} products`}
                                     </p>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setViewMode('grid')} className={`p-2 border-4 border-black transition-colors ${viewMode === 'grid' ? 'bg-black text-white' : 'bg-white hover:bg-brutal-yellow'}`} aria-label={lang === 'zh' ? '网格视图' : 'Grid View'}>
+                                            <span className="material-symbols-outlined font-black">grid_view</span>
+                                        </button>
+                                        <button onClick={() => setViewMode('list')} className={`p-2 border-4 border-black transition-colors ${viewMode === 'list' ? 'bg-black text-white' : 'bg-white hover:bg-brutal-yellow'}`} aria-label={lang === 'zh' ? '列表视图' : 'List View'}>
+                                            <span className="material-symbols-outlined font-black">view_list</span>
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
+                                <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10" : "flex flex-col gap-6"}>
                                     {allProducts.map((product) => (
-                                        <article key={product.id} className="group border-4 border-black shadow-brutal-lg transition-all bg-white flex flex-col h-full hover:-translate-x-1 hover:-translate-y-1 hover:shadow-brutal-xl">
-                                            <Link to={`/product/${product.id}`} className="flex flex-col flex-1">
-                                                <div className="relative aspect-square border-b-4 border-black overflow-hidden p-8 bg-[#F3F3F3]">
+                                        <article key={product.id} className={`group border-4 border-black shadow-brutal-lg transition-all bg-white flex ${viewMode === 'grid' ? 'flex-col h-full' : 'flex-col sm:flex-row'} hover:-translate-x-1 hover:-translate-y-1 hover:shadow-brutal-xl`}>
+                                            <div className={`relative ${viewMode === 'grid' ? 'aspect-square border-b-4 border-black' : 'w-full sm:w-64 aspect-square border-b-4 border-black sm:border-b-0 sm:border-r-4'} overflow-hidden bg-[#F3F3F3] shrink-0`}>
+                                                <Link to={`/product/${product.id}`} className="block w-full h-full p-8 relative z-10">
                                                     <img src={product.image} alt={localized(product, 'name', lang)} className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110" loading="lazy" />
                                                     <div className="absolute top-4 left-4 flex flex-col gap-2">
-                                                        {product.tags?.map(tag => (
+                                                        {product.tags?.filter(tag => ['HOT','NEW','SALE','PREMIUM'].includes(tag.toUpperCase())).map(tag => (
                                                             <span key={tag} className={`text-xs font-black uppercase px-3 py-1 border-2 border-black shadow-brutal ${tag === 'HOT' ? 'bg-brutal-pink text-white' : tag === 'NEW' ? 'bg-brutal-blue text-white' : tag === 'SALE' ? 'bg-brutal-red text-white' : tag === 'PREMIUM' ? 'bg-brutal-yellow text-black' : 'bg-white text-black'}`}>{t(`tag.${tag}`) || tag}</span>
                                                         ))}
                                                     </div>
@@ -170,8 +180,10 @@ export const ShopHome = () => {
                                                             -{Math.round((1 - product.price / product.original_price) * 100)}%
                                                         </div>
                                                     )}
-                                                </div>
-                                                <div className="p-6 flex flex-col flex-1">
+                                                </Link>
+                                            </div>
+                                            <div className="flex flex-col flex-1">
+                                                <Link to={`/product/${product.id}`} className="p-6 flex flex-col flex-1">
                                                     <div className="flex items-center gap-1 mb-2">
                                                         <span className="material-symbols-outlined text-xl font-black text-brutal-yellow filled">star</span>
                                                         <span className="font-black text-lg">{product.rating}</span>
@@ -183,15 +195,15 @@ export const ShopHome = () => {
                                                     <h3 className="text-2xl font-black uppercase leading-tight mb-2 font-display">{localized(product, 'name', lang)}</h3>
                                                     <p className="text-sm font-bold text-gray-700 mb-6 line-clamp-2">{localized(product, 'description', lang)}</p>
                                                     <div className="mt-auto flex items-end justify-between">
-                                                        <div className="flex flex-col">
+                                                        <div className="flex-1"></div>
+                                                        <div className="flex flex-col text-right">
                                                             {product.original_price && <span className="text-sm font-bold line-through">${product.original_price}</span>}
                                                             <span className="text-3xl font-black tracking-tighter">${product.price}</span>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </Link>
-                                            <div className="flex border-t-4 border-black">
-                                                <button onClick={() => addToCart(product)} className="flex-1 bg-brutal-blue text-white py-3 border-r-2 border-black flex items-center justify-center gap-2 font-black uppercase hover:bg-black transition-colors" aria-label={`${t('product.addToCart')}: ${localized(product, 'name', lang)}`}>
+                                                </Link>
+                                                <div className="flex border-t-4 border-black mt-auto">
+                                                <button onClick={() => { addToCart(product); if (!isLoggedIn) navigate('/login'); }} className="flex-1 bg-brutal-blue text-white py-3 border-r-2 border-black flex items-center justify-center gap-2 font-black uppercase hover:bg-black transition-colors" aria-label={`${t('product.addToCart')}: ${localized(product, 'name', lang)}`}>
                                                     <span className="material-symbols-outlined">add_shopping_cart</span>
                                                     {t('product.addToCart')}
                                                 </button>
@@ -200,6 +212,7 @@ export const ShopHome = () => {
                                                         <span className={`material-symbols-outlined ${isInWishlist(product.id) ? 'filled' : ''}`}>favorite</span>
                                                     </button>
                                                 )}
+                                                </div>
                                             </div>
                                         </article>
                                     ))}
@@ -262,7 +275,10 @@ export const ProductDetail = () => {
     }, [id]);
 
     const handleAddToCart = () => {
-        if (product) { addToCart(product); navigate('/cart'); }
+        if (!product) return;
+        addToCart(product);
+        if (!isLoggedIn) { navigate('/login'); return; }
+        navigate('/cart');
     };
 
     const submitReview = async (e: React.FormEvent) => {
@@ -288,7 +304,65 @@ export const ProductDetail = () => {
         );
     }
 
-    const allImages = [product.image, ...(product.product_images?.map(img => img.url) || [])].filter(Boolean);
+    const sortedImages = (product.product_images || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    const allImages = sortedImages.length > 0 ? sortedImages.map(img => img.url) : [product.image].filter(Boolean);
+
+    const translateSpecValue = (val: string) => {
+        if (!val || typeof val !== 'string') return val;
+
+        const applyRegex = (str: string) => str
+            .replace(/\blbs\b/gi, '磅')
+            .replace(/(\d+)\s*kg\b/gi, '$1千克')
+            .replace(/(\d+)\s*g\b/gi, '$1克')
+            .replace(/(\d+)\s*mm\b/gi, '$1毫米')
+            .replace(/(\d+)\s*cm\b/gi, '$1厘米')
+            .replace(/(\d+)\s*m\b/gi, '$1米')
+            .replace(/(\d+)\s*min\b/gi, '$1分钟')
+            .replace(/\bHours?\b/gi, '小时')
+            .replace(/\bWeeks?\b/gi, '周')
+            .replace(/\bMonths?\b/gi, '个月')
+            .replace(/\bMonthly\b/gi, '每月')
+            .replace(/\bYears?\b/gi, '年')
+            .replace(/\bPacks?\b/gi, '装')
+            .replace(/\bPieces?\b/gi, '件')
+            .replace(/\bUnknown\b/gi, '未知');
+
+        // Check for compound strings first so we don't accidentally match a massive un-translated string in the fallback dictionary
+        if (val.includes('|') || val.includes('\n')) {
+            return val.split(/\||\n/).map(segment => {
+                if (segment.includes(':')) {
+                    const parts = segment.split(':');
+                    const k = parts[0].trim();
+                    const v = parts.slice(1).join(':').trim();
+                    
+                    const tK = t(`spec.${k}`);
+                    const finalK = tK !== `spec.${k}` ? tK : k;
+                    
+                    const tV = t(`specVal.${v}`);
+                    let finalV = tV !== `specVal.${v}` ? tV : v;
+                    
+                    if (lang === 'zh' && finalV === v) finalV = applyRegex(finalV);
+                    return `${finalK}: ${finalV}`;
+                } else {
+                    const tV = t(`specVal.${segment.trim()}`);
+                    let finalV = tV !== `specVal.${segment.trim()}` ? tV : segment.trim();
+                    if (lang === 'zh' && finalV === segment.trim()) finalV = applyRegex(finalV);
+                    return finalV;
+                }
+            }).join(' | ');
+        }
+
+        // Single value lookup
+        const transKey = `specVal.${val}`;
+        const trans = t(transKey);
+        let finalTrans = (trans && trans !== transKey) ? trans : val;
+
+        if (lang === 'zh' && finalTrans === val) {
+            finalTrans = applyRegex(finalTrans);
+        }
+
+        return finalTrans;
+    };
 
     return (
         <div className="min-h-screen">
@@ -309,12 +383,16 @@ export const ProductDetail = () => {
                     <p className="text-2xl font-bold bg-white p-6 border-4 border-black shadow-brutal mb-8 max-w-xl">{localized(product, 'description', lang).toUpperCase()}</p>
                     {product.specs && Object.keys(product.specs).length > 0 && (
                         <div className="flex flex-wrap gap-6 mb-12">
-                            {Object.entries(product.specs).map(([key, val], idx) => (
-                                <div key={key} className={`${idx === 0 ? 'bg-brutal-blue text-white' : idx === 1 ? 'bg-brutal-green text-black' : 'bg-white text-black'} border-4 border-black shadow-brutal p-4 min-w-[120px]`}>
-                                    <span className="block text-xs font-black uppercase mb-1 opacity-80">{key}</span>
-                                    <span className="text-2xl font-black uppercase italic">{val}</span>
-                                </div>
-                            ))}
+                            {Object.entries(product.specs).map(([key, val], idx) => {
+                                const tKey = t(`spec.${key}`);
+                                const displayKey = tKey !== `spec.${key}` ? tKey : key;
+                                return (
+                                    <div key={key} className={`${idx === 0 ? 'bg-brutal-blue text-white' : idx === 1 ? 'bg-brutal-green text-black' : 'bg-white text-black'} border-4 border-black shadow-brutal p-4 min-w-[120px]`}>
+                                        <span className="block text-xs font-black uppercase mb-1 opacity-80">{displayKey}</span>
+                                        <span className="text-2xl font-black uppercase italic">{translateSpecValue(val as string)}</span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -358,11 +436,11 @@ export const ProductDetail = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label htmlFor="review-title" className="font-black uppercase text-sm block mb-2">Title</label>
+                                    <label htmlFor="review-title" className="font-black uppercase text-sm block mb-2">{t('product.reviewTitle')}</label>
                                     <input id="review-title" type="text" value={reviewTitle} onChange={e => setReviewTitle(e.target.value)} className="w-full p-3 border-4 border-black font-bold focus:ring-0" />
                                 </div>
                                 <div>
-                                    <label htmlFor="review-body" className="font-black uppercase text-sm block mb-2">Review</label>
+                                    <label htmlFor="review-body" className="font-black uppercase text-sm block mb-2">{t('product.reviewBody')}</label>
                                     <textarea id="review-body" rows={4} value={reviewBody} onChange={e => setReviewBody(e.target.value)} className="w-full p-3 border-4 border-black font-bold focus:ring-0 resize-none" />
                                 </div>
                                 <div className="flex gap-4">
@@ -406,7 +484,7 @@ export const ProductDetail = () => {
                 <aside className="lg:col-span-4 lg:sticky lg:top-28">
                     <div className="bg-white border-4 border-black shadow-brutal-lg p-8 space-y-8">
                         <div>
-                            <h2 className="text-4xl font-black uppercase italic tracking-tighter mb-2 font-display">{product.name}</h2>
+                            <h2 className="text-4xl font-black uppercase italic tracking-tighter mb-2 font-display">{localized(product, 'name', lang)}</h2>
                             <div className="flex items-center gap-2">
                                 <span className="w-3 h-3 bg-brutal-green border-2 border-black rounded-full"></span>
                                 <span className="text-sm font-black uppercase italic">{product.stock && product.stock > 0 ? t('product.inStock') : t('product.outOfStock')}</span>
@@ -417,7 +495,7 @@ export const ProductDetail = () => {
                             {product.original_price && <span className="text-2xl font-black text-brutal-red line-through italic mb-1">${product.original_price}</span>}
                         </div>
                         <div className="space-y-4">
-                            <button onClick={handleAddToCart} className="w-full bg-brutal-red text-white border-4 border-black shadow-brutal p-6 text-2xl font-black uppercase italic hover:bg-brutal-yellow hover:text-black transition-all active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center gap-3" aria-label={`${t('product.addToCart')}: ${product.name}`}>
+                            <button onClick={handleAddToCart} className="w-full bg-brutal-red text-white border-4 border-black shadow-brutal p-6 text-2xl font-black uppercase italic hover:bg-brutal-yellow hover:text-black transition-all active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center gap-3" aria-label={`${t('product.addToCart')}: ${localized(product, 'name', lang)}`}>
                                 {t('product.addToCart')}
                                 <span className="material-symbols-outlined font-black">shopping_cart</span>
                             </button>
@@ -537,6 +615,7 @@ export const StoreDetailPage = () => {
     const { id } = useParams();
     const { addToCart, toggleWishlist, isInWishlist, isLoggedIn } = useApp();
     const { t, lang } = useI18n();
+    const navigate = useNavigate();
     const [store, setStore] = useState<any>(null);
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -653,7 +732,7 @@ export const StoreDetailPage = () => {
                                     </div>
                                 </Link>
                                 <div className="flex border-t-4 border-black">
-                                    <button onClick={() => addToCart(product)} className="flex-1 bg-brutal-blue text-white py-3 border-r-2 border-black flex items-center justify-center gap-2 font-black uppercase hover:bg-black transition-colors" aria-label={`${t('product.addToCart')}: ${localized(product, 'name', lang)}`}>
+                                    <button onClick={() => { addToCart(product); if (!isLoggedIn) navigate('/login'); }} className="flex-1 bg-brutal-blue text-white py-3 border-r-2 border-black flex items-center justify-center gap-2 font-black uppercase hover:bg-black transition-colors" aria-label={`${t('product.addToCart')}: ${localized(product, 'name', lang)}`}>
                                         <span className="material-symbols-outlined">add_shopping_cart</span>
                                         {t('product.addToCart')}
                                     </button>

@@ -50,6 +50,15 @@ export const Cart = () => {
                                             <Link to={`/product/${item.id}`} className="hover:text-brutal-blue transition-colors">
                                                 <h3 className="text-2xl font-black mb-2 uppercase font-display">{localized(item, 'name', lang)}</h3>
                                             </Link>
+                                            {item.options && Object.keys(item.options).length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mb-3">
+                                                    {Object.entries(item.options).map(([k, v]) => (
+                                                        <span key={k} className="bg-gray-100 border-2 border-black px-2 py-0.5 text-xs font-black uppercase">
+                                                            {k}: {v}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                             {item.categories && <p className="text-sm font-bold bg-black text-white px-2 py-1 inline-block uppercase mb-4">{item.categories.name}</p>}
                                             <p className="text-sm font-bold text-gray-500">{t('cart.unitPrice')}: ${item.price.toFixed(2)}</p>
                                         </div>
@@ -142,13 +151,20 @@ export const Checkout = () => {
         setLoading(true);
         try {
             const orderData = {
-                items: cart.map(item => ({
-                    product_id: item.id,
-                    name: item.name,
-                    image: item.image,
-                    price: item.price,
-                    quantity: item.quantity,
-                })),
+                items: cart.map(item => {
+                    let formattedName = item.name;
+                    if (item.options && Object.keys(item.options).length > 0) {
+                        const optStr = Object.entries(item.options).map(([k, v]) => `${k}: ${v}`).join(', ');
+                        formattedName += ` (${optStr})`;
+                    }
+                    return {
+                        product_id: item.id,
+                        name: formattedName,
+                        image: item.image,
+                        price: item.price,
+                        quantity: item.quantity,
+                    };
+                }),
                 shipping,
                 payment_method: paymentMethod,
             };
@@ -276,7 +292,16 @@ export const Checkout = () => {
                                             <img src={item.image} alt={item.name} className="object-cover w-full h-full" />
                                         </div>
                                         <div className="flex-1">
-                                            <p className="text-sm font-black uppercase leading-tight">{item.name}</p>
+                                            <p className="text-sm font-black uppercase leading-tight mb-1">{item.name}</p>
+                                            {item.options && Object.keys(item.options).length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mb-2">
+                                                    {Object.entries(item.options).map(([k, v]) => (
+                                                        <span key={k} className="bg-gray-200 border border-black px-1 text-[10px] font-black uppercase whitespace-nowrap">
+                                                            {k}: {v}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                             <p className="text-lg font-black italic">${item.price}</p>
                                             <p className="text-xs font-bold">Qty: {item.quantity}</p>
                                         </div>

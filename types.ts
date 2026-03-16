@@ -30,6 +30,7 @@ export interface ProductImage {
 
 export interface CartItem extends Product {
     quantity: number;
+    options?: { [key: string]: string };
 }
 
 export interface Order {

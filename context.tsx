@@ -152,30 +152,43 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
         setWishlist([]);
     };
 
-    const addToCart = (product: Product, quantity = 1) => {
+    const getCartItemId = (productId: string, options?: any) => {
+        if (!options || Object.keys(options).length === 0) return productId;
+        return `${productId}-${JSON.stringify(options)}`;
+    };
+
+    const addToCart = (product: Product, quantity = 1, options?: { [key: string]: string }) => {
+        const itemId = getCartItemId(product.id, options);
+        
         setCart(prev => {
-            const existing = prev.find(p => p.id === product.id);
+            const existing = prev.find(p => getCartItemId(p.id, p.options) === itemId);
             if (existing) {
-                return prev.map(p => p.id === product.id ? { ...p, quantity: p.quantity + quantity } : p);
+                return prev.map(p => getCartItemId(p.id, p.options) === itemId ? { ...p, quantity: p.quantity + quantity } : p);
             }
-            return [...prev, { ...product, quantity }];
+            return [...prev, { ...product, quantity, options }];
         });
+        
+        // Note: Server syncing (api.addCartItem) currently only uses product.id natively.
+        // For distinct options lacking schema support, it will update the base product's quantity on the server.
         // Sync to server if logged in
         if (user) {
             api.addCartItem(product.id, quantity).catch(() => { });
         }
     };
 
-    const removeFromCart = (productId: string) => {
-        setCart(prev => prev.filter(p => p.id !== productId));
+    const removeFromCart = (productId: string, options?: any) => {
+        const itemId = getCartItemId(productId, options);
+        setCart(prev => prev.filter(p => getCartItemId(p.id, p.options) !== itemId));
+        // Simple server remove attempts to delete by base ID
         if (user) {
             api.removeCartItem(productId).catch(() => { });
         }
     };
 
-    const updateQuantity = (productId: string, quantity: number) => {
+    const updateQuantity = (productId: string, quantity: number, options?: any) => {
         if (quantity < 1) return;
-        setCart(prev => prev.map(p => p.id === productId ? { ...p, quantity } : p));
+        const itemId = getCartItemId(productId, options);
+        setCart(prev => prev.map(p => getCartItemId(p.id, p.options) === itemId ? { ...p, quantity } : p));
         if (user) {
             api.updateCartItem(productId, quantity).catch(() => { });
         }

@@ -108,10 +108,12 @@ router.put('/:id', requireAuth, async (req, res) => {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
-        const { name, description, logo, banner } = req.body;
+        const { name, name_zh, description, description_zh, logo, banner } = req.body;
         const updates = {};
         if (name !== undefined) updates.name = name;
+        if (name_zh !== undefined) updates.name_zh = name_zh;
         if (description !== undefined) updates.description = description;
+        if (description_zh !== undefined) updates.description_zh = description_zh;
         if (logo !== undefined) updates.logo = logo;
         if (banner !== undefined) updates.banner = banner;
 

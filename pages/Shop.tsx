@@ -265,20 +265,45 @@ export const ProductDetail = () => {
     const [reviewBody, setReviewBody] = useState('');
     const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
+    const selectableSpecKeys = [
+        'Color', 'Colors', 'Size', 'String Tension', 'Weight / Grip', 'Grip / Weight', 'Flex', 'Format', 'Type'
+    ];
+    const [selectedOptions, setSelectedOptions] = useState<{ [key: string]: string }>({});
+
     useEffect(() => {
         if (!id) return;
         setLoading(true);
         Promise.all([api.getProduct(id), api.getReviews(id)])
-            .then(([prod, revs]) => { setProduct(prod); setReviews(revs); })
+            .then(([prod, revs]) => { 
+                setProduct(prod); 
+                setReviews(revs); 
+
+                if (prod && prod.specs) {
+                    const defaults: { [key: string]: string } = {};
+                    Object.entries(prod.specs).forEach(([k, v]) => {
+                        if (selectableSpecKeys.includes(k) && typeof v === 'string') {
+                            const options = v.split(/\||\n/).map(s => {
+                                if (s.includes(':')) return s.split(':')[1].trim();
+                                return s.trim();
+                            });
+                            if (options.length > 0) defaults[k] = options[0];
+                        }
+                    });
+                    setSelectedOptions(defaults);
+                }
+            })
             .catch(() => { })
             .finally(() => setLoading(false));
     }, [id]);
 
     const handleAddToCart = () => {
         if (!product) return;
-        addToCart(product);
-        if (!isLoggedIn) { navigate('/login'); return; }
-        navigate('/cart');
+        addToCart(product, 1, Object.keys(selectedOptions).length > 0 ? selectedOptions : undefined);
+        const title = localized(product, 'name', lang);
+        alert(`${t('product.addToCart')} ${title} ${t('general.success')}`);
+        // Only force navigate to login if not logged in. Otherwise give option to view cart or stay.
+        // if (!isLoggedIn) { navigate('/login'); return; }
+        // navigate('/cart');
     };
 
     const submitReview = async (e: React.FormEvent) => {
@@ -382,14 +407,49 @@ export const ProductDetail = () => {
                     <h1 className="text-6xl md:text-8xl font-black uppercase leading-[0.85] tracking-tighter mb-4 font-display">{localized(product, 'name', lang)}</h1>
                     <p className="text-2xl font-bold bg-white p-6 border-4 border-black shadow-brutal mb-8 max-w-xl">{localized(product, 'description', lang).toUpperCase()}</p>
                     {product.specs && Object.keys(product.specs).length > 0 && (
-                        <div className="flex flex-wrap gap-6 mb-12">
+                        <div className="flex flex-col gap-6 mb-12">
                             {Object.entries(product.specs).map(([key, val], idx) => {
                                 const tKey = t(`spec.${key}`);
                                 const displayKey = tKey !== `spec.${key}` ? tKey : key;
+                                const isSelectable = selectableSpecKeys.includes(key);
+
+                                if (isSelectable && typeof val === 'string') {
+                                    const options = val.split(/\||\n/).map(s => {
+                                        let rawVal = s;
+                                        let displayVal = s;
+                                        if (s.includes(':')) {
+                                            const parts = s.split(':');
+                                            rawVal = parts.slice(1).join(':').trim();
+                                            displayVal = translateSpecValue(s);
+                                        } else {
+                                            rawVal = s.trim();
+                                            displayVal = translateSpecValue(s.trim());
+                                        }
+                                        return { raw: rawVal, display: displayVal };
+                                    });
+
+                                    return (
+                                        <div key={key} className="bg-white border-4 border-black shadow-brutal p-4">
+                                            <span className="block text-sm font-black uppercase mb-3 text-brutal-blue">{displayKey}:</span>
+                                            <div className="flex flex-wrap gap-3">
+                                                {options.map((opt, i) => (
+                                                    <button
+                                                        key={i}
+                                                        onClick={() => setSelectedOptions(prev => ({ ...prev, [key]: opt.raw }))}
+                                                        className={`border-4 px-4 py-2 font-black text-lg transition-transform ${selectedOptions[key] === opt.raw ? 'border-black bg-black text-white scale-105' : 'border-black bg-white text-black hover:-translate-y-1'}`}
+                                                    >
+                                                        {opt.display}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
                                 return (
-                                    <div key={key} className={`${idx === 0 ? 'bg-brutal-blue text-white' : idx === 1 ? 'bg-brutal-green text-black' : 'bg-white text-black'} border-4 border-black shadow-brutal p-4 min-w-[120px]`}>
+                                    <div key={key} className={`${idx === 0 ? 'bg-brutal-blue text-white' : idx === 1 ? 'bg-brutal-green text-black' : 'bg-white text-black'} border-4 border-black shadow-brutal p-4 w-fit inline-block mr-4 mb-4`}>
                                         <span className="block text-xs font-black uppercase mb-1 opacity-80">{displayKey}</span>
-                                        <span className="text-2xl font-black uppercase italic">{translateSpecValue(val as string)}</span>
+                                        <span className="text-xl md:text-2xl font-black uppercase italic">{translateSpecValue(val as string)}</span>
                                     </div>
                                 );
                             })}

@@ -1,11 +1,48 @@
 const API_URL = (import.meta as any).env?.VITE_API_URL || '/api';
 
+function getSession(): any | null {
+    try { return JSON.parse(localStorage.getItem('gm_session') || 'null'); } catch { return null; }
+}
+
 function getToken(): string | null {
-    const session = localStorage.getItem('gm_session');
-    if (!session) return null;
-    try {
-        return JSON.parse(session).access_token;
-    } catch { return null; }
+    const session = getSession();
+    return session?.access_token || null;
+}
+
+function getRefreshToken(): string | null {
+    const session = getSession();
+    return session?.refresh_token || null;
+}
+
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+    if (isRefreshing && refreshPromise) return refreshPromise;
+    isRefreshing = true;
+
+    refreshPromise = (async () => {
+        const refreshToken = getRefreshToken();
+        if (!refreshToken) { isRefreshing = false; return false; }
+        try {
+            const res = await fetch(`${API_URL}/auth/refresh`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refresh_token: refreshToken }),
+            });
+            if (!res.ok) { isRefreshing = false; return false; }
+            const data = await res.json();
+            if (data.session) {
+                localStorage.setItem('gm_session', JSON.stringify(data.session));
+                isRefreshing = false;
+                return true;
+            }
+        } catch { /* ignore */ }
+        isRefreshing = false;
+        return false;
+    })();
+
+    return refreshPromise;
 }
 
 async function request(path: string, options: RequestInit = {}): Promise<any> {
@@ -16,7 +53,18 @@ async function request(path: string, options: RequestInit = {}): Promise<any> {
     };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+    let res = await fetch(`${API_URL}${path}`, { ...options, headers });
+
+    // Auto-refresh on 401
+    if (res.status === 401 && !path.includes('/auth/refresh')) {
+        const refreshed = await tryRefreshToken();
+        if (refreshed) {
+            const newToken = getToken();
+            if (newToken) headers['Authorization'] = `Bearer ${newToken}`;
+            res = await fetch(`${API_URL}${path}`, { ...options, headers });
+        }
+    }
+
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Request failed');
     return data;
@@ -64,6 +112,11 @@ export const api = {
         request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
     cancelOrder: (id: string) =>
         request(`/orders/${id}/cancel`, { method: 'PATCH' }),
+    requestRefund: (id: string) =>
+        request(`/orders/${id}/refund`, { method: 'PATCH' }),
+    approveRefund: (id: string) =>
+        request(`/orders/${id}/approve-refund`, { method: 'PATCH' }),
+
 
     // Cart (server-side)
     getCart: () => request('/cart'),
@@ -104,8 +157,6 @@ export const api = {
         const q = params ? '?' + new URLSearchParams(params).toString() : '';
         return request(`/orders/seller${q}`);
     },
-    toggleProduct: (id: string, enabled: boolean) =>
-        request(`/products/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
     reorderProductImages: (productId: string, imageIds: string[]) =>
         request(`/products/${productId}/images/reorder`, { method: 'PATCH', body: JSON.stringify({ imageIds }) }),
     deleteProductImage: (productId: string, imageId: string) =>

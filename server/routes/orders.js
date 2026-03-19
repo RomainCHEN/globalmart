@@ -7,7 +7,7 @@ const router = Router();
 // POST /api/orders — create order
 router.post('/', requireAuth, async (req, res) => {
     try {
-        const { items, shipping, payment_method } = req.body;
+        const { items, shipping, payment_method, store_id } = req.body;
 
         const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
@@ -22,7 +22,8 @@ router.post('/', requireAuth, async (req, res) => {
                 shipping_zip: shipping?.zip || '',
                 shipping_country: shipping?.country || '',
                 payment_method: payment_method || 'credit_card',
-                status: 'pending'
+                status: 'pending',
+                store_id: store_id || null
             })
             .select()
             .single();
@@ -184,7 +185,7 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
         }
 
         const { status } = req.body;
-        const validStatuses = ['pending', 'shipped', 'delivered', 'hold', 'cancelled'];
+        const validStatuses = ['pending', 'shipped', 'delivered', 'hold', 'cancelled', 'refund_requested', 'refunded'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ error: 'Invalid status' });
         }
@@ -232,6 +233,81 @@ router.patch('/:id/cancel', requireAuth, async (req, res) => {
             .update({
                 status: 'cancelled',
                 cancelled_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', req.params.id)
+            .select()
+            .single();
+
+        if (error) return res.status(400).json({ error: error.message });
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PATCH /api/orders/:id/refund — customer requests refund (only if delivered)
+router.patch('/:id/refund', requireAuth, async (req, res) => {
+    try {
+        const { data: order, error: getErr } = await supabaseAdmin
+            .from('orders')
+            .select('*')
+            .eq('id', req.params.id)
+            .eq('user_id', req.user.id)
+            .single();
+
+        if (getErr || !order) return res.status(404).json({ error: 'Order not found' });
+
+        if (order.status !== 'delivered') {
+            return res.status(400).json({ error: 'Only delivered orders can request refund' });
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('orders')
+            .update({
+                status: 'refund_requested',
+                refund_requested_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', req.params.id)
+            .select()
+            .single();
+
+        if (error) return res.status(400).json({ error: error.message });
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PATCH /api/orders/:id/approve-refund — seller approves refund
+router.patch('/:id/approve-refund', requireAuth, async (req, res) => {
+    try {
+        const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('role')
+            .eq('id', req.user.id)
+            .single();
+
+        if (!profile || (profile.role !== 'admin' && profile.role !== 'seller')) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        const { data: order } = await supabaseAdmin
+            .from('orders')
+            .select('*')
+            .eq('id', req.params.id)
+            .single();
+
+        if (!order || order.status !== 'refund_requested') {
+            return res.status(400).json({ error: 'Order is not in refund_requested status' });
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('orders')
+            .update({
+                status: 'refunded',
+                refunded_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             })
             .eq('id', req.params.id)

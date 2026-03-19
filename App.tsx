@@ -2,6 +2,7 @@ import React from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context';
 import { I18nProvider } from './i18n';
+import { ToastProvider } from './components/Toast';
 import { MainLayout } from './layouts';
 import { ShopHome, ProductDetail, StorePage, StoreDetailPage } from './pages/Shop';
 import { Cart, Checkout, OrderDetails } from './pages/Order';
@@ -12,6 +13,7 @@ const App = () => {
     return (
         <I18nProvider>
             <AppProvider>
+                <ToastProvider>
                 <HashRouter>
                     <Routes>
                         <Route element={<MainLayout />}>
@@ -30,6 +32,7 @@ const App = () => {
                         <Route path="/seller" element={<SellerDashboard />} />
                     </Routes>
                 </HashRouter>
+                </ToastProvider>
             </AppProvider>
         </I18nProvider>
     );

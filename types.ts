@@ -36,8 +36,9 @@ export interface CartItem extends Product {
 export interface Order {
     id: string;
     user_id: string;
-    status: 'pending' | 'shipped' | 'delivered' | 'hold' | 'cancelled';
+    status: 'pending' | 'shipped' | 'delivered' | 'hold' | 'cancelled' | 'refund_requested' | 'refunded';
     total: number;
+    store_id?: string;
     shipping_name: string;
     shipping_street: string;
     shipping_city: string;
@@ -50,6 +51,8 @@ export interface Order {
     cancelled_at?: string;
     hold_at?: string;
     delivered_at?: string;
+    refund_requested_at?: string;
+    refunded_at?: string;
     order_items?: OrderItem[];
     profiles?: { name: string; email: string };
 }

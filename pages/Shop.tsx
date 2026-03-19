@@ -298,12 +298,10 @@ export const ProductDetail = () => {
 
     const handleAddToCart = () => {
         if (!product) return;
+        if (!isLoggedIn) { navigate('/login'); return; }
         addToCart(product, 1, Object.keys(selectedOptions).length > 0 ? selectedOptions : undefined);
         const title = localized(product, 'name', lang);
         alert(`${t('product.addToCart')} ${title} ${t('general.success')}`);
-        // Only force navigate to login if not logged in. Otherwise give option to view cart or stay.
-        // if (!isLoggedIn) { navigate('/login'); return; }
-        // navigate('/cart');
     };
 
     const submitReview = async (e: React.FormEvent) => {

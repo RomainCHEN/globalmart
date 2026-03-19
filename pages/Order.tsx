@@ -150,27 +150,51 @@ export const Checkout = () => {
     const handlePlaceOrder = async () => {
         setLoading(true);
         try {
-            const orderData = {
-                items: cart.map(item => {
-                    let formattedName = item.name;
-                    if (item.options && Object.keys(item.options).length > 0) {
-                        const optStr = Object.entries(item.options).map(([k, v]) => `${k}: ${v}`).join(', ');
-                        formattedName += ` (${optStr})`;
-                    }
-                    return {
-                        product_id: item.id,
-                        name: formattedName,
-                        image: item.image,
-                        price: item.price,
-                        quantity: item.quantity,
-                    };
-                }),
-                shipping,
-                payment_method: paymentMethod,
-            };
-            const order = await api.createOrder(orderData);
+            // F4: Group items by store_id — one order per store
+            const storeGroups: Record<string, typeof cart> = {};
+            cart.forEach(item => {
+                const sid = item.store_id || 'unknown';
+                if (!storeGroups[sid]) storeGroups[sid] = [];
+                storeGroups[sid].push(item);
+            });
+
+            const storeIds = Object.keys(storeGroups);
+            const createdOrders: any[] = [];
+
+            for (const storeId of storeIds) {
+                const groupItems = storeGroups[storeId];
+                const orderData = {
+                    items: groupItems.map(item => {
+                        let formattedName = item.name;
+                        if (item.options && Object.keys(item.options).length > 0) {
+                            const optStr = Object.entries(item.options).map(([k, v]) => `${k}: ${v}`).join(', ');
+                            formattedName += ` (${optStr})`;
+                        }
+                        return {
+                            product_id: item.id,
+                            name: formattedName,
+                            image: item.image,
+                            price: item.price,
+                            quantity: item.quantity,
+                        };
+                    }),
+                    shipping,
+                    payment_method: paymentMethod,
+                    store_id: storeId !== 'unknown' ? storeId : undefined,
+                };
+                const order = await api.createOrder(orderData);
+                createdOrders.push(order);
+            }
+
             clearCart();
-            navigate(`/order/${order.id}`);
+
+            if (createdOrders.length === 1) {
+                navigate(`/order/${createdOrders[0].id}`);
+            } else {
+                // Multiple orders created — go to dashboard orders list
+                alert(t('checkout.multiStoreNotice') || `${createdOrders.length} orders created (one per store).`);
+                navigate('/dashboard');
+            }
         } catch (err: any) {
             alert(err.message || 'Failed to place order');
         } finally {
@@ -377,6 +401,8 @@ export const OrderDetails = () => {
         delivered: t('order.delivered'),
         hold: t('order.hold'),
         cancelled: t('order.cancelled'),
+        refund_requested: t('order.refundRequested'),
+        refunded: t('order.refunded'),
     };
     const statusIcons: Record<string, string> = {
         pending: 'hourglass_top',
@@ -384,6 +410,8 @@ export const OrderDetails = () => {
         delivered: 'check_circle',
         hold: 'pause_circle',
         cancelled: 'cancel',
+        refund_requested: 'assignment_return',
+        refunded: 'currency_exchange',
     };
 
     if (loading) {
@@ -406,10 +434,11 @@ export const OrderDetails = () => {
         );
     }
 
-    const currentStepIndex = order.status === 'cancelled' || order.status === 'hold'
+    const currentStepIndex = order.status === 'cancelled' || order.status === 'hold' || order.status === 'refund_requested' || order.status === 'refunded'
         ? -1
         : statusSteps.indexOf(order.status);
     const canCancel = order.status === 'pending' || order.status === 'hold';
+    const canRefund = order.status === 'delivered';
 
     return (
         <div className="px-4 md:px-10 py-8 w-full max-w-[1400px] mx-auto" role="main" aria-label={`${t('order.title')} ${order.id.slice(0, 8)}`}>
@@ -433,6 +462,18 @@ export const OrderDetails = () => {
                     <button onClick={handleCancel} disabled={cancelling} className="border-4 border-black bg-brutal-red text-white px-6 py-3 font-black uppercase shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50 flex items-center gap-2">
                         <span className="material-symbols-outlined">cancel</span>
                         {cancelling ? t('general.loading') : t('order.cancelOrder')}
+                    </button>
+                )}
+                {canRefund && (
+                    <button onClick={async () => {
+                        if (!confirm(t('order.refundConfirm'))) return;
+                        try {
+                            const updated = await api.requestRefund(order.id);
+                            setOrder(updated);
+                        } catch (err: any) { alert(err.message); }
+                    }} className="border-4 border-black bg-orange-500 text-white px-6 py-3 font-black uppercase shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center gap-2">
+                        <span className="material-symbols-outlined">assignment_return</span>
+                        {t('order.requestReturn')}
                     </button>
                 )}
             </div>
@@ -529,6 +570,8 @@ export const OrderDetails = () => {
                         {order.delivered_at && <p><span className="font-black">{t('order.delivered')}:</span> {new Date(order.delivered_at).toLocaleString()}</p>}
                         {order.hold_at && <p><span className="font-black">{t('order.hold')}:</span> {new Date(order.hold_at).toLocaleString()}</p>}
                         {order.cancelled_at && <p><span className="font-black">{t('order.cancelled')}:</span> {new Date(order.cancelled_at).toLocaleString()}</p>}
+                        {order.refund_requested_at && <p><span className="font-black">{t('order.refundRequestedAt')}:</span> {new Date(order.refund_requested_at).toLocaleString()}</p>}
+                        {order.refunded_at && <p><span className="font-black">{t('order.refundedAt')}:</span> {new Date(order.refunded_at).toLocaleString()}</p>}
                     </div>
                 </div>
             </div>

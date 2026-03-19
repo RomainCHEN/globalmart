@@ -50,6 +50,23 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// Refresh token — get new access_token using refresh_token
+router.post('/refresh', async (req, res) => {
+    try {
+        const { refresh_token } = req.body;
+        if (!refresh_token) return res.status(400).json({ error: 'refresh_token is required' });
+
+        const { data, error } = await supabaseAdmin.auth.refreshSession({ refresh_token });
+        if (error || !data.session) {
+            return res.status(401).json({ error: error?.message || 'Failed to refresh session' });
+        }
+
+        res.json({ session: data.session });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Logout
 router.post('/logout', requireAuth, async (req, res) => {
     try {

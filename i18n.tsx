@@ -96,6 +96,7 @@ const translations: Record<Lang, Record<string, string>> = {
         'checkout.city': 'City',
         'checkout.zip': 'ZIP Code',
         'checkout.country': 'Country',
+        'checkout.multiStoreNotice': 'Your cart contained items from multiple stores. Separate orders have been created for each store.',
         // Orders
         'order.title': 'Order',
         'order.status': 'Current Status',
@@ -127,6 +128,13 @@ const translations: Record<Lang, Record<string, string>> = {
         'order.actionDeliver': 'Deliver',
         'order.actionCancel': 'Cancel',
         'order.noActions': 'No actions available',
+        'order.refundRequested': 'Return Requested',
+        'order.refunded': 'Refunded',
+        'order.requestReturn': 'Request Return',
+        'order.refundConfirm': 'Are you sure you want to request a return for this order?',
+        'order.actionApproveRefund': 'Approve Refund',
+        'order.refundRequestedAt': 'Return Requested At',
+        'order.refundedAt': 'Refunded At',
         'cart.unitPrice': 'Unit Price',
         // Dashboard
         'dash.title': 'User Center',
@@ -460,6 +468,7 @@ const translations: Record<Lang, Record<string, string>> = {
         'checkout.city': '城市',
         'checkout.zip': '邮编',
         'checkout.country': '国家',
+        'checkout.multiStoreNotice': '您的购物车包含来自不同店铺的商品，系统已自动按店铺拆分为多个订单。',
         // Orders
         'order.title': '订单',
         'order.status': '当前状态',
@@ -491,6 +500,13 @@ const translations: Record<Lang, Record<string, string>> = {
         'order.actionDeliver': '送达',
         'order.actionCancel': '取消',
         'order.noActions': '无可用操作',
+        'order.refundRequested': '退货申请中',
+        'order.refunded': '已退款',
+        'order.requestReturn': '申请退货',
+        'order.refundConfirm': '确定要申请退货吗？',
+        'order.actionApproveRefund': '批准退款',
+        'order.refundRequestedAt': '退货申请时间',
+        'order.refundedAt': '退款时间',
         'cart.unitPrice': '单价',
         // Dashboard
         'dash.title': '用户中心',

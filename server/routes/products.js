@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
         }
 
         if (search) {
-            query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+            query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,name_zh.ilike.%${search}%,description_zh.ilike.%${search}%`);
         }
         if (category) {
             query = query.eq('category_id', category);

@@ -677,18 +677,29 @@ export const StoreDetailPage = () => {
     const [store, setStore] = useState<any>(null);
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const [storeSearch, setStoreSearch] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
 
     useEffect(() => {
         if (!id) return;
         setLoading(true);
-        Promise.all([api.getStore(id), api.getStoreProducts(id)])
-            .then(([storeData, productsData]) => {
-                setStore(storeData);
-                setProducts(productsData);
-            })
+        api.getStore(id)
+            .then(data => setStore(data))
             .catch(() => { })
             .finally(() => setLoading(false));
     }, [id]);
+
+    useEffect(() => {
+        if (!id) return;
+        setIsSearching(true);
+        const params: any = {};
+        if (storeSearch) params.search = storeSearch;
+        
+        api.getStoreProducts(id, params)
+            .then(data => setProducts(data))
+            .catch(() => { })
+            .finally(() => setIsSearching(false));
+    }, [id, storeSearch]);
 
     if (loading) {
         return (
@@ -745,20 +756,43 @@ export const StoreDetailPage = () => {
                 </div>
             </div>
 
-            {/* Back link */}
-            <div className="max-w-[1600px] mx-auto px-6 lg:px-12 pt-8 pb-4">
-                <Link to="/store" className="inline-flex items-center gap-2 border-4 border-black px-4 py-2 font-black uppercase shadow-brutal bg-white hover:bg-brutal-yellow transition-colors">
+            {/* Back link and Search */}
+            <div className="max-w-[1600px] mx-auto px-6 lg:px-12 pt-8 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <Link to="/store" className="inline-flex items-center gap-2 border-4 border-black px-4 py-2 font-black uppercase shadow-brutal bg-white hover:bg-brutal-yellow transition-colors w-fit">
                     <span className="material-symbols-outlined">arrow_back</span>
                     {t('store.backToStores') || 'All Stores'}
                 </Link>
+                
+                <div className="w-full md:w-96 relative">
+                    <input 
+                        type="text" 
+                        value={storeSearch}
+                        onChange={e => setStoreSearch(e.target.value)}
+                        placeholder={t('nav.search') + ' in this store...'}
+                        className="w-full border-4 border-black p-3 pr-12 font-bold shadow-brutal focus:ring-0 focus:-translate-x-1 focus:-translate-y-1 transition-all"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                        {isSearching ? (
+                            <span className="material-symbols-outlined animate-spin text-gray-400">progress_activity</span>
+                        ) : (
+                            <span className="material-symbols-outlined text-black font-black">search</span>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* Products Grid */}
             <div className="max-w-[1600px] mx-auto px-6 lg:px-12 py-8">
-                {products.length === 0 ? (
+                {isSearching && products.length === 0 ? (
+                   <div className="text-center py-20 animate-pulse">
+                        <span className="text-2xl font-black uppercase">{t('general.loading')}...</span>
+                   </div>
+                ) : products.length === 0 ? (
                     <div className="text-center py-20">
                         <div className="inline-block border-4 border-black border-dashed bg-white px-8 py-4">
-                            <span className="text-xl font-black uppercase">No products in this store yet</span>
+                            <span className="text-xl font-black uppercase">
+                                {storeSearch ? 'No matching products found' : 'No products in this store yet'}
+                            </span>
                         </div>
                     </div>
                 ) : (

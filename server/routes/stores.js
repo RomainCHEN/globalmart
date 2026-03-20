@@ -83,11 +83,17 @@ router.get('/:id', async (req, res) => {
 // GET /api/stores/:id/products
 router.get('/:id/products', async (req, res) => {
     try {
-        const { data, error } = await supabaseAdmin
+        const { search } = req.query;
+        let query = supabaseAdmin
             .from('products')
             .select('*, categories(name, slug)')
-            .eq('store_id', req.params.id)
-            .order('created_at', { ascending: false });
+            .eq('store_id', req.params.id);
+
+        if (search) {
+            query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,name_zh.ilike.%${search}%,description_zh.ilike.%${search}%`);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
         if (error) return res.status(400).json({ error: error.message });
         res.json(data);
     } catch (err) {

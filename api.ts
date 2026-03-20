@@ -146,7 +146,10 @@ export const api = {
     // Stores
     getStores: () => request('/stores'),
     getStore: (id: string) => request(`/stores/${id}`),
-    getStoreProducts: (id: string) => request(`/stores/${id}/products`),
+    getStoreProducts: (id: string, params?: Record<string, string>) => {
+        const q = params ? '?' + new URLSearchParams(params).toString() : '';
+        return request(`/stores/${id}/products${q}`);
+    },
     updateStore: (id: string, data: any) =>
         request(`/stores/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     createStore: (data: { name: string; name_zh?: string; description?: string; description_zh?: string; logo?: string }) =>

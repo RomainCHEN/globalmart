@@ -11,7 +11,7 @@ const supabaseAdmin = createClient(
 // POST /api/migrate/bilingual — add name_zh and description_zh columns to products AND stores
 router.post('/bilingual', async (req, res) => {
     try {
-        const results = { products: 'unknown', stores: 'unknown' };
+        const results = { products: 'unknown', stores: 'unknown', orders: 'unknown' };
 
         // Check products table
         const prodTest = await supabaseAdmin
@@ -35,18 +35,31 @@ router.post('/bilingual', async (req, res) => {
             results.stores = 'ready';
         }
 
-        if (results.products === 'ready' && results.stores === 'ready') {
-            return res.json({ success: true, message: 'All bilingual columns ready', results });
+        // Check orders table for store_id
+        const orderTest = await supabaseAdmin
+            .from('orders')
+            .select('store_id')
+            .limit(1);
+        if (orderTest.error && orderTest.error.message.includes('column "store_id" does not exist')) {
+            results.orders = 'missing — run SQL below';
+        } else {
+            results.orders = 'ready';
+        }
+
+        const allReady = results.products === 'ready' && results.stores === 'ready' && results.orders === 'ready';
+        if (allReady) {
+            return res.json({ success: true, message: 'All schema updates ready', results });
         }
 
         res.status(400).json({
-            error: 'Some bilingual columns missing. Run this SQL in Supabase SQL Editor:',
+            error: 'Some columns missing. Run this SQL in Supabase SQL Editor:',
             results,
             sql: [
                 "ALTER TABLE products ADD COLUMN IF NOT EXISTS name_zh TEXT DEFAULT '';",
                 "ALTER TABLE products ADD COLUMN IF NOT EXISTS description_zh TEXT DEFAULT '';",
                 "ALTER TABLE stores ADD COLUMN IF NOT EXISTS name_zh TEXT DEFAULT '';",
-                "ALTER TABLE stores ADD COLUMN IF NOT EXISTS description_zh TEXT DEFAULT '';"
+                "ALTER TABLE stores ADD COLUMN IF NOT EXISTS description_zh TEXT DEFAULT '';",
+                "ALTER TABLE orders ADD COLUMN IF NOT EXISTS store_id UUID REFERENCES stores(id) ON DELETE SET NULL;"
             ]
         });
     } catch (err) {
@@ -56,7 +69,8 @@ router.post('/bilingual', async (req, res) => {
                 "ALTER TABLE products ADD COLUMN IF NOT EXISTS name_zh TEXT DEFAULT '';",
                 "ALTER TABLE products ADD COLUMN IF NOT EXISTS description_zh TEXT DEFAULT '';",
                 "ALTER TABLE stores ADD COLUMN IF NOT EXISTS name_zh TEXT DEFAULT '';",
-                "ALTER TABLE stores ADD COLUMN IF NOT EXISTS description_zh TEXT DEFAULT '';"
+                "ALTER TABLE stores ADD COLUMN IF NOT EXISTS description_zh TEXT DEFAULT '';",
+                "ALTER TABLE orders ADD COLUMN IF NOT EXISTS store_id UUID REFERENCES stores(id) ON DELETE SET NULL;"
             ]
         });
     }

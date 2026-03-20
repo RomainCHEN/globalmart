@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS reviews (
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  store_id UUID REFERENCES stores(id) ON DELETE SET NULL,
   status TEXT NOT NULL DEFAULT 'ordered' CHECK (status IN ('ordered', 'shipped', 'out_for_delivery', 'delivered', 'cancelled')),
   total NUMERIC(10,2) NOT NULL DEFAULT 0,
   shipping_name TEXT DEFAULT '',

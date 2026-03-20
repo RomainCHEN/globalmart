@@ -17,6 +17,10 @@ interface AppContextType {
     updateQuantity: (productId: string, quantity: number) => void;
     cartTotal: number;
     clearCart: () => void;
+    selectedCartItems: string[];
+    setSelectedCartItems: (ids: string[]) => void;
+    removeItems: (ids: string[]) => void;
+    getCartItemId: (productId: string, options?: any) => string;
     // Wishlist
     wishlist: string[];
     toggleWishlist: (productId: string) => void;
@@ -196,12 +200,24 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
 
     const clearCart = () => {
         setCart([]);
+        setSelectedCartItems([]);
         if (user) {
             api.clearCart().catch(() => { });
         }
     };
 
-    const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const removeItems = (ids: string[]) => {
+        setCart(prev => prev.filter(p => !ids.includes(getCartItemId(p.id, p.options))));
+        setSelectedCartItems(prev => prev.filter(id => !ids.includes(id)));
+    };
+
+    const [selectedCartItems, setSelectedCartItems] = useState<string[]>([]);
+
+    // cartTotal computes only selected items (or all if none selected)
+    const cartTotal = (() => {
+        if (selectedCartItems.length === 0) return cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+        return cart.filter(item => selectedCartItems.includes(getCartItemId(item.id, item.options))).reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    })();
 
     const toggleWishlist = async (productId: string) => {
         if (!user) return;
@@ -238,6 +254,7 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
         <AppContext.Provider value={{
             user, isLoggedIn, login, register, logout, authLoading,
             cart, addToCart, removeFromCart, updateQuantity, cartTotal, clearCart,
+            selectedCartItems, setSelectedCartItems, removeItems, getCartItemId,
             wishlist, toggleWishlist, isInWishlist,
             categories, products, loadProducts, productsLoading
         }}>

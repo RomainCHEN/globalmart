@@ -105,12 +105,38 @@ export const UserDashboard = () => {
                                 <div className="border-4 border-dashed border-black p-12 text-center"><p className="text-xl font-black uppercase text-gray-500">{t('order.noOrders')}</p></div>
                             ) : orders.map(order => (
                                 <Link to={`/order/${order.id}`} key={order.id} className="block bg-white border-4 border-black shadow-brutal p-6 hover:-translate-x-1 hover:-translate-y-1 hover:shadow-brutal-lg transition-all">
-                                    <div className="flex flex-wrap justify-between items-center gap-4">
-                                        <div>
-                                            <h4 className="font-black uppercase text-lg">Order #{order.id.slice(0, 8)}</h4>
+                                    <div className="flex flex-wrap justify-between items-start gap-4">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <h4 className="font-black uppercase text-lg">Order #{order.id.slice(0, 8)}</h4>
+                                                {order.stores && (
+                                                    <div className="flex items-center gap-1 bg-brutal-yellow border-2 border-black px-2 py-0.5 text-[10px] font-black uppercase">
+                                                        <span className="material-symbols-outlined text-[12px]">storefront</span>
+                                                        {order.stores.name}
+                                                    </div>
+                                                )}
+                                            </div>
                                             <p className="text-sm font-bold text-gray-500">{new Date(order.created_at).toLocaleDateString()}</p>
+                                            {/* Product thumbnails */}
+                                            {order.order_items && order.order_items.length > 0 && (
+                                                <div className="flex items-center gap-2 mt-3">
+                                                    {order.order_items.slice(0, 3).map((item: any, idx: number) => (
+                                                        <div key={idx} className="w-12 h-12 border-2 border-black overflow-hidden bg-gray-100 shrink-0">
+                                                            {item.product_image ? (
+                                                                <img src={item.product_image} alt={item.product_name || ''} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-gray-400 text-sm">image</span></div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                    {order.order_items.length > 3 && (
+                                                        <span className="text-xs font-black border-2 border-black px-2 py-1 bg-gray-100">+{order.order_items.length - 3}</span>
+                                                    )}
+                                                    <span className="text-xs font-bold text-gray-500 ml-1">{order.order_items.length} {order.order_items.length === 1 ? 'item' : 'items'}</span>
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex flex-col items-end gap-2">
                                             <span className={`px-3 py-1 border-2 border-black font-black uppercase text-sm ${order.status === 'delivered' ? 'bg-brutal-green' : order.status === 'cancelled' ? 'bg-brutal-red text-white' : order.status === 'hold' ? 'bg-orange-400' : order.status === 'shipped' ? 'bg-brutal-blue text-white' : 'bg-brutal-yellow'}`}>{t(`order.${order.status}`)}</span>
                                             <span className="text-2xl font-black">${order.total}</span>
                                         </div>

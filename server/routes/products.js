@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
 
         let query = supabaseAdmin
             .from('products')
-            .select('*, categories(name, slug), product_images(url, sort_order)', { count: 'exact' });
+            .select('*, categories(name, slug), product_images(url, sort_order), stores(id, name, logo, verified)', { count: 'exact' });
 
         // Only filter enabled for storefront (not when seller requests all)
         if (!include_disabled) {

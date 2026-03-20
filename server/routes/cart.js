@@ -9,7 +9,7 @@ router.get('/', requireAuth, async (req, res) => {
     try {
         const { data, error } = await supabaseAdmin
             .from('cart_items')
-            .select('*, products(id, name, name_zh, description, description_zh, price, original_price, image, stock, category_id, categories(name, slug), rating, tags)')
+            .select('*, products(id, name, name_zh, description, description_zh, price, original_price, image, stock, category_id, categories(name, slug), rating, tags, store_id, stores(id, name, logo, verified))')
             .eq('user_id', req.user.id)
             .order('created_at', { ascending: true });
         if (error) return res.status(400).json({ error: error.message });
@@ -140,7 +140,7 @@ router.post('/sync', requireAuth, async (req, res) => {
         // Return updated cart
         const { data } = await supabaseAdmin
             .from('cart_items')
-            .select('*, products(id, name, name_zh, description, description_zh, price, original_price, image, stock, category_id, categories(name, slug), rating, tags)')
+            .select('*, products(id, name, name_zh, description, description_zh, price, original_price, image, stock, category_id, categories(name, slug), rating, tags, store_id, stores(id, name, logo, verified))')
             .eq('user_id', req.user.id)
             .order('created_at', { ascending: true });
         res.json(data);

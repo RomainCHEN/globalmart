@@ -39,6 +39,7 @@ export interface Order {
     status: 'pending' | 'shipped' | 'delivered' | 'hold' | 'cancelled' | 'refund_requested' | 'refunded';
     total: number;
     store_id?: string;
+    stores?: { id: string; name: string; logo: string };
     shipping_name: string;
     shipping_street: string;
     shipping_city: string;

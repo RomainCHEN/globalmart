@@ -15,6 +15,7 @@ router.post('/', requireAuth, async (req, res) => {
             .from('orders')
             .insert({
                 user_id: req.user.id,
+                store_id: store_id || null,
                 total,
                 shipping_name: shipping?.name || '',
                 shipping_street: shipping?.street || '',
@@ -22,8 +23,7 @@ router.post('/', requireAuth, async (req, res) => {
                 shipping_zip: shipping?.zip || '',
                 shipping_country: shipping?.country || '',
                 payment_method: payment_method || 'credit_card',
-                status: 'pending',
-                store_id: store_id || null
+                status: 'pending'
             })
             .select()
             .single();
@@ -62,7 +62,7 @@ router.get('/', requireAuth, async (req, res) => {
     try {
         let query = supabaseAdmin
             .from('orders')
-            .select('*, order_items(*)')
+            .select('*, order_items(*), stores(id, name, logo)')
             .eq('user_id', req.user.id)
             .order('created_at', { ascending: false });
 
@@ -126,7 +126,7 @@ router.get('/seller', requireAuth, async (req, res) => {
 
         let query = supabaseAdmin
             .from('orders')
-            .select('*, order_items(*), profiles:user_id(name, email)')
+            .select('*, order_items(*), profiles:user_id(name, email), stores(id, name, logo)')
             .in('id', orderIds)
             .order('created_at', { ascending: false });
 
@@ -148,7 +148,7 @@ router.get('/:id', requireAuth, async (req, res) => {
         // First try as customer
         let { data, error } = await supabaseAdmin
             .from('orders')
-            .select('*, order_items(*)')
+            .select('*, order_items(*), stores(id, name, logo)')
             .eq('id', req.params.id)
             .single();
 

@@ -6,17 +6,43 @@ import { api } from '../api';
 import { Order } from '../types';
 
 export const Cart = () => {
-    const { cart, removeFromCart, updateQuantity, cartTotal, isLoggedIn } = useApp();
+    const { cart, removeFromCart, updateQuantity, isLoggedIn, selectedCartItems, setSelectedCartItems, getCartItemId } = useApp();
     const { t, lang } = useI18n();
     const navigate = useNavigate();
 
-    // A2: If not logged in and cart is empty prompt, redirect to login on checkout
+    // Group cart items by store
+    const storeGroups = React.useMemo(() => {
+        const groups: Record<string, { store: { id: string; name: string; logo?: string } | null; items: typeof cart }> = {};
+        cart.forEach(item => {
+            const sid = item.store_id || 'independent';
+            if (!groups[sid]) {
+                groups[sid] = { store: item.stores ? { id: item.stores.id, name: item.stores.name, logo: item.stores.logo } : null, items: [] };
+            }
+            groups[sid].items.push(item);
+        });
+        return groups;
+    }, [cart]);
+
+    const allItemIds = cart.map(item => getCartItemId(item.id, item.options));
+    const isAllSelected = allItemIds.length > 0 && allItemIds.every(id => selectedCartItems.includes(id));
+
+    const toggleItem = (itemId: string) => {
+        setSelectedCartItems(selectedCartItems.includes(itemId) ? selectedCartItems.filter(id => id !== itemId) : [...selectedCartItems, itemId]);
+    };
+    const toggleStoreGroup = (storeId: string) => {
+        const ids = (storeGroups[storeId]?.items || []).map(item => getCartItemId(item.id, item.options));
+        const allChecked = ids.every(id => selectedCartItems.includes(id));
+        setSelectedCartItems(allChecked ? selectedCartItems.filter(id => !ids.includes(id)) : [...new Set([...selectedCartItems, ...ids])]);
+    };
+    const toggleAll = () => setSelectedCartItems(isAllSelected ? [] : [...allItemIds]);
+
+    const selectedCount = selectedCartItems.length;
+    const selectedTotal = cart.filter(item => selectedCartItems.includes(getCartItemId(item.id, item.options))).reduce((acc, item) => acc + item.price * item.quantity, 0);
+
     const handleCheckout = () => {
-        if (!isLoggedIn) {
-            navigate('/login');
-        } else {
-            navigate('/checkout');
-        }
+        if (selectedCount === 0) { alert(t('cart.selectItems') || 'Please select items to checkout'); return; }
+        if (!isLoggedIn) { navigate('/login'); return; }
+        navigate('/checkout');
     };
 
     return (
@@ -29,92 +55,92 @@ export const Cart = () => {
                     <div className="border-4 border-black border-dashed p-12 inline-block">
                         <span className="material-symbols-outlined text-6xl mb-4 block text-gray-400">shopping_cart</span>
                         <p className="text-2xl font-black uppercase mb-6">{t('cart.empty')}</p>
-                        <Link to="/" className="inline-flex items-center border-4 border-black bg-brutal-yellow px-6 py-3 font-black uppercase shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-                            {t('cart.continue')}
-                        </Link>
+                        <Link to="/" className="inline-flex items-center border-4 border-black bg-brutal-yellow px-6 py-3 font-black uppercase shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">{t('cart.continue')}</Link>
                     </div>
                 </div>
             ) : (
-                <div className="flex flex-col lg:flex-row gap-16 items-start">
-                    <div className="w-full lg:flex-1">
-                        {cart.map(item => (
-                            <div key={item.id} className="flex flex-col sm:flex-row gap-8 py-8 border-b-4 border-black first:pt-0">
-                                {/* A8: Cart item image clickable to product detail */}
-                                <Link to={`/product/${item.id}`} className="shrink-0 border-4 border-black shadow-brutal overflow-hidden hover:shadow-brutal-lg transition-all">
-                                    <div className="bg-center bg-no-repeat bg-cover w-full sm:w-48 h-48" style={{ backgroundImage: `url("${item.image}")` }}></div>
-                                </Link>
-                                <div className="flex flex-1 flex-col justify-between">
-                                    <div className="flex justify-between items-start gap-4">
-                                        <div>
-                                            {/* A8: Cart item name clickable to product detail */}
-                                            <Link to={`/product/${item.id}`} className="hover:text-brutal-blue transition-colors">
-                                                <h3 className="text-2xl font-black mb-2 uppercase font-display">{localized(item, 'name', lang)}</h3>
-                                            </Link>
-                                            {item.options && Object.keys(item.options).length > 0 && (
-                                                <div className="flex flex-wrap gap-2 mb-3">
-                                                    {Object.entries(item.options).map(([k, v]) => (
-                                                        <span key={k} className="bg-gray-100 border-2 border-black px-2 py-0.5 text-xs font-black uppercase">
-                                                            {k}: {v}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {item.categories && <p className="text-sm font-bold bg-black text-white px-2 py-1 inline-block uppercase mb-4">{item.categories.name}</p>}
-                                            <p className="text-sm font-bold text-gray-500">{t('cart.unitPrice')}: ${item.price.toFixed(2)}</p>
-                                        </div>
-                                        <button onClick={() => removeFromCart(item.id)} className="bg-brutal-red border-4 border-black p-3 shadow-brutal hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all flex items-center gap-2 font-bold uppercase text-sm text-white" aria-label={`${t('cart.remove')}: ${item.name}`}>
-                                            <span className="material-symbols-outlined text-[20px]">delete</span>
-                                            {t('cart.remove')}
-                                        </button>
-                                    </div>
-                                    <div className="flex flex-wrap items-end justify-between gap-4">
-                                        <div className="flex items-center border-4 border-black shadow-brutal bg-white" role="group" aria-label="Quantity">
-                                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-12 h-12 flex items-center justify-center border-r-4 border-black hover:bg-brutal-yellow" aria-label="Decrease quantity">
-                                                <span className="material-symbols-outlined font-black">remove</span>
-                                            </button>
-                                            <input className="w-14 text-center border-none text-xl font-black focus:ring-0" type="number" value={item.quantity} readOnly aria-label="Quantity" />
-                                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-12 h-12 flex items-center justify-center border-l-4 border-black hover:bg-brutal-yellow" aria-label="Increase quantity">
-                                                <span className="material-symbols-outlined font-black">add</span>
-                                            </button>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-4xl font-black font-display">${(item.price * item.quantity).toFixed(2)}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        <div className="mt-12">
-                            <Link to="/" className="inline-flex items-center border-4 border-black bg-white px-6 py-3 font-black uppercase shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-                                <span className="material-symbols-outlined mr-2 font-black">arrow_back</span>
-                                {t('cart.continue')}
-                            </Link>
+                <div className="flex flex-col lg:flex-row gap-12 items-start">
+                    <div className="w-full lg:flex-1 space-y-6">
+                        {/* Global select all */}
+                        <div className="flex items-center gap-4 border-4 border-black bg-gray-100 px-6 py-4 shadow-brutal">
+                            <label className="flex items-center gap-3 cursor-pointer select-none">
+                                <input type="checkbox" checked={isAllSelected} onChange={toggleAll} className="w-6 h-6 accent-black cursor-pointer" />
+                                <span className="font-black uppercase text-sm">{t('cart.selectAll') || 'Select All'}</span>
+                            </label>
                         </div>
+                        {/* Store-grouped items */}
+                        {Object.entries(storeGroups).map(([storeId, group]: [string, { store: { id: string; name: string; logo?: string } | null; items: typeof cart }]) => {
+                            const groupIds = group.items.map(item => getCartItemId(item.id, item.options));
+                            const allGroupChecked = groupIds.every(id => selectedCartItems.includes(id));
+                            return (
+                                <div key={storeId} className="border-4 border-black bg-white shadow-brutal">
+                                    <div className="flex items-center gap-4 px-6 py-4 border-b-4 border-black bg-brutal-yellow/20">
+                                        <input type="checkbox" checked={allGroupChecked} onChange={() => toggleStoreGroup(storeId)} className="w-5 h-5 accent-black cursor-pointer" />
+                                        {group.store?.logo && <div className="w-8 h-8 border-2 border-black overflow-hidden bg-white shrink-0"><img src={group.store.logo} alt="" className="w-full h-full object-contain" /></div>}
+                                        <Link to={group.store ? `/store/${group.store.id}` : '/'} className="flex items-center gap-2 hover:text-brutal-blue">
+                                            <span className="material-symbols-outlined text-lg">storefront</span>
+                                            <span className="font-black uppercase text-sm">{group.store?.name || 'Store'}</span>
+                                        </Link>
+                                    </div>
+                                    {group.items.map(item => {
+                                        const itemId = getCartItemId(item.id, item.options);
+                                        const isChecked = selectedCartItems.includes(itemId);
+                                        return (
+                                            <div key={itemId} className={`flex flex-col sm:flex-row gap-5 px-6 py-5 border-b-2 border-black/20 last:border-0 transition-colors ${isChecked ? 'bg-brutal-yellow/5' : ''}`}>
+                                                <div className="flex items-center shrink-0"><input type="checkbox" checked={isChecked} onChange={() => toggleItem(itemId)} className="w-5 h-5 accent-black cursor-pointer" /></div>
+                                                <Link to={`/product/${item.id}`} className="shrink-0 border-3 border-black overflow-hidden hover:shadow-brutal transition-all">
+                                                    <div className="bg-center bg-no-repeat bg-cover w-full sm:w-28 h-28" style={{ backgroundImage: `url("${item.image}")` }}></div>
+                                                </Link>
+                                                <div className="flex flex-1 flex-col justify-between min-w-0">
+                                                    <div className="flex justify-between items-start gap-4">
+                                                        <div className="min-w-0 flex-1">
+                                                            <Link to={`/product/${item.id}`} className="hover:text-brutal-blue"><h3 className="text-lg font-black mb-1 uppercase font-display truncate">{localized(item, 'name', lang)}</h3></Link>
+                                                            {item.options && Object.keys(item.options).length > 0 && (
+                                                                <div className="flex flex-wrap gap-1 mb-2">{Object.entries(item.options).map(([k, v]) => (<span key={k} className="bg-gray-100 border-2 border-black px-2 py-0.5 text-xs font-black uppercase">{k}: {v}</span>))}</div>
+                                                            )}
+                                                            <p className="text-sm font-bold text-gray-500">{t('cart.unitPrice')}: ${item.price.toFixed(2)}</p>
+                                                        </div>
+                                                        <button onClick={() => removeFromCart(item.id)} className="bg-brutal-red border-3 border-black p-2 hover:translate-x-[1px] hover:translate-y-[1px] transition-all text-white shrink-0" aria-label={t('cart.remove')}>
+                                                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex flex-wrap items-end justify-between gap-4 mt-2">
+                                                        <div className="flex items-center border-3 border-black bg-white" role="group">
+                                                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-10 h-10 flex items-center justify-center border-r-3 border-black hover:bg-brutal-yellow"><span className="material-symbols-outlined font-black text-sm">remove</span></button>
+                                                            <input className="w-12 text-center border-none text-lg font-black focus:ring-0" type="number" value={item.quantity} readOnly />
+                                                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-10 h-10 flex items-center justify-center border-l-3 border-black hover:bg-brutal-yellow"><span className="material-symbols-outlined font-black text-sm">add</span></button>
+                                                        </div>
+                                                        <p className="text-2xl font-black font-display">${(item.price * item.quantity).toFixed(2)}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })}
+                        <Link to="/" className="inline-flex items-center border-4 border-black bg-white px-6 py-3 font-black uppercase shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all mt-4">
+                            <span className="material-symbols-outlined mr-2 font-black">arrow_back</span>{t('cart.continue')}
+                        </Link>
                     </div>
-                    <div className="w-full lg:w-[440px] shrink-0 sticky top-28">
+                    {/* Summary — selected items only */}
+                    <div className="w-full lg:w-[420px] shrink-0 sticky top-28">
                         <div className="border-4 border-black bg-white p-8 shadow-brutal-lg">
                             <h2 className="text-3xl font-black mb-8 border-b-4 border-black pb-4 font-display uppercase">{t('checkout.manifest')}</h2>
-                            <div className="space-y-6 pb-8 border-b-4 border-black font-bold uppercase text-lg">
-                                <div className="flex justify-between">
-                                    <span>{t('cart.subtotal')}</span>
-                                    <span>${cartTotal.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>{t('cart.shipping')}</span>
-                                    <span className="text-brutal-green">{t('cart.free')}</span>
-                                </div>
+                            <div className="space-y-4 pb-8 border-b-4 border-black font-bold uppercase">
+                                <div className="flex justify-between"><span>{t('cart.selectedItems') || 'Selected'}</span><span className="text-lg">{selectedCount} / {cart.length}</span></div>
+                                <div className="flex justify-between text-lg"><span>{t('cart.subtotal')}</span><span>${selectedTotal.toFixed(2)}</span></div>
+                                <div className="flex justify-between"><span>{t('cart.shipping')}</span><span className="text-brutal-green">{t('cart.free')}</span></div>
                             </div>
                             <div className="py-8">
-                                <div className="flex justify-between items-center mb-10">
-                                    <span className="font-black text-2xl uppercase italic">{t('cart.total')}</span>
-                                    <span className="font-black text-5xl font-display">${cartTotal.toFixed(2)}</span>
+                                <div className="flex justify-between items-center mb-8">
+                                    <span className="font-black text-xl uppercase italic">{t('cart.total')}</span>
+                                    <span className="font-black text-4xl font-display">${selectedTotal.toFixed(2)}</span>
                                 </div>
-                                <button
-                                    onClick={handleCheckout}
-                                    className="w-full bg-brutal-yellow border-4 border-black py-6 text-2xl font-black uppercase shadow-brutal-lg hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-4"
-                                >
-                                    {t('cart.checkout')}
-                                    <span className="material-symbols-outlined font-black text-3xl">arrow_forward</span>
+                                <button onClick={handleCheckout} disabled={selectedCount === 0}
+                                    className="w-full bg-brutal-yellow border-4 border-black py-5 text-xl font-black uppercase shadow-brutal-lg hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed">
+                                    {t('cart.checkout')} ({selectedCount})
+                                    <span className="material-symbols-outlined font-black text-2xl">arrow_forward</span>
                                 </button>
                             </div>
                         </div>
@@ -125,44 +151,40 @@ export const Cart = () => {
     );
 };
 
+
 export const Checkout = () => {
-    const { cart, cartTotal, clearCart, isLoggedIn, user } = useApp();
+    const { cart, cartTotal, clearCart, removeItems, isLoggedIn, user, selectedCartItems, getCartItemId } = useApp();
     const { t } = useI18n();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    // Pre-fill shipping from user profile if available
     const [shipping, setShipping] = useState(() => {
         const addr = (user as any)?.shipping_address;
-        return {
-            name: addr?.name || user?.name || '',
-            street: addr?.street || '',
-            city: addr?.city || '',
-            zip: addr?.zip || '',
-            country: addr?.country || ''
-        };
+        return { name: addr?.name || user?.name || '', street: addr?.street || '', city: addr?.city || '', zip: addr?.zip || '', country: addr?.country || '' };
     });
     const [paymentMethod, setPaymentMethod] = useState('credit_card');
 
+    // Only checkout selected items
+    const checkoutItems = cart.filter(item => selectedCartItems.includes(getCartItemId(item.id, item.options)));
+
     useEffect(() => {
         if (!isLoggedIn) navigate('/login');
-    }, [isLoggedIn, navigate]);
+        // If no items selected, go back to cart
+        if (checkoutItems.length === 0 && cart.length > 0) navigate('/cart');
+    }, [isLoggedIn, navigate, checkoutItems.length, cart.length]);
 
     const handlePlaceOrder = async () => {
         setLoading(true);
         try {
-            // F4: Group items by store_id — one order per store
-            const storeGroups: Record<string, typeof cart> = {};
-            cart.forEach(item => {
+            // Group selected items by store_id — one order per store
+            const storeGroups: Record<string, typeof checkoutItems> = {};
+            checkoutItems.forEach(item => {
                 const sid = item.store_id || 'unknown';
                 if (!storeGroups[sid]) storeGroups[sid] = [];
                 storeGroups[sid].push(item);
             });
 
-            const storeIds = Object.keys(storeGroups);
             const createdOrders: any[] = [];
-
-            for (const storeId of storeIds) {
-                const groupItems = storeGroups[storeId];
+            for (const [sid, groupItems] of Object.entries(storeGroups)) {
                 const orderData = {
                     items: groupItems.map(item => {
                         let formattedName = item.name;
@@ -170,28 +192,22 @@ export const Checkout = () => {
                             const optStr = Object.entries(item.options).map(([k, v]) => `${k}: ${v}`).join(', ');
                             formattedName += ` (${optStr})`;
                         }
-                        return {
-                            product_id: item.id,
-                            name: formattedName,
-                            image: item.image,
-                            price: item.price,
-                            quantity: item.quantity,
-                        };
+                        return { product_id: item.id, name: formattedName, image: item.image, price: item.price, quantity: item.quantity };
                     }),
                     shipping,
                     payment_method: paymentMethod,
-                    store_id: storeId !== 'unknown' ? storeId : undefined,
+                    store_id: sid === 'unknown' ? null : sid,
                 };
                 const order = await api.createOrder(orderData);
                 createdOrders.push(order);
             }
 
-            clearCart();
+            // Remove only the checked-out items from cart; unchecked items stay
+            removeItems(selectedCartItems);
 
             if (createdOrders.length === 1) {
                 navigate(`/order/${createdOrders[0].id}`);
             } else {
-                // Multiple orders created — go to dashboard orders list
                 alert(t('checkout.multiStoreNotice') || `${createdOrders.length} orders created (one per store).`);
                 navigate('/dashboard');
             }
@@ -310,7 +326,7 @@ export const Checkout = () => {
                         <div className="bg-white border-4 border-black p-8 shadow-brutal">
                             <h3 className="text-2xl font-black uppercase italic mb-8 border-b-4 border-black pb-4 font-display">{t('checkout.manifest')}</h3>
                             <div className="space-y-6 mb-8">
-                                {cart.map(item => (
+                                {checkoutItems.map(item => (
                                     <div key={item.id} className="flex gap-4 items-center">
                                         <div className="w-20 h-20 border-4 border-black overflow-hidden bg-gray-200 shrink-0">
                                             <img src={item.image} alt={item.name} className="object-cover w-full h-full" />
@@ -349,7 +365,7 @@ export const Checkout = () => {
                         </div>
                         <button
                             onClick={handlePlaceOrder}
-                            disabled={loading || cart.length === 0}
+                            disabled={loading || checkoutItems.length === 0}
                             className="w-full bg-brutal-yellow border-4 border-black text-black font-black text-3xl py-8 shadow-brutal hover:shadow-brutal-active hover:translate-x-1 hover:translate-y-1 transition-all uppercase italic tracking-tighter flex flex-col items-center group font-display disabled:opacity-50"
                         >
                             <span className="flex items-center gap-3">
@@ -451,7 +467,15 @@ export const OrderDetails = () => {
             </div>
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
                 <div>
-                    <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none mb-4 font-display">{t('order.title')} #{order.id.slice(0, 8)}</h2>
+                    <div className="flex items-center gap-3 mb-4">
+                        <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none font-display">{t('order.title')} #{order.id.slice(0, 8)}</h2>
+                        {order.stores && (
+                            <Link to={`/store/${order.stores.id}`} className="bg-brutal-yellow border-4 border-black px-4 py-1 flex items-center gap-2 hover:shadow-brutal transition-all">
+                                <span className="material-symbols-outlined font-black">storefront</span>
+                                <span className="font-black uppercase italic">{order.stores.name}</span>
+                            </Link>
+                        )}
+                    </div>
                     <div className="flex flex-wrap gap-4 text-lg font-bold">
                         <span className="bg-brutal-pink text-white px-3 py-1 border-4 border-black">{new Date(order.created_at).toLocaleDateString()}</span>
                         <span className="bg-brutal-blue text-white px-3 py-1 border-4 border-black">{t('cart.total')}: ${order.total}</span>

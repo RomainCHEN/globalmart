@@ -79,6 +79,11 @@ const translations: Record<Lang, Record<string, string>> = {
         'cart.total': 'Total',
         'cart.checkout': 'Secure Checkout',
         'cart.remove': 'Remove',
+        'cart.selectAll': 'Select All',
+        'cart.selectItems': 'Please select items to checkout',
+        'cart.selectedItems': 'Selected',
+        'cart.unitPrice': 'Unit Price',
+        'cart.independentSeller': 'Independent Seller',
         // Checkout
         'checkout.title': 'Checkout',
         'checkout.shipping': 'Shipping Address',
@@ -135,7 +140,6 @@ const translations: Record<Lang, Record<string, string>> = {
         'order.actionApproveRefund': 'Approve Refund',
         'order.refundRequestedAt': 'Return Requested At',
         'order.refundedAt': 'Refunded At',
-        'cart.unitPrice': 'Unit Price',
         // Dashboard
         'dash.title': 'User Center',
         'dash.welcome': 'Welcome back',
@@ -451,6 +455,11 @@ const translations: Record<Lang, Record<string, string>> = {
         'cart.total': '合计',
         'cart.checkout': '安全结算',
         'cart.remove': '删除',
+        'cart.selectAll': '全选',
+        'cart.selectItems': '请选择要结算的商品',
+        'cart.selectedItems': '已选',
+        'cart.unitPrice': '单价',
+        'cart.independentSeller': '独立卖家',
         // Checkout
         'checkout.title': '结算',
         'checkout.shipping': '收货地址',
@@ -507,7 +516,6 @@ const translations: Record<Lang, Record<string, string>> = {
         'order.actionApproveRefund': '批准退款',
         'order.refundRequestedAt': '退货申请时间',
         'order.refundedAt': '退款时间',
-        'cart.unitPrice': '单价',
         // Dashboard
         'dash.title': '用户中心',
         'dash.welcome': '欢迎回来',

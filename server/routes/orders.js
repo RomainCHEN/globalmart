@@ -201,11 +201,10 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
             .from('orders')
             .update(updates)
             .eq('id', req.params.id)
-            .select()
-            .single();
+            .select();
 
         if (error) return res.status(400).json({ error: error.message });
-        res.json(data);
+        res.json(data && data.length > 0 ? data[0] : null);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -236,11 +235,10 @@ router.patch('/:id/cancel', requireAuth, async (req, res) => {
                 updated_at: new Date().toISOString()
             })
             .eq('id', req.params.id)
-            .select()
-            .single();
+            .select();
 
         if (error) return res.status(400).json({ error: error.message });
-        res.json(data);
+        res.json(data && data.length > 0 ? data[0] : null);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -270,11 +268,10 @@ router.patch('/:id/refund', requireAuth, async (req, res) => {
                 updated_at: new Date().toISOString()
             })
             .eq('id', req.params.id)
-            .select()
-            .single();
+            .select();
 
         if (error) return res.status(400).json({ error: error.message });
-        res.json(data);
+        res.json(data && data.length > 0 ? data[0] : null);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -311,11 +308,10 @@ router.patch('/:id/approve-refund', requireAuth, async (req, res) => {
                 updated_at: new Date().toISOString()
             })
             .eq('id', req.params.id)
-            .select()
-            .single();
+            .select();
 
         if (error) return res.status(400).json({ error: error.message });
-        res.json(data);
+        res.json(data && data.length > 0 ? data[0] : null);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

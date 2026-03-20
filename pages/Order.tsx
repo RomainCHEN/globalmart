@@ -4,6 +4,7 @@ import { useApp } from '../context';
 import { useI18n, localized } from '../i18n';
 import { api } from '../api';
 import { Order } from '../types';
+import { AddressSelector } from '../components/AddressSelector';
 
 export const Cart = () => {
     const { cart, removeFromCart, updateQuantity, isLoggedIn, selectedCartItems, setSelectedCartItems, getCartItemId } = useApp();
@@ -159,7 +160,14 @@ export const Checkout = () => {
     const [loading, setLoading] = useState(false);
     const [shipping, setShipping] = useState(() => {
         const addr = (user as any)?.shipping_address;
-        return { name: addr?.name || user?.name || '', street: addr?.street || '', city: addr?.city || '', zip: addr?.zip || '', country: addr?.country || '' };
+        return { 
+            name: addr?.name || user?.name || '', 
+            street: addr?.street || '', 
+            city: addr?.city || '', 
+            state: addr?.state || '',
+            zip: addr?.zip || '', 
+            country: addr?.country || '' 
+        };
     });
     const [paymentMethod, setPaymentMethod] = useState('credit_card');
 
@@ -251,27 +259,12 @@ export const Checkout = () => {
                     <div className="bg-white border-4 border-black p-8 shadow-brutal relative">
                         <div className="absolute -top-6 -left-4 bg-black text-white px-4 py-1 text-sm font-black uppercase">Step 01</div>
                         <h3 className="text-2xl font-black uppercase italic tracking-tight font-display mb-6">{t('checkout.shipping')}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2 space-y-2">
+                        <div className="space-y-6">
+                            <div className="space-y-2">
                                 <label className="text-sm font-black uppercase">{t('checkout.name')}</label>
                                 <input type="text" value={shipping.name} onChange={e => setShipping(s => ({ ...s, name: e.target.value }))} className="w-full p-4 border-4 border-black focus:ring-0 text-lg font-bold" placeholder="John Doe" aria-label={t('checkout.name')} />
                             </div>
-                            <div className="md:col-span-2 space-y-2">
-                                <label className="text-sm font-black uppercase">{t('checkout.street')}</label>
-                                <input type="text" value={shipping.street} onChange={e => setShipping(s => ({ ...s, street: e.target.value }))} className="w-full p-4 border-4 border-black focus:ring-0 text-lg font-bold" placeholder="123 Main St" aria-label={t('checkout.street')} />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-black uppercase">{t('checkout.city')}</label>
-                                <input type="text" value={shipping.city} onChange={e => setShipping(s => ({ ...s, city: e.target.value }))} className="w-full p-4 border-4 border-black focus:ring-0 text-lg font-bold" aria-label={t('checkout.city')} />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-black uppercase">{t('checkout.zip')}</label>
-                                <input type="text" value={shipping.zip} onChange={e => setShipping(s => ({ ...s, zip: e.target.value }))} className="w-full p-4 border-4 border-black focus:ring-0 text-lg font-bold" aria-label={t('checkout.zip')} />
-                            </div>
-                            <div className="md:col-span-2 space-y-2">
-                                <label className="text-sm font-black uppercase">{t('checkout.country')}</label>
-                                <input type="text" value={shipping.country} onChange={e => setShipping(s => ({ ...s, country: e.target.value }))} className="w-full p-4 border-4 border-black focus:ring-0 text-lg font-bold" aria-label={t('checkout.country')} />
-                            </div>
+                            <AddressSelector address={shipping as any} onChange={(updated) => setShipping(s => ({ ...s, ...updated }))} />
                         </div>
                     </div>
 

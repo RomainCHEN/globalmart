@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context';
 import { useI18n } from '../i18n';
+import { AddressSelector } from '../components/AddressSelector';
 
 export const LoginPage = () => {
     const { login } = useApp();
@@ -94,7 +95,7 @@ export const RegisterPage = () => {
     const [role, setRole] = useState('user');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [address, setAddress] = useState({ street: '', city: '', zip: '', country: '' });
+    const [address, setAddress] = useState({ street: '', city: '', state: '', zip: '', country: '' });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -167,7 +168,7 @@ export const RegisterPage = () => {
                         />
                     </div>
 
-                    {/* Account Type - moved above shipping so we can conditionally show address */}
+                    {/* Account Type */}
                     <div className="space-y-2">
                         <label className="text-sm font-black uppercase">{t('auth.accountType')}</label>
                         <div className="grid grid-cols-2 gap-4">
@@ -190,54 +191,13 @@ export const RegisterPage = () => {
 
                     {/* Shipping Address — only for buyers */}
                     {role === 'user' && (
-                    <div className="border-4 border-black p-4 bg-gray-50">
-                        <h3 className="text-sm font-black uppercase mb-4 flex items-center gap-2">
-                            <span className="material-symbols-outlined text-lg">local_shipping</span>
-                            {t('auth.shippingAddress')}
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-2 space-y-1">
-                                <label className="text-xs font-bold uppercase text-gray-600">{t('checkout.street')}</label>
-                                <input
-                                    type="text"
-                                    value={address.street}
-                                    onChange={e => setAddress(a => ({ ...a, street: e.target.value }))}
-                                    className="w-full p-3 border-3 border-black focus:ring-0 text-sm font-bold"
-                                    placeholder="123 Main St"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold uppercase text-gray-600">{t('checkout.city')}</label>
-                                <input
-                                    type="text"
-                                    value={address.city}
-                                    onChange={e => setAddress(a => ({ ...a, city: e.target.value }))}
-                                    className="w-full p-3 border-3 border-black focus:ring-0 text-sm font-bold"
-                                    placeholder="City"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold uppercase text-gray-600">{t('checkout.zip')}</label>
-                                <input
-                                    type="text"
-                                    value={address.zip}
-                                    onChange={e => setAddress(a => ({ ...a, zip: e.target.value }))}
-                                    className="w-full p-3 border-3 border-black focus:ring-0 text-sm font-bold"
-                                    placeholder="Zip"
-                                />
-                            </div>
-                            <div className="md:col-span-2 space-y-1">
-                                <label className="text-xs font-bold uppercase text-gray-600">{t('checkout.country')}</label>
-                                <input
-                                    type="text"
-                                    value={address.country}
-                                    onChange={e => setAddress(a => ({ ...a, country: e.target.value }))}
-                                    className="w-full p-3 border-3 border-black focus:ring-0 text-sm font-bold"
-                                    placeholder="Country"
-                                />
-                            </div>
+                        <div className="border-4 border-black p-4 bg-gray-50">
+                            <h3 className="text-sm font-black uppercase mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-lg">local_shipping</span>
+                                {t('auth.shippingAddress')}
+                            </h3>
+                            <AddressSelector address={address} onChange={setAddress} />
                         </div>
-                    </div>
                     )}
                     <button
                         type="submit"

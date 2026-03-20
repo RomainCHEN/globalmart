@@ -769,7 +769,7 @@ export const StoreDetailPage = () => {
                                     <div className="relative aspect-square border-b-4 border-black overflow-hidden p-8 bg-[#F3F3F3]">
                                         <img src={product.image} alt={localized(product, 'name', lang)} className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110" loading="lazy" />
                                         <div className="absolute top-4 left-4 flex flex-col gap-2">
-                                            {product.tags?.map(tag => (
+                                            {product.tags?.filter(tag => ['HOT','NEW','SALE','PREMIUM'].includes(tag.toUpperCase())).map(tag => (
                                                 <span key={tag} className={`text-xs font-black uppercase px-3 py-1 border-2 border-black shadow-brutal ${tag === 'HOT' ? 'bg-brutal-pink text-white' : tag === 'NEW' ? 'bg-brutal-blue text-white' : tag === 'SALE' ? 'bg-brutal-red text-white' : tag === 'PREMIUM' ? 'bg-brutal-yellow text-black' : 'bg-white text-black'}`}>{t(`tag.${tag}`) || tag}</span>
                                             ))}
                                         </div>

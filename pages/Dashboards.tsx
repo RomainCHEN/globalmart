@@ -148,12 +148,36 @@ export const UserDashboard = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {wishlistItems.length === 0 ? (
                                 <div className="col-span-2 border-4 border-dashed border-black p-12 text-center"><p className="text-xl font-black uppercase text-gray-500">Wishlist is empty</p></div>
-                            ) : wishlistItems.map(item => item.products && (
-                                <Link to={`/product/${item.product_id}`} key={item.id} className="bg-white border-4 border-black shadow-brutal hover:-translate-x-1 hover:-translate-y-1 hover:shadow-brutal-lg transition-all flex gap-4 p-4">
-                                    <div className="w-24 h-24 border-4 border-black overflow-hidden bg-gray-100 shrink-0"><img src={item.products.image} alt={item.products.name} className="w-full h-full object-contain" /></div>
-                                    <div><h4 className="font-black uppercase">{item.products.name}</h4><p className="text-2xl font-black">${item.products.price}</p></div>
-                                </Link>
-                            ))}
+                            ) : wishlistItems.map(item => {
+                                if (!item.products) return null;
+                                const p = item.products;
+                                const isOnSale = p.original_price && p.original_price > p.price;
+                                return (
+                                    <Link to={`/product/${item.product_id}`} key={item.id} className="bg-white border-4 border-black shadow-brutal hover:-translate-x-1 hover:-translate-y-1 hover:shadow-brutal-lg transition-all flex gap-4 p-4 relative overflow-hidden">
+                                        {isOnSale && (
+                                            <div className="absolute top-2 -right-6 bg-brutal-red text-white text-xs font-black px-8 py-1 rotate-45 border-y-2 border-black">
+                                                ON SALE
+                                            </div>
+                                        )}
+                                        <div className="w-24 h-24 border-4 border-black overflow-hidden bg-gray-100 shrink-0">
+                                            <img src={p.image} alt={p.name} className="w-full h-full object-contain" />
+                                        </div>
+                                        <div className="flex-1 pr-6">
+                                            <h4 className="font-black uppercase truncate">{p.name}</h4>
+                                            <div className="mt-2">
+                                                {isOnSale ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-2xl font-black text-brutal-red">${p.price}</span>
+                                                        <span className="text-sm font-bold line-through text-gray-500">${p.original_price}</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-2xl font-black">${p.price}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </Link>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

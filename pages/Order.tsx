@@ -7,15 +7,15 @@ import { Order } from '../types';
 import { AddressSelector } from '../components/AddressSelector';
 
 export const Cart = () => {
-    const { cart, removeFromCart, updateQuantity, isLoggedIn, selectedCartItems, setSelectedCartItems, getCartItemId } = useApp();
+    const { cart, removeFromCart, updateQuantity, isLoggedIn, selectedCartItems, setSelectedCartItems, getCartItemId, authLoading } = useApp();
     const { t, lang } = useI18n();
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!isLoggedIn) {
+        if (!authLoading && !isLoggedIn) {
             navigate('/login');
         }
-    }, [isLoggedIn, navigate]);
+    }, [isLoggedIn, authLoading, navigate]);
 
     // Group cart items by store
     const storeGroups = React.useMemo(() => {

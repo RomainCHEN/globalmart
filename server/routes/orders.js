@@ -81,43 +81,37 @@ router.get('/', requireAuth, async (req, res) => {
 // GET /api/orders/seller — orders containing seller's products
 router.get('/seller', requireAuth, async (req, res) => {
     try {
-        // Get seller's store
-        const { data: store } = await supabaseAdmin
+        // Get seller's store(s)
+        const { data: stores } = await supabaseAdmin
             .from('stores')
             .select('id')
-            .eq('seller_id', req.user.id)
-            .single();
+            .eq('seller_id', req.user.id);
 
-        let productIds = [];
-        if (store) {
-            const { data: storeProducts } = await supabaseAdmin
-                .from('products')
-                .select('id')
-                .eq('store_id', store.id);
-            if (storeProducts) productIds = storeProducts.map(p => p.id);
-        }
+        let storeIds = stores ? stores.map(s => s.id) : [];
 
-        // Also include products directly owned by seller
-        const { data: sellerProducts } = await supabaseAdmin
+        // Get products owned by the seller directly OR belonging to their store(s)
+        let productQuery = supabaseAdmin
             .from('products')
             .select('id')
-            .eq('seller_id', req.user.id);
-        if (sellerProducts) {
-            sellerProducts.forEach(p => {
-                if (!productIds.includes(p.id)) productIds.push(p.id);
-            });
-        }
+            .or(`seller_id.eq.${req.user.id}${storeIds.length > 0 ? `,store_id.in.(${storeIds.join(',')})` : ''}`);
+
+        const { data: products, error: productError } = await productQuery;
+        
+        if (productError) return res.status(400).json({ error: productError.message });
+        
+        const productIds = products ? products.map(p => p.id) : [];
 
         if (productIds.length === 0) {
             return res.json({ orders: [], total: 0 });
         }
 
         // Get order items for these products
-        const { data: orderItems } = await supabaseAdmin
+        const { data: orderItems, error: itemsError } = await supabaseAdmin
             .from('order_items')
             .select('order_id')
             .in('product_id', productIds);
 
+        if (itemsError) return res.status(400).json({ error: itemsError.message });
         if (!orderItems || orderItems.length === 0) {
             return res.json({ orders: [], total: 0 });
         }
@@ -136,7 +130,14 @@ router.get('/seller', requireAuth, async (req, res) => {
 
         const { data: orders, error } = await query;
         if (error) return res.status(400).json({ error: error.message });
-        res.json({ orders, total: orders.length });
+        
+        // Filter order_items in each order to only show products belonging to this seller
+        const filteredOrders = orders.map(order => ({
+            ...order,
+            order_items: order.order_items.filter(item => productIds.includes(item.product_id))
+        }));
+
+        res.json({ orders: filteredOrders, total: filteredOrders.length });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

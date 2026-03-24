@@ -31,6 +31,10 @@ interface AppContextType {
     products: Product[];
     loadProducts: (params?: Record<string, string>) => Promise<void>;
     productsLoading: boolean;
+    // Accessibility
+    seniorMode: boolean;
+    setSeniorMode: (enabled: boolean) => void;
+    formatPrice: (price: number) => string;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -45,6 +49,32 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [productsLoading, setProductsLoading] = useState(false);
+    const [seniorMode, setSeniorModeState] = useState<boolean>(() => localStorage.getItem('gm_senior_mode') === 'true');
+
+    const setSeniorMode = (enabled: boolean) => {
+        setSeniorModeState(enabled);
+        localStorage.setItem('gm_senior_mode', String(enabled));
+        if (enabled) {
+            document.documentElement.classList.add('senior-mode');
+        } else {
+            document.documentElement.classList.remove('senior-mode');
+        }
+    };
+
+    // Initialize senior mode class on mount
+    useEffect(() => {
+        if (seniorMode) document.documentElement.classList.add('senior-mode');
+    }, []);
+
+    const formatPrice = (price: number) => {
+        const lang = localStorage.getItem('gm_lang') || 'en';
+        if (lang === 'zh') {
+            // Demo conversion: 1 USD = 7.2 CNY
+            const rmb = price * 7.2;
+            return `￥${rmb.toFixed(seniorMode ? 0 : 2)}`;
+        }
+        return `$${price.toFixed(seniorMode ? 0 : 2)}`;
+    };
 
     // Persist cart to localStorage
     useEffect(() => {
@@ -256,7 +286,8 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
             cart, addToCart, removeFromCart, updateQuantity, cartTotal, clearCart,
             selectedCartItems, setSelectedCartItems, removeItems, getCartItemId,
             wishlist, toggleWishlist, isInWishlist,
-            categories, products, loadProducts, productsLoading
+            categories, products, loadProducts, productsLoading,
+            seniorMode, setSeniorMode, formatPrice
         }}>
             {children}
         </AppContext.Provider>

@@ -6,7 +6,7 @@ import { api } from '../api';
 import { Product, Review } from '../types';
 
 export const ShopHome = () => {
-    const { categories, addToCart, toggleWishlist, isInWishlist, isLoggedIn } = useApp();
+    const { categories, addToCart, toggleWishlist, isInWishlist, isLoggedIn, formatPrice } = useApp();
     const { t, lang } = useI18n();
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
@@ -197,8 +197,8 @@ export const ShopHome = () => {
                                                     <div className="mt-auto flex items-end justify-between">
                                                         <div className="flex-1"></div>
                                                         <div className="flex flex-col text-right">
-                                                            {product.original_price && <span className="text-sm font-bold line-through">${product.original_price}</span>}
-                                                            <span className="text-3xl font-black tracking-tighter">${product.price}</span>
+                                                            {product.original_price && <span className="text-sm font-bold line-through">{formatPrice(product.original_price)}</span>}
+                                                            <span className="text-3xl font-black tracking-tighter">{formatPrice(product.price)}</span>
                                                         </div>
                                                     </div>
                                                 </Link>
@@ -252,7 +252,7 @@ export const ShopHome = () => {
 
 export const ProductDetail = () => {
     const { id } = useParams();
-    const { addToCart, toggleWishlist, isInWishlist, isLoggedIn } = useApp();
+    const { addToCart, toggleWishlist, isInWishlist, isLoggedIn, formatPrice } = useApp();
     const { t, lang } = useI18n();
     const navigate = useNavigate();
     const [product, setProduct] = useState<Product | null>(null);
@@ -549,8 +549,8 @@ export const ProductDetail = () => {
                             </div>
                         </div>
                         <div className="flex items-end gap-4 bg-brutal-yellow border-4 border-black p-4 shadow-brutal">
-                            <span className="text-6xl font-black">${product.price}</span>
-                            {product.original_price && <span className="text-2xl font-black text-brutal-red line-through italic mb-1">${product.original_price}</span>}
+                            <span className="text-6xl font-black">{formatPrice(product.price)}</span>
+                            {product.original_price && <span className="text-2xl font-black text-brutal-red line-through italic mb-1">{formatPrice(product.original_price)}</span>}
                         </div>
                         <div className="space-y-4">
                             <button onClick={handleAddToCart} className="w-full bg-brutal-red text-white border-4 border-black shadow-brutal p-6 text-2xl font-black uppercase italic hover:bg-brutal-yellow hover:text-black transition-all active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center gap-3" aria-label={`${t('product.addToCart')}: ${localized(product, 'name', lang)}`}>
@@ -671,7 +671,7 @@ export const StorePage = () => {
 
 export const StoreDetailPage = () => {
     const { id } = useParams();
-    const { addToCart, toggleWishlist, isInWishlist, isLoggedIn } = useApp();
+    const { addToCart, toggleWishlist, isInWishlist, isLoggedIn, formatPrice } = useApp();
     const { t, lang } = useI18n();
     const navigate = useNavigate();
     const [store, setStore] = useState<any>(null);
@@ -817,8 +817,8 @@ export const StoreDetailPage = () => {
                                         <p className="text-sm font-bold text-gray-700 mb-6 line-clamp-2">{localized(product, 'description', lang)}</p>
                                         <div className="mt-auto flex items-end justify-between">
                                             <div className="flex flex-col">
-                                                {product.original_price && <span className="text-sm font-bold line-through">${product.original_price}</span>}
-                                                <span className="text-3xl font-black tracking-tighter">${product.price}</span>
+                                                {product.original_price && <span className="text-sm font-bold line-through">{formatPrice(product.original_price)}</span>}
+                                                <span className="text-3xl font-black tracking-tighter">{formatPrice(product.price)}</span>
                                             </div>
                                         </div>
                                     </div>

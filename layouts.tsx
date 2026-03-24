@@ -4,7 +4,7 @@ import { useApp } from './context';
 import { useI18n } from './i18n';
 
 export const MainLayout = () => {
-    const { user, isLoggedIn, logout, cart } = useApp();
+    const { user, isLoggedIn, logout, cart, seniorMode, setSeniorMode, formatPrice } = useApp();
     const { t, lang, setLang } = useI18n();
     const navigate = useNavigate();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -21,14 +21,48 @@ export const MainLayout = () => {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-[#f3f3f3]">
+        <div className={`min-h-screen flex flex-col bg-[#f3f3f3] ${seniorMode ? 'senior-mode-active' : ''}`}>
+            <style dangerouslySetInnerHTML={{ __html: `
+                .senior-mode-active {
+                    font-size: 1.25rem !important;
+                }
+                .senior-mode-active .font-display {
+                    letter-spacing: 0 !important;
+                }
+                .senior-mode-active h1, .senior-mode-active h2, .senior-mode-active h3 {
+                    font-size: 2rem !important;
+                    line-height: 1.2 !important;
+                }
+                .senior-mode-active p, .senior-mode-active span, .senior-mode-active button, .senior-mode-active input, .senior-mode-active label {
+                    font-size: 1.4rem !important;
+                    line-height: 1.6 !important;
+                }
+                .senior-mode-active .shadow-brutal {
+                    box-shadow: 8px 8px 0px 0px rgba(0,0,0,1) !important;
+                }
+                .senior-mode-active .shadow-brutal-lg {
+                    box-shadow: 12px 12px 0px 0px rgba(0,0,0,1) !important;
+                }
+                .senior-mode-active nav a {
+                    padding: 1rem 1.5rem !important;
+                }
+                .senior-mode-active .material-symbols-outlined {
+                    font-size: 2rem !important;
+                }
+            `}} />
             {/* Top bar */}
-            <div className="bg-black text-white py-1 px-4 flex justify-between items-center text-xs font-bold uppercase">
-                <span>Free Shipping Worldwide • 30 Day Returns</span>
-                <button onClick={() => setLang(lang === 'en' ? 'zh' : 'en')} className="flex items-center gap-1 hover:text-brutal-yellow transition-colors px-2 py-1 border border-white/30 hover:border-white" aria-label="Toggle language">
-                    <span className="material-symbols-outlined text-sm">translate</span>
-                    {lang === 'en' ? '中文' : 'EN'}
-                </button>
+            <div className="bg-black text-white py-2 px-4 flex justify-between items-center text-xs font-bold uppercase tracking-wider border-b-4 border-black">
+                <div className="flex gap-4">
+                    <button onClick={() => setLang(lang === 'en' ? 'zh' : 'en')} className="flex items-center gap-1 hover:text-brutal-yellow transition-colors px-2 py-1 border border-white/30 hover:border-white" aria-label="Toggle language">
+                        <span className="material-symbols-outlined text-sm">language</span>
+                        {lang === 'en' ? '中文简体' : 'ENGLISH'}
+                    </button>
+                    <button onClick={() => setSeniorMode(!seniorMode)} className={`flex items-center gap-1 transition-colors px-2 py-1 border border-white/30 hover:border-white ${seniorMode ? 'bg-white text-black' : ''}`} aria-label="Toggle Senior Mode">
+                        <span className="material-symbols-outlined text-sm">visibility</span>
+                        {seniorMode ? (lang === 'en' ? 'STANDARD MODE' : '标准模式') : (lang === 'en' ? 'SENIOR MODE' : '长辈模式')}
+                    </button>
+                </div>
+                <span className="hidden sm:inline">Free Shipping Worldwide • 30 Day Returns</span>
             </div>
 
             {/* Main Header */}

@@ -9,7 +9,7 @@ import { Order, WishlistItem, Product } from '../types';
    BUYER DASHBOARD  (unchanged)
    ═══════════════════════════════════════════ */
 export const UserDashboard = () => {
-    const { user, isLoggedIn, logout } = useApp();
+    const { user, isLoggedIn, logout, formatPrice } = useApp();
     const { t } = useI18n();
     const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
@@ -138,7 +138,7 @@ export const UserDashboard = () => {
                                         </div>
                                         <div className="flex flex-col items-end gap-2">
                                             <span className={`px-3 py-1 border-2 border-black font-black uppercase text-sm ${order.status === 'delivered' ? 'bg-brutal-green' : order.status === 'cancelled' ? 'bg-brutal-red text-white' : order.status === 'hold' ? 'bg-orange-400' : order.status === 'shipped' ? 'bg-brutal-blue text-white' : 'bg-brutal-yellow'}`}>{t(`order.${order.status}`)}</span>
-                                            <span className="text-2xl font-black">${order.total}</span>
+                                            <span className="text-2xl font-black">{formatPrice(order.total)}</span>
                                         </div>
                                     </div>
                                 </Link>
@@ -201,7 +201,7 @@ export const UserDashboard = () => {
    ADMIN DASHBOARD  – full platform control
    ═══════════════════════════════════════════ */
 export const AdminDashboard = () => {
-    const { isLoggedIn, user, logout } = useApp();
+    const { isLoggedIn, user, logout, formatPrice } = useApp();
     const { t } = useI18n();
     const navigate = useNavigate();
     const [section, setSection] = useState<'overview' | 'users' | 'stores' | 'products' | 'orders'>('overview');
@@ -513,7 +513,7 @@ export const AdminDashboard = () => {
    SELLER DASHBOARD – store & product mgmt
    ═══════════════════════════════════════════ */
 export const SellerDashboard = () => {
-    const { isLoggedIn, user } = useApp();
+    const { isLoggedIn, user, formatPrice } = useApp();
     const { t, lang } = useI18n();
     const navigate = useNavigate();
     const [tab, setTab] = useState<'dashboard' | 'store' | 'products' | 'orders'>('dashboard');

@@ -11,6 +11,12 @@ export const Cart = () => {
     const { t, lang } = useI18n();
     const navigate = useNavigate();
 
+    useEffect(() => {
+        if (!isLoggedIn) {
+            navigate('/login');
+        }
+    }, [isLoggedIn, navigate]);
+
     // Group cart items by store
     const storeGroups = React.useMemo(() => {
         const groups: Record<string, { store: { id: string; name: string; logo?: string } | null; items: typeof cart }> = {};

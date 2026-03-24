@@ -27,10 +27,19 @@ router.post('/', async (req, res) => {
 
         // 2. Create demo seller profiles (using admin API)
         const sellerAccounts = [
-            { email: 'sportspro@globalmart.com', password: 'Seller123456', name: 'SportsPro Official', role: 'seller' },
-            { email: 'techzone@globalmart.com', password: 'Seller123456', name: 'TechZone Digital', role: 'seller' },
-            { email: 'homelife@globalmart.com', password: 'Seller123456', name: 'HomeLife Essentials', role: 'seller' },
-            { email: 'urbanstyle@globalmart.com', password: 'Seller123456', name: 'Urban Style Co.', role: 'seller' },
+            { email: 'sportspro@globalmart.com', password: 'Gm123456!', name: 'SportsPro Official', role: 'seller' },
+            { email: 'techzone@globalmart.com', password: 'Gm123456!', name: 'TechZone Digital', role: 'seller' },
+            { email: 'homelife@globalmart.com', password: 'Gm123456!', name: 'HomeLife Essentials', role: 'seller' },
+            { email: 'urbanstyle@globalmart.com', password: 'Gm123456!', name: 'Urban Style Co.', role: 'seller' },
+            { email: 'prada@globalmart.com', password: 'Gm123456!', name: 'Prada', role: 'seller' },
+            { email: 'sportsproofficialsto@globalmart.com', password: 'Gm123456!', name: 'SportsPro Official Store', role: 'seller' },
+            { email: 'techzonedigital@globalmart.com', password: 'Gm123456!', name: 'TechZone Digital', role: 'seller' },
+            { email: 'homelifeessentials@globalmart.com', password: 'Gm123456!', name: 'HomeLife Essentials', role: 'seller' },
+            { email: 'healthwellnutrition@globalmart.com', password: 'Gm123456!', name: 'HealthWell Nutrition', role: 'seller' },
+            { email: 'bookcorner@globalmart.com', password: 'Gm123456!', name: 'Book Corner', role: 'seller' },
+            { email: 'nexusbadminton@globalmart.com', password: 'Gm123456!', name: 'Nexus Badminton', role: 'seller' },
+            { email: 'badmintonwarehouse@globalmart.com', password: 'Gm123456!', name: 'Badminton Warehouse', role: 'seller' },
+            { email: 'mpu@globalmart.com', password: 'Gm123456!', name: 'mpu', role: 'seller' },
         ];
 
         const sellerIds = [];
@@ -45,6 +54,13 @@ router.post('/', async (req, res) => {
 
             if (existing) {
                 userId = existing.id;
+                // Update password to ensure consistency
+                const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+                    password: seller.password
+                });
+                if (updateErr) {
+                    console.log(`Seller ${seller.email} password update failed: ${updateErr.message}`);
+                }
             } else {
                 const { data: newUser, error: userErr } = await supabaseAdmin.auth.admin.createUser({
                     email: seller.email,

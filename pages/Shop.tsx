@@ -203,7 +203,7 @@ export const ShopHome = () => {
                                                     </div>
                                                 </Link>
                                                 <div className="flex border-t-4 border-black mt-auto">
-                                                <button onClick={() => { addToCart(product); if (!isLoggedIn) navigate('/login'); }} className="flex-1 bg-brutal-blue text-white py-3 border-r-2 border-black flex items-center justify-center gap-2 font-black uppercase hover:bg-black transition-colors" aria-label={`${t('product.addToCart')}: ${localized(product, 'name', lang)}`}>
+                                                <button onClick={() => { if (!isLoggedIn) { navigate('/login'); return; } addToCart(product); }} className="flex-1 bg-brutal-blue text-white py-3 border-r-2 border-black flex items-center justify-center gap-2 font-black uppercase hover:bg-black transition-colors" aria-label={`${t('product.addToCart')}: ${localized(product, 'name', lang)}`}>
                                                     <span className="material-symbols-outlined">add_shopping_cart</span>
                                                     {t('product.addToCart')}
                                                 </button>
@@ -824,7 +824,7 @@ export const StoreDetailPage = () => {
                                     </div>
                                 </Link>
                                 <div className="flex border-t-4 border-black">
-                                    <button onClick={() => { addToCart(product); if (!isLoggedIn) navigate('/login'); }} className="flex-1 bg-brutal-blue text-white py-3 border-r-2 border-black flex items-center justify-center gap-2 font-black uppercase hover:bg-black transition-colors" aria-label={`${t('product.addToCart')}: ${localized(product, 'name', lang)}`}>
+                                    <button onClick={() => { if (!isLoggedIn) { navigate('/login'); return; } addToCart(product); }} className="flex-1 bg-brutal-blue text-white py-3 border-r-2 border-black flex items-center justify-center gap-2 font-black uppercase hover:bg-black transition-colors" aria-label={`${t('product.addToCart')}: ${localized(product, 'name', lang)}`}>
                                         <span className="material-symbols-outlined">add_shopping_cart</span>
                                         {t('product.addToCart')}
                                     </button>

@@ -83,7 +83,6 @@ export const Cart = () => {
                                 <div key={storeId} className="border-4 border-black bg-white shadow-brutal">
                                     <div className="flex items-center gap-4 px-6 py-4 border-b-4 border-black bg-brutal-yellow/20">
                                         <input type="checkbox" checked={allGroupChecked} onChange={() => toggleStoreGroup(storeId)} className="w-5 h-5 accent-black cursor-pointer" />
-                                        {group.store?.logo && <div className="w-8 h-8 border-2 border-black overflow-hidden bg-white shrink-0"><img src={group.store.logo} alt="" className="w-full h-full object-contain" /></div>}
                                         <Link to={group.store ? `/store/${group.store.id}` : '/'} className="flex items-center gap-2 hover:text-brutal-blue">
                                             <span className="material-symbols-outlined text-lg">storefront</span>
                                             <span className="font-black uppercase text-sm">{group.store?.name || 'Store'}</span>
@@ -424,8 +423,6 @@ export const OrderDetails = () => {
         delivered: t('order.delivered'),
         hold: t('order.hold'),
         cancelled: t('order.cancelled'),
-        refund_requested: t('order.refundRequested'),
-        refunded: t('order.refunded'),
     };
     const statusIcons: Record<string, string> = {
         pending: 'hourglass_top',
@@ -433,8 +430,6 @@ export const OrderDetails = () => {
         delivered: 'check_circle',
         hold: 'pause_circle',
         cancelled: 'cancel',
-        refund_requested: 'assignment_return',
-        refunded: 'currency_exchange',
     };
 
     if (loading) {
@@ -459,11 +454,10 @@ export const OrderDetails = () => {
         );
     }
 
-    const currentStepIndex = order.status === 'cancelled' || order.status === 'hold' || order.status === 'refund_requested' || order.status === 'refunded'
+    const currentStepIndex = order.status === 'cancelled' || order.status === 'hold'
         ? -1
         : statusSteps.indexOf(order.status);
     const canCancel = order.status === 'pending' || order.status === 'hold';
-    const canRefund = order.status === 'delivered';
 
     return (
         <div className="px-4 md:px-10 py-8 w-full max-w-[1400px] mx-auto" role="main" aria-label={`${t('order.title')} ${order.id.slice(0, 8)}`}>
@@ -497,18 +491,6 @@ export const OrderDetails = () => {
                         <button onClick={handleCancel} disabled={cancelling} className="border-4 border-black bg-brutal-red text-white px-6 py-3 font-black uppercase shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50 flex items-center gap-2">
                             <span className="material-symbols-outlined">cancel</span>
                             {cancelling ? t('general.loading') : t('order.cancelOrder')}
-                        </button>
-                    )}
-                    {canRefund && (
-                        <button onClick={async () => {
-                            if (!confirm(t('order.refundConfirm'))) return;
-                            try {
-                                const updated = await api.requestRefund(order.id);
-                                setOrder(updated);
-                            } catch (err: any) { alert(err.message); }
-                        }} className="border-4 border-black bg-orange-500 text-white px-6 py-3 font-black uppercase shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center gap-2">
-                            <span className="material-symbols-outlined">assignment_return</span>
-                            {t('order.requestReturn')}
                         </button>
                     )}
                 </div>

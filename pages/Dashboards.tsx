@@ -77,11 +77,6 @@ export const UserDashboard = () => {
                             <h3 className="font-black uppercase text-sm mb-1">{t('dash.myWishlist')}</h3>
                             <p className="text-5xl font-display font-black">{wishlistItems.length}</p>
                         </div>
-                        <div className="border-4 border-black shadow-brutal p-6 bg-brutal-blue text-white">
-                            <div className="flex justify-between items-start mb-6"><div className="size-14 border-4 border-black bg-white flex items-center justify-center"><span className="material-symbols-outlined text-3xl font-black text-black">local_activity</span></div></div>
-                            <h3 className="font-black uppercase text-sm mb-1">{t('dash.coupons')}</h3>
-                            <p className="text-5xl font-display font-black">0</p>
-                        </div>
                     </div>
 
                     <div className="flex border-4 border-black bg-white">
@@ -95,7 +90,7 @@ export const UserDashboard = () => {
                         <div className="space-y-6">
                             {/* B3: Order status filter */}
                             <div className="flex flex-wrap gap-2">
-                                {['all', 'pending', 'shipped', 'delivered', 'hold', 'cancelled', 'refund_requested', 'refunded'].map(s => (
+                                {['all', 'pending', 'shipped', 'delivered', 'hold', 'cancelled'].map(s => (
                                     <button key={s} onClick={() => handleFilterChange(s)} className={`px-4 py-2 border-2 border-black font-black uppercase text-xs transition-all ${statusFilter === s ? 'bg-black text-white shadow-none' : 'bg-white shadow-brutal hover:bg-brutal-yellow'}`}>
                                         {s === 'all' ? t('order.all') : t(`order.${s}`)}
                                     </button>
@@ -1072,15 +1067,8 @@ export const SellerDashboard = () => {
                                                                 <span className="material-symbols-outlined text-sm">cancel</span> {t('order.actionCancel')}
                                                             </button>
                                                         )}
-                                                        {(o.status === 'delivered' || o.status === 'cancelled' || o.status === 'refunded') && (
+                                                        {(o.status === 'delivered' || o.status === 'cancelled') && (
                                                             <span className="px-4 py-2 text-xs font-black uppercase text-gray-400">{t('order.noActions')}</span>
-                                                        )}
-                                                        {o.status === 'refund_requested' && (
-                                                            <button onClick={() => {
-                                                                api.approveRefund(o.id).then(() => loadData()).catch((err: any) => alert(err.message));
-                                                            }} className="px-4 py-2 border-2 border-black text-xs font-black uppercase bg-orange-500 text-white hover:shadow-brutal transition-all flex items-center gap-1">
-                                                                <span className="material-symbols-outlined text-sm">currency_exchange</span> {t('order.actionApproveRefund')}
-                                                            </button>
                                                         )}
                                                     </div>
                                                 </div>

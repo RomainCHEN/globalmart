@@ -129,7 +129,8 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
     // Load wishlist when logged in
     useEffect(() => {
         if (user) {
-            api.getWishlist()
+            const today = new Date();
+            api.getWishlist(today.getMonth() + 1, today.getDate())
                 .then(res => {
                     const data = (res as any).data || res;
                     setWishlist(data.map((w: any) => w.product_id));

@@ -26,6 +26,8 @@ export const ShopHome = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
+    const LIMIT = 12;
+
     const fetchProducts = async (pageNum: number, append: boolean) => {
         if (append) setLoadingMore(true); else setLoading(true);
         try {

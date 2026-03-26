@@ -137,7 +137,9 @@ export const api = {
     deleteReview: (id: string) => request(`/reviews/${id}`, { method: 'DELETE' }),
 
     // Wishlist
-    getWishlist: () => request('/wishlist'),
+    getWishlist: (month?: number, day?: number) =>
+        request(`/wishlist${month ? `?month=${month}&day=${day}` : ''}`),
+
     addToWishlist: (productId: string) =>
         request('/wishlist', { method: 'POST', body: JSON.stringify({ product_id: productId }) }),
     removeFromWishlist: (productId: string) =>

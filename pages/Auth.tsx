@@ -234,7 +234,7 @@ export const RegisterPage = () => {
 
                     {/* Birthday */}
                     <div className="space-y-2">
-                        <label className="text-sm font-black uppercase">Birthday (Month / Day)</label>
+                        <label className="text-sm font-black uppercase">{t('auth.birthdayHint')}</label>
                         <div className="grid grid-cols-2 gap-4">
                             <select 
                                 value={birthday.month} 
@@ -259,6 +259,9 @@ export const RegisterPage = () => {
                                 ))}
                             </select>
                         </div>
+                        <p className="text-[10px] font-bold text-brutal-red italic leading-tight">
+                            {t('auth.birthdayNote')}
+                        </p>
                     </div>
 
                     {/* Account Type */}

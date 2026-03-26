@@ -10,7 +10,81 @@ export const MainLayout = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showNotifDrawer, setShowNotifDrawer] = useState(false);
+    const [notifications, setNotifications] = useState<any[]>([]);
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+    useEffect(() => {
+        if (isLoggedIn) {
+            fetchNotifications();
+            // Refresh notifications every 5 minutes
+            const timer = setInterval(fetchNotifications, 5 * 60 * 1000);
+            return () => clearInterval(timer);
+        } else {
+            setNotifications([]);
+        }
+    }, [isLoggedIn]);
+
+    const fetchNotifications = async () => {
+        try {
+            const { api } = await import('./api');
+            const serverNotifs = await api.getNotifications().catch(() => []);
+            
+            // Client-side generated notifications (Birthday & Wishlist Sales)
+            const clientNotifs: any[] = [];
+            const today = new Date();
+            const m = today.getMonth() + 1;
+            const d = today.getDate();
+
+            // Check Birthday
+            const me = await api.getMe().catch(() => null);
+            if (me && me.birthday_month === m && me.birthday_day === d) {
+                clientNotifs.push({
+                    id: 'birthday',
+                    type: 'birthday_reminder',
+                    title: t('notif.birthday.title'),
+                    message: t('notif.birthday.msg'),
+                    link: '/dashboard?tab=wishlist',
+                    created_at: today.toISOString(),
+                    is_read: false
+                });
+            }
+
+            // Check Wishlist Sales
+            const wishlist = await api.getWishlist(m, d).catch(() => ({ data: [] }));
+            const saleItems = (wishlist.data || []).filter((item: any) => 
+                item.products?.original_price && item.products?.original_price > item.products?.price
+            );
+            if (saleItems.length > 0) {
+                clientNotifs.push({
+                    id: 'wishlist-sale',
+                    type: 'wishlist_sale',
+                    title: t('notif.priceDrop.title'),
+                    message: t('notif.priceDrop.msg'),
+                    link: '/dashboard?tab=wishlist',
+                    created_at: today.toISOString(),
+                    is_read: false
+                });
+            }
+
+            setNotifications([...clientNotifs, ...serverNotifs].sort((a, b) => 
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            ));
+        } catch (err) {
+            console.error('Failed to fetch notifications:', err);
+        }
+    };
+
+    const unreadCount = notifications.filter(n => !n.is_read).length;
+
+    const markAllRead = async () => {
+        try {
+            const { api } = await import('./api');
+            const serverIds = notifications.filter(n => !n.is_read && n.id !== 'birthday' && n.id !== 'wishlist-sale').map(n => n.id);
+            await Promise.all(serverIds.map(id => api.markNotificationAsRead(id)));
+            setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+        } catch {}
+    };
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,19 +100,77 @@ export const MainLayout = () => {
 
     return (
         <div className={`min-h-screen flex flex-col bg-[#f3f3f3] ${seniorMode ? 'senior-mode-active' : ''}`}>
+            {/* Notification Drawer */}
+            <div className={`fixed inset-0 z-[100] transition-opacity duration-300 ${showNotifDrawer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowNotifDrawer(false)} />
+                <aside className={`absolute top-0 right-0 h-full w-full max-w-md bg-white border-l-8 border-black shadow-[-10px_0px_0px_0px_rgba(0,0,0,1)] transition-transform duration-500 flex flex-col ${showNotifDrawer ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <header className="p-6 border-b-8 border-black bg-brutal-pink flex justify-between items-center">
+                        <h2 className="text-4xl font-display font-black uppercase italic tracking-tighter">{t('notif.title')}</h2>
+                        <button onClick={() => setShowNotifDrawer(false)} className="size-12 border-4 border-black bg-white flex items-center justify-center font-black text-2xl hover:bg-brutal-red transition-colors">✕</button>
+                    </header>
+                    
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                        {notifications.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-64 opacity-30 grayscale italic font-bold">
+                                <span className="material-symbols-outlined text-8xl">notifications_off</span>
+                                <p className="text-xl mt-4">{t('notif.empty')}</p>
+                            </div>
+                        ) : (
+                            notifications.map(n => (
+                                <div key={n.id} className={`p-4 border-4 border-black shadow-brutal transition-all relative group ${n.is_read ? 'bg-white' : 'bg-brutal-yellow'}`}>
+                                    <div className="flex gap-4">
+                                        <div className={`size-12 border-4 border-black flex items-center justify-center shrink-0 ${
+                                            n.type === 'birthday_reminder' ? 'bg-brutal-pink' : 
+                                            n.type === 'wishlist_sale' ? 'bg-brutal-red' : 
+                                            n.type === 'order_shipped' ? 'bg-brutal-blue' : 'bg-black'
+                                        }`}>
+                                            <span className="material-symbols-outlined text-white font-black">
+                                                {n.type === 'birthday_reminder' ? 'cake' : 
+                                                 n.type === 'wishlist_sale' ? 'sell' : 
+                                                 n.type === 'order_shipped' ? 'local_shipping' : 'info'}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-black uppercase text-lg leading-tight mb-1">{n.title}</h3>
+                                            <p className="font-bold text-sm leading-snug">{n.message}</p>
+                                            <div className="mt-3 flex items-center justify-between">
+                                                <span className="text-[10px] font-black uppercase opacity-40">{new Date(n.created_at).toLocaleDateString()}</span>
+                                                {n.link && (
+                                                    <Link 
+                                                        to={n.link} 
+                                                        onClick={() => setShowNotifDrawer(false)}
+                                                        className="text-xs font-black uppercase underline hover:text-brutal-pink"
+                                                    >
+                                                        {n.type === 'wishlist_sale' || n.type === 'birthday_reminder' ? t('notif.viewWishlist') : t('notif.viewOrder')} →
+                                                    </Link>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {!n.is_read && <div className="absolute top-2 right-2 size-3 bg-brutal-red border-2 border-black rounded-full shadow-[2px_2px_0px_#000]" />}
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    <footer className="p-4 border-t-8 border-black grid grid-cols-2 gap-4 bg-white">
+                        <button onClick={markAllRead} className="border-4 border-black py-3 font-black uppercase text-sm bg-brutal-green shadow-brutal hover:-translate-y-1 transition-all">{t('notif.markRead')}</button>
+                        <button onClick={() => setNotifications([])} className="border-4 border-black py-3 font-black uppercase text-sm bg-gray-200 shadow-brutal hover:-translate-y-1 transition-all">{t('notif.clear')}</button>
+                    </footer>
+                </aside>
+            </div>
+
             <style dangerouslySetInnerHTML={{ __html: `
-                .senior-mode-active {
+                html.senior-mode {
                     font-size: 1.25rem !important;
                 }
                 .senior-mode-active .font-display {
                     letter-spacing: 0 !important;
                 }
-                .senior-mode-active h1, .senior-mode-active h2, .senior-mode-active h3 {
-                    font-size: 2rem !important;
+                .senior-mode-active h1, .senior-mode-active h2, .senior-mode-active h3, .senior-mode-active h4 {
                     line-height: 1.2 !important;
                 }
                 .senior-mode-active p, .senior-mode-active span, .senior-mode-active button, .senior-mode-active input, .senior-mode-active label {
-                    font-size: 1.4rem !important;
                     line-height: 1.6 !important;
                 }
                 .senior-mode-active .shadow-brutal {
@@ -51,7 +183,8 @@ export const MainLayout = () => {
                     padding: 1rem 1.5rem !important;
                 }
                 .senior-mode-active .material-symbols-outlined {
-                    font-size: 2rem !important;
+                    font-size: 1.5em !important;
+                    vertical-align: middle;
                 }
             `}} />
             {/* Top bar */}
@@ -137,15 +270,18 @@ export const MainLayout = () => {
                             )}
 
                             {isLoggedIn && (
-                                <Link to="/dashboard?tab=wishlist" className="relative p-2 border-2 border-transparent hover:border-black transition-all group" aria-label="Wishlist notifications">
+                                <button 
+                                    onClick={() => setShowNotifDrawer(true)}
+                                    className="relative p-2 border-2 border-transparent hover:border-black transition-all group" 
+                                    aria-label={t('notif.title')}
+                                >
                                     <span className="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">notifications</span>
-                                    {wishlistOnSaleCount > 0 && (
-                                        <span className="absolute top-1 right-1 bg-brutal-red w-3 h-3 rounded-full border-2 border-black animate-ping"></span>
+                                    {unreadCount > 0 && (
+                                        <span className="absolute top-1 right-1 bg-brutal-red w-4 h-4 rounded-full border-2 border-black flex items-center justify-center text-[8px] font-black text-white shadow-[1px_1px_0px_#000]">
+                                            {unreadCount}
+                                        </span>
                                     )}
-                                    {wishlistOnSaleCount > 0 && (
-                                        <span className="absolute top-1 right-1 bg-brutal-red w-3 h-3 rounded-full border-2 border-black"></span>
-                                    )}
-                                </Link>
+                                </button>
                             )}
 
                             <Link to="/cart" className="relative p-2 border-2 border-transparent hover:border-black transition-all group" aria-label={`${t('nav.cart')}: ${cartCount} items`}>

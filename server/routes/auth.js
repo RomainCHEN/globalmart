@@ -117,11 +117,13 @@ router.get('/me', requireAuth, async (req, res) => {
 // Update profile
 router.put('/me', requireAuth, async (req, res) => {
     try {
-        const { name, avatar, shipping_address } = req.body;
+        const { name, avatar, shipping_address, contact_person, contact_phone } = req.body;
         const updates = {};
         if (name !== undefined) updates.name = name;
         if (avatar !== undefined) updates.avatar = avatar;
         if (shipping_address !== undefined) updates.shipping_address = shipping_address;
+        if (contact_person !== undefined) updates.contact_person = contact_person;
+        if (contact_phone !== undefined) updates.contact_phone = contact_phone;
 
         const { data, error } = await supabaseAdmin
             .from('profiles')

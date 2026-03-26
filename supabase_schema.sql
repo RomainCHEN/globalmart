@@ -141,6 +141,19 @@ CREATE TABLE IF NOT EXISTS wishlists (
   UNIQUE(user_id, product_id)
 );
 
+-- 12. Notifications
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('wishlist_sale', 'order_shipped', 'birthday_reminder', 'system_alert')),
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  link TEXT,
+  is_read BOOLEAN DEFAULT FALSE,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ========== ROW LEVEL SECURITY ==========
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -152,11 +165,13 @@ ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wishlists ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
--- Profiles: users can read all, update own
-CREATE POLICY "Profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
-CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+-- Notifications: users see and manage own
+CREATE POLICY "Users see own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users update own notifications" ON notifications FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own notifications" ON notifications FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Service role manages notifications" ON notifications FOR ALL USING (auth.role() = 'service_role');
 
 -- Categories: public read
 CREATE POLICY "Categories are public" ON categories FOR SELECT USING (true);

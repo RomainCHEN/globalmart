@@ -15,9 +15,13 @@ export const UserDashboard = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
     const [isBirthday, setIsBirthday] = useState(false);
-    const [activeTab, setActiveTab] = useState<'orders' | 'wishlist'>(() => {
+    const [profile, setProfile] = useState<any>(null);
+    const [editProfile, setEditProfile] = useState(false);
+    const [profileForm, setProfileForm] = useState({ name: '', contact_person: '', contact_phone: '', shipping_address: { street: '', city: '', state: '', zip: '', country: '' } });
+
+    const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'profile'>(() => {
         const params = new URLSearchParams(window.location.search);
-        return (params.get('tab') as 'orders' | 'wishlist') || 'orders';
+        return (params.get('tab') as 'orders' | 'wishlist' | 'profile') || 'orders';
     });
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('all');
@@ -36,11 +40,32 @@ export const UserDashboard = () => {
         Promise.all([
             loadOrders(statusFilter),
             api.getWishlist(today.getMonth() + 1, today.getDate()).catch(() => ({ data: [], isBirthday: false })),
-        ]).then(([, w]) => {
+            api.getMe().catch(() => null),
+        ]).then(([_, w, p]) => {
             setWishlistItems((w as any).data || []);
             setIsBirthday((w as any).isBirthday || false);
+            if (p) {
+                setProfile(p);
+                setProfileForm({
+                    name: p.name || '',
+                    contact_person: p.contact_person || '',
+                    contact_phone: p.contact_phone || '',
+                    shipping_address: p.shipping_address || { street: '', city: '', state: '', zip: '', country: '' }
+                });
+            }
         }).finally(() => setLoading(false));
     }, [isLoggedIn, navigate]);
+
+    const handleUpdateProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const updated = await api.updateProfile(profileForm);
+            setProfile(updated);
+            setEditProfile(false);
+        } catch (err: any) {
+            alert(err.message);
+        }
+    };
 
     const handleFilterChange = async (status: string) => {
         setStatusFilter(status);
@@ -88,10 +113,92 @@ export const UserDashboard = () => {
                     <div className="flex border-4 border-black bg-white">
                         <button onClick={() => setActiveTab('orders')} className={`flex-1 py-4 font-black uppercase text-lg ${activeTab === 'orders' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}>{t('dash.myOrders')}</button>
                         <button onClick={() => setActiveTab('wishlist')} className={`flex-1 py-4 font-black uppercase text-lg border-l-4 border-black ${activeTab === 'wishlist' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}>{t('dash.myWishlist')}</button>
+                        <button onClick={() => setActiveTab('profile')} className={`flex-1 py-4 font-black uppercase text-lg border-l-4 border-black ${activeTab === 'profile' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}>{t('dash.profile')}</button>
                     </div>
 
                     {loading ? (
                         <div className="text-center py-12"><span className="font-black uppercase animate-pulse text-xl">{t('general.loading')}</span></div>
+                    ) : activeTab === 'profile' ? (
+                        <div className="bg-white border-4 border-black shadow-brutal p-8">
+                            <div className="flex justify-between items-center mb-8 border-b-4 border-black pb-4">
+                                <h3 className="text-3xl font-black uppercase italic tracking-tighter">{t('dash.profile')}</h3>
+                                {!editProfile && (
+                                    <button onClick={() => setEditProfile(true)} className="bg-brutal-yellow border-4 border-black px-6 py-2 font-black uppercase shadow-brutal hover:-translate-y-1 transition-all flex items-center gap-2">
+                                        <span className="material-symbols-outlined font-black">edit</span>
+                                        {t('dash.editProfile')}
+                                    </button>
+                                )}
+                            </div>
+
+                            {editProfile ? (
+                                <form onSubmit={handleUpdateProfile} className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-black uppercase">{t('auth.name')}</label>
+                                            <input type="text" value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} className="w-full p-3 border-4 border-black font-bold focus:ring-0 focus:border-brutal-pink" required />
+                                        </div>
+                                        <div className="space-y-2 opacity-60">
+                                            <label className="text-sm font-black uppercase">{t('auth.birthdayHint')}</label>
+                                            <div className="flex gap-4">
+                                                <input type="text" value={profile?.birthday_month || ''} disabled className="flex-1 p-3 border-4 border-black bg-gray-100 font-bold cursor-not-allowed" />
+                                                <input type="text" value={profile?.birthday_day || ''} disabled className="flex-1 p-3 border-4 border-black bg-gray-100 font-bold cursor-not-allowed" />
+                                            </div>
+                                            <p className="text-[10px] font-bold text-brutal-red italic">{t('dash.birthdayLocked')}</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-black uppercase">Contact Person</label>
+                                            <input type="text" value={profileForm.contact_person} onChange={e => setProfileForm({ ...profileForm, contact_person: e.target.value })} className="w-full p-3 border-4 border-black font-bold focus:ring-0 focus:border-brutal-pink" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-black uppercase">Contact Phone</label>
+                                            <input type="text" value={profileForm.contact_phone} onChange={e => setProfileForm({ ...profileForm, contact_phone: e.target.value })} className="w-full p-3 border-4 border-black font-bold focus:ring-0 focus:border-brutal-pink" />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="border-4 border-black p-4 bg-gray-50">
+                                        <h4 className="text-sm font-black uppercase mb-4 flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-lg">local_shipping</span>
+                                            {t('auth.shippingAddress')}
+                                        </h4>
+                                        <AddressSelector 
+                                            address={profileForm.shipping_address} 
+                                            onChange={addr => setProfileForm({ ...profileForm, shipping_address: addr })} 
+                                        />
+                                    </div>
+
+                                    <div className="flex gap-4 pt-4">
+                                        <button type="submit" className="flex-1 bg-brutal-green border-4 border-black py-4 font-black uppercase text-xl shadow-brutal hover:-translate-y-1 transition-all">{t('dash.saveProfile')}</button>
+                                        <button type="button" onClick={() => setEditProfile(false)} className="px-8 border-4 border-black py-4 font-black uppercase text-xl hover:bg-gray-100 transition-all">{t('general.cancel')}</button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <div className="space-y-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-4">
+                                            <div><p className="text-xs font-black uppercase text-gray-500 mb-1">{t('auth.name')}</p><p className="text-2xl font-black">{profile?.name || '—'}</p></div>
+                                            <div><p className="text-xs font-black uppercase text-gray-500 mb-1">Email</p><p className="text-xl font-bold">{profile?.email}</p></div>
+                                            <div>
+                                                <p className="text-xs font-black uppercase text-gray-500 mb-1">{t('auth.birthdayHint')}</p>
+                                                <p className="text-xl font-black">{profile?.birthday_month} / {profile?.birthday_day}</p>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div><p className="text-xs font-black uppercase text-gray-500 mb-1">Contact Info</p><p className="text-lg font-bold">{profile?.contact_person || '—'} {profile?.contact_phone ? `(${profile.contact_phone})` : ''}</p></div>
+                                            <div>
+                                                <p className="text-xs font-black uppercase text-gray-500 mb-1">{t('auth.shippingAddress')}</p>
+                                                {profile?.shipping_address ? (
+                                                    <div className="text-lg font-bold">
+                                                        <p>{profile.shipping_address.street}</p>
+                                                        <p>{profile.shipping_address.city}, {profile.shipping_address.state} {profile.shipping_address.zip}</p>
+                                                        <p>{profile.shipping_address.country}</p>
+                                                    </div>
+                                                ) : <p className="text-gray-400 italic">No address saved</p>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     ) : activeTab === 'orders' ? (
                         <div className="space-y-6">
                             {/* B3: Order status filter */}
@@ -649,7 +756,7 @@ export const SellerDashboard = () => {
 
     const tabs = [
         { key: 'dashboard', icon: 'dashboard', label: t('seller.dashboard') },
-        { key: 'analytics', icon: 'monitoring', label: 'Analytics' },
+        { key: 'analytics', icon: 'monitoring', label: t('seller.analytics') },
         { key: 'store', icon: 'storefront', label: t('seller.myStore') },
         { key: 'products', icon: 'inventory_2', label: t('seller.products') },
         { key: 'orders', icon: 'shopping_bag', label: t('seller.orders') },
@@ -1033,9 +1140,9 @@ export const SellerDashboard = () => {
                         {/* ANALYTICS — Anticate Sales Decision Support */}
                         {tab === 'analytics' && (
                             <div className="space-y-8">
-                                <h1 className="text-5xl font-black uppercase tracking-tighter">Store Analytics</h1>
+                                <h1 className="text-5xl font-black uppercase tracking-tighter">{t('seller.analytics')}</h1>
                                 <p className="text-xl font-bold bg-white border-4 border-black p-4 shadow-brutal inline-block">
-                                    Monitor popularity and search trends to decide your next promotional strategy.
+                                    {t('seller.analytics.desc')}
                                 </p>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1043,19 +1150,19 @@ export const SellerDashboard = () => {
                                     <div className="bg-white border-4 border-black shadow-brutal p-6">
                                         <h2 className="text-2xl font-black uppercase mb-6 flex items-center gap-2">
                                             <span className="material-symbols-outlined text-brutal-pink">trending_up</span>
-                                            Most Popular Products
+                                            {t('seller.analytics.popular')}
                                         </h2>
                                         <div className="space-y-4">
                                             {analytics.topProducts.length === 0 ? (
-                                                <p className="text-gray-500 font-bold py-8 text-center italic">No browsing data yet.</p>
+                                                <p className="text-gray-500 font-bold py-8 text-center italic">{t('seller.analytics.noBrowse')}</p>
                                             ) : analytics.topProducts.map((p, idx) => (
                                                 <div key={p.id} className="flex items-center justify-between border-b-2 border-black pb-3 last:border-0">
                                                     <div className="flex items-center gap-3">
                                                         <span className="font-black text-2xl text-gray-300">#{idx + 1}</span>
-                                                        <span className="font-bold">{p.name}</span>
+                                                        <span className="font-bold">{localized(p, 'name', lang)}</span>
                                                     </div>
-                                                    <div className="bg-brutal-blue text-white px-3 py-1 border-2 border-black font-black text-sm">
-                                                        {p.views} VIEWS
+                                                    <div className="bg-brutal-blue text-white px-3 py-1 border-2 border-black font-black text-sm uppercase">
+                                                        {p.views} {t('seller.analytics.views')}
                                                     </div>
                                                 </div>
                                             ))}
@@ -1066,21 +1173,21 @@ export const SellerDashboard = () => {
                                     <div className="bg-white border-4 border-black shadow-brutal p-6">
                                         <h2 className="text-2xl font-black uppercase mb-6 flex items-center gap-2">
                                             <span className="material-symbols-outlined text-brutal-blue">search_insights</span>
-                                            Market Search Trends
+                                            {t('seller.analytics.trends')}
                                         </h2>
                                         <div className="flex flex-wrap gap-3">
                                             {analytics.searchTrends.length === 0 ? (
-                                                <p className="text-gray-500 font-bold py-8 text-center w-full italic">No search data yet.</p>
-                                            ) : analytics.searchTrends.map((t, idx) => (
+                                                <p className="text-gray-500 font-bold py-8 text-center w-full italic">{t('seller.analytics.noSearch')}</p>
+                                            ) : analytics.searchTrends.map((t_item, idx) => (
                                                 <div key={idx} className="bg-brutal-yellow border-2 border-black px-4 py-2 flex items-center gap-2 hover:-translate-y-1 transition-all cursor-default">
-                                                    <span className="font-black text-sm uppercase">{t.query}</span>
-                                                    <span className="bg-black text-white px-1.5 py-0.5 rounded text-[10px] font-black">{t.count}</span>
+                                                    <span className="font-black text-sm uppercase">{t_item.query}</span>
+                                                    <span className="bg-black text-white px-1.5 py-0.5 rounded text-[10px] font-black">{t_item.count}</span>
                                                 </div>
                                             ))}
                                         </div>
                                         <div className="mt-8 bg-brutal-green/10 border-2 border-dashed border-black p-4">
                                             <p className="text-xs font-bold leading-relaxed italic">
-                                                <strong>Tip:</strong> If you see high search counts for keywords related to your products, consider running a 24-hour flash sale to convert that interest into orders!
+                                                <strong>{lang === 'zh' ? '提示：' : 'Tip:'}</strong> {t('seller.analytics.tip')}
                                             </p>
                                         </div>
                                     </div>

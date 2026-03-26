@@ -39,6 +39,11 @@ export const ShopHome = () => {
             
             const data = await api.getProducts(params);
 
+            // Log search if this is the first page of results
+            if (search && pageNum === 1) {
+                api.logSearch(search).catch(() => {});
+            }
+
             const newProducts = data.products || [];
             setAllProducts(prev => append ? [...prev, ...newProducts] : newProducts);
             setTotalProducts(data.total || 0);

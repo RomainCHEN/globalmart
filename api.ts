@@ -229,6 +229,12 @@ export const api = {
         request('/products/browse/log', { method: 'POST', body: JSON.stringify({ product_id: productId, category_id: categoryId }) }),
     getStoreAnalytics: () =>
         request('/stores/me/analytics'),
+    getNotifications: () =>
+        request('/notifications'),
+    markNotificationAsRead: (id: string) =>
+        request(`/notifications/${id}/read`, { method: 'PUT' }),
+    deleteNotification: (id: string) =>
+        request(`/notifications/${id}`, { method: 'DELETE' }),
     deleteImage: (path: string) =>
         request('/upload/image', { method: 'DELETE', body: JSON.stringify({ path }) }),
 };

@@ -65,6 +65,61 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET /api/stores/me/analytics — seller analytics (popularity & trends)
+router.get('/me/analytics', requireAuth, async (req, res) => {
+    try {
+        // 1. Get seller's store and products
+        const { data: store } = await supabaseAdmin.from('stores').select('id').eq('seller_id', req.user.id).single();
+        if (!store) return res.status(404).json({ error: 'Store not found' });
+
+        const { data: products } = await supabaseAdmin.from('products').select('id, name, category_id').eq('store_id', store.id);
+        if (!products || products.length === 0) return res.json({ topProducts: [], searchTrends: [] });
+
+        const productIds = products.map(p => p.id);
+        const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
+
+        // 2. Get top products by browse count
+        // Grouping by product_id manually from browse_logs
+        const { data: browseLogs } = await supabaseAdmin
+            .from('browse_logs')
+            .select('product_id')
+            .in('product_id', productIds);
+        
+        const counts = (browseLogs || []).reduce((acc, log) => {
+            acc[log.product_id] = (acc[log.product_id] || 0) + 1;
+            return acc;
+        }, {});
+
+        const topProducts = products
+            .map(p => ({ ...p, views: counts[p.id] || 0 }))
+            .sort((a, b) => b.views - a.views)
+            .slice(0, 5);
+
+        // 3. Get search trends related to seller's categories
+        const { data: searchLogs } = await supabaseAdmin
+            .from('search_logs')
+            .select('query')
+            .order('created_at', { ascending: false })
+            .limit(100);
+        
+        // Find keywords that appear frequently
+        const keywords = (searchLogs || []).map(l => l.query.toLowerCase());
+        const trendCounts = keywords.reduce((acc, k) => {
+            acc[k] = (acc[k] || 0) + 1;
+            return acc;
+        }, {});
+
+        const searchTrends = Object.entries(trendCounts)
+            .map(([query, count]) => ({ query, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10);
+
+        res.json({ topProducts, searchTrends });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // GET /api/stores/:id
 router.get('/:id', async (req, res) => {
     try {

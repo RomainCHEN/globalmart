@@ -225,8 +225,8 @@ export const api = {
         request('/products/search/log', { method: 'POST', body: JSON.stringify({ query }) }),
     logBrowse: (productId: string, categoryId?: string) =>
         request('/products/browse/log', { method: 'POST', body: JSON.stringify({ product_id: productId, category_id: categoryId }) }),
-    getRecommendations: () =>
-        request('/products/recommendations'),
+    getStoreAnalytics: () =>
+        request('/stores/me/analytics'),
     deleteImage: (path: string) =>
         request('/upload/image', { method: 'DELETE', body: JSON.stringify({ path }) }),
 };

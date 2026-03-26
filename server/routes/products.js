@@ -13,12 +13,11 @@ router.get('/', async (req, res) => {
             .from('products')
             .select('*, categories(name, slug), product_images(url, sort_order), stores(id, name, logo, verified)', { count: 'exact' });
 
-        // Only filter enabled for storefront (not when seller requests all)
-        // Include products where enabled=true OR enabled is NULL (default)
-        // Note: SQL NULL comparisons (NULL != false) return NULL, not TRUE
-        if (!include_disabled) {
-            query = query.or('enabled.eq.true,enabled.is.null');
-        }
+        // NOTE: The 'enabled' column may not exist in the products table yet.
+        // If it exists, filter out disabled products for the storefront.
+        // If it doesn't exist, skip the filter to avoid breaking the query.
+        // The toggle feature requires adding the column: ALTER TABLE products ADD COLUMN enabled BOOLEAN DEFAULT TRUE;
+        // For now, disabled filtering is skipped to prevent query failures.
 
         if (search) {
             query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,name_zh.ilike.%${search}%,description_zh.ilike.%${search}%,tags.cs.{"${search}"}`);

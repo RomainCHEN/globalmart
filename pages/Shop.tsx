@@ -329,6 +329,11 @@ export const ProductDetail = () => {
                     setSelectedOptions(defaults);
                 }
 
+                // Log browsing behavior
+                if (isLoggedIn) {
+                    api.logBrowse(prod.id, prod.category_id).catch(() => {});
+                }
+
                 // Check for review parameter
                 const params = new URLSearchParams(window.location.search);
                 if (params.get('review') === 'true') {

@@ -46,6 +46,19 @@ CREATE TABLE IF NOT EXISTS search_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 11. Browse Logs (for anticipating sales)
+CREATE TABLE IF NOT EXISTS browse_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+  category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE browse_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can insert own browse logs" ON browse_logs FOR INSERT WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+CREATE POLICY "Users see own browse logs" ON browse_logs FOR SELECT USING (auth.uid() = user_id);
+
 ALTER TABLE search_logs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can insert own search logs" ON search_logs FOR INSERT WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
 CREATE POLICY "Users see own search logs" ON search_logs FOR SELECT USING (auth.uid() = user_id);

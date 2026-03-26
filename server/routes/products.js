@@ -79,55 +79,91 @@ router.post('/search/log', optionalAuth, async (req, res) => {
     }
 });
 
-// GET /api/products/recommendations — get recommended products based on search history
+// POST /api/products/browse/log — log a product view
+router.post('/browse/log', optionalAuth, async (req, res) => {
+    try {
+        const { product_id, category_id } = req.body;
+        if (!product_id) return res.status(400).json({ error: 'Product ID required' });
+
+        await supabaseAdmin.from('browse_logs').insert({
+            user_id: req.user?.id || null,
+            product_id,
+            category_id
+        });
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/products/recommendations — get recommended products based on search and browse history
 router.get('/recommendations', optionalAuth, async (req, res) => {
     try {
         let recommendedProducts = [];
+        const limit = 10;
 
         if (req.user) {
-            // 1. Get user's recent search queries
-            const { data: logs } = await supabaseAdmin
-                .from('search_logs')
-                .select('query')
-                .eq('user_id', req.user.id)
-                .order('created_at', { ascending: false })
-                .limit(5);
+            // 1. Analyze user interest (Search & Browse)
+            const [searchLogs, browseLogs] = await Promise.all([
+                supabaseAdmin.from('search_logs').select('query').eq('user_id', req.user.id).order('created_at', { ascending: false }).limit(5),
+                supabaseAdmin.from('browse_logs').select('category_id').eq('user_id', req.user.id).not('category_id', 'is', null).order('created_at', { ascending: false }).limit(10)
+            ]);
 
-            if (logs && logs.length > 0) {
-                const queries = logs.map(l => l.query);
+            const queries = (searchLogs.data || []).map(l => l.query);
+            const categoryIds = [...new Set((browseLogs.data || []).map(l => l.category_id))];
+
+            // 2. Strategy A: Anticipate Sales - Find items in browsed categories that are ON SALE
+            if (categoryIds.length > 0) {
+                const { data: saleProducts } = await supabaseAdmin
+                    .from('products')
+                    .select('*, categories(name, slug), stores(name, logo)')
+                    .eq('enabled', true)
+                    .in('category_id', categoryIds)
+                    .not('original_price', 'is', null)
+                    .order('rating', { ascending: false })
+                    .limit(5);
                 
-                // 2. Search for products matching these queries
-                // Using a simple 'or' filter for multiple queries
-                let queryFilter = queries.map(q => `name.ilike.%${q}%`).join(',');
-                
-                const { data: products } = await supabaseAdmin
+                if (saleProducts) recommendedProducts.push(...saleProducts);
+            }
+
+            // 3. Strategy B: Keyword Match - Based on search queries
+            if (queries.length > 0 && recommendedProducts.length < limit) {
+                const queryFilter = queries.map(q => `name.ilike.%${q}%`).join(',');
+                const { data: matchedProducts } = await supabaseAdmin
                     .from('products')
                     .select('*, categories(name, slug), stores(name, logo)')
                     .or(queryFilter)
                     .eq('enabled', true)
-                    .limit(10);
+                    .limit(5);
                 
-                recommendedProducts = products || [];
+                if (matchedProducts) {
+                    const existingIds = new Set(recommendedProducts.map(p => p.id));
+                    matchedProducts.forEach(p => {
+                        if (!existingIds.has(p.id)) recommendedProducts.push(p);
+                    });
+                }
             }
         }
 
-        // 3. Fallback: Top rated products
-        if (recommendedProducts.length < 4) {
+        // 4. Fallback: Top rated products
+        if (recommendedProducts.length < limit) {
             const { data: topRated } = await supabaseAdmin
                 .from('products')
                 .select('*, categories(name, slug), stores(name, logo)')
                 .eq('enabled', true)
                 .order('rating', { ascending: false })
-                .limit(10);
+                .limit(limit);
             
-            // Merge and remove duplicates
-            const existingIds = new Set(recommendedProducts.map(p => p.id));
-            topRated.forEach(p => {
-                if (!existingIds.has(p.id)) recommendedProducts.push(p);
-            });
+            if (topRated) {
+                const existingIds = new Set(recommendedProducts.map(p => p.id));
+                topRated.forEach(p => {
+                    if (!existingIds.has(p.id)) recommendedProducts.push(p);
+                });
+            }
         }
 
-        res.json(recommendedProducts.slice(0, 10));
+        res.json(recommendedProducts.slice(0, limit));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

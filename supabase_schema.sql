@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   store_id UUID REFERENCES stores(id) ON DELETE SET NULL,
-  status TEXT NOT NULL DEFAULT 'ordered' CHECK (status IN ('ordered', 'shipped', 'out_for_delivery', 'delivered', 'cancelled')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'ordered', 'shipped', 'out_for_delivery', 'delivered', 'hold', 'cancelled', 'refund_requested', 'refunded')),
   total NUMERIC(10,2) NOT NULL DEFAULT 0,
   shipping_name TEXT DEFAULT '',
   shipping_street TEXT DEFAULT '',
@@ -185,14 +185,14 @@ CREATE POLICY "Users can delete own reviews" ON reviews FOR DELETE USING (auth.u
 
 -- Orders: users see own
 CREATE POLICY "Users see own orders" ON orders FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can create orders" ON orders FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can create orders" ON orders FOR INSERT WITH CHECK (auth.uid() = user_id OR auth.role() = 'service_role');
 
 -- Order items: users see own
 CREATE POLICY "Users see own order items" ON order_items FOR SELECT USING (
-  EXISTS (SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid())
+  EXISTS (SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()) OR auth.role() = 'service_role'
 );
 CREATE POLICY "Users can insert order items" ON order_items FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid())
+  EXISTS (SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()) OR auth.role() = 'service_role'
 );
 
 -- Wishlists: users manage own

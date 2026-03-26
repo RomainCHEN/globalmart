@@ -14,9 +14,10 @@ router.get('/', async (req, res) => {
             .select('*, categories(name, slug), product_images(url, sort_order), stores(id, name, logo, verified)', { count: 'exact' });
 
         // Only filter enabled for storefront (not when seller requests all)
-        // Use neq('enabled', false) so products with enabled=NULL (default) are still shown
+        // Include products where enabled=true OR enabled is NULL (default)
+        // Note: SQL NULL comparisons (NULL != false) return NULL, not TRUE
         if (!include_disabled) {
-            query = query.neq('enabled', false);
+            query = query.or('enabled.eq.true,enabled.is.null');
         }
 
         if (search) {

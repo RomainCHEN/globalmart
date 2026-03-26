@@ -7,23 +7,44 @@ const router = Router();
 // Register (auto-confirms email via admin API)
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, name, role, shipping_address } = req.body;
+        const { email, password, name, role, shipping_address, birthday_month, birthday_day, contact_person, contact_phone, shop_name, shop_desc, shop_photo } = req.body;
 
         // Create user with admin API (auto-confirms email)
         const { data: adminData, error: createError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
             email_confirm: true,
-            user_metadata: { name, role: role || 'user' }
+            user_metadata: { 
+                name, 
+                role: role || 'user',
+                birthday_month,
+                birthday_day,
+                contact_person,
+                contact_phone
+            }
         });
         if (createError) return res.status(400).json({ error: createError.message });
 
         // Save shipping address to profile if provided
-        if (shipping_address && adminData.user) {
+        if ((shipping_address || role === 'seller') && adminData.user) {
+            const updates = {};
+            if (shipping_address) updates.shipping_address = shipping_address;
+            
             await supabaseAdmin
                 .from('profiles')
-                .update({ shipping_address })
+                .update(updates)
                 .eq('id', adminData.user.id);
+            
+            if (role === 'seller') {
+                await supabaseAdmin
+                    .from('stores')
+                    .insert({
+                        seller_id: adminData.user.id,
+                        name: shop_name || `${name}'s Shop`,
+                        description: shop_desc || '',
+                        shop_photo: shop_photo || ''
+                    });
+            }
         }
 
         // Immediately sign them in so we return a session

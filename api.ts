@@ -73,8 +73,8 @@ async function request(path: string, options: RequestInit = {}): Promise<any> {
 // Auth
 export const api = {
     // Auth
-    register: (email: string, password: string, name: string, role = 'user', shipping_address?: any) =>
-        request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, name, role, shipping_address }) }),
+    register: (email: string, password: string, name: string, role = 'user', shipping_address?: any, extra?: any) =>
+        request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, name, role, shipping_address, ...extra }) }),
     login: (email: string, password: string) =>
         request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
     logout: () => request('/auth/logout', { method: 'POST' }),
@@ -221,6 +221,10 @@ export const api = {
         if (!res.ok) throw new Error(data.error || 'Upload failed');
         return data;
     },
+    logSearch: (query: string) =>
+        request('/products/search/log', { method: 'POST', body: JSON.stringify({ query }) }),
+    getRecommendations: () =>
+        request('/products/recommendations'),
     deleteImage: (path: string) =>
         request('/upload/image', { method: 'DELETE', body: JSON.stringify({ path }) }),
 };

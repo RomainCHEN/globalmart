@@ -62,6 +62,77 @@ router.get('/', async (req, res) => {
     }
 });
 
+// POST /api/products/search/log — log a search query
+router.post('/search/log', optionalAuth, async (req, res) => {
+    try {
+        const { query } = req.body;
+        if (!query) return res.status(400).json({ error: 'Query required' });
+
+        await supabaseAdmin.from('search_logs').insert({
+            user_id: req.user?.id || null,
+            query: query.trim()
+        });
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/products/recommendations — get recommended products based on search history
+router.get('/recommendations', optionalAuth, async (req, res) => {
+    try {
+        let recommendedProducts = [];
+
+        if (req.user) {
+            // 1. Get user's recent search queries
+            const { data: logs } = await supabaseAdmin
+                .from('search_logs')
+                .select('query')
+                .eq('user_id', req.user.id)
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            if (logs && logs.length > 0) {
+                const queries = logs.map(l => l.query);
+                
+                // 2. Search for products matching these queries
+                // Using a simple 'or' filter for multiple queries
+                let queryFilter = queries.map(q => `name.ilike.%${q}%`).join(',');
+                
+                const { data: products } = await supabaseAdmin
+                    .from('products')
+                    .select('*, categories(name, slug), stores(name, logo)')
+                    .or(queryFilter)
+                    .eq('enabled', true)
+                    .limit(10);
+                
+                recommendedProducts = products || [];
+            }
+        }
+
+        // 3. Fallback: Top rated products
+        if (recommendedProducts.length < 4) {
+            const { data: topRated } = await supabaseAdmin
+                .from('products')
+                .select('*, categories(name, slug), stores(name, logo)')
+                .eq('enabled', true)
+                .order('rating', { ascending: false })
+                .limit(10);
+            
+            // Merge and remove duplicates
+            const existingIds = new Set(recommendedProducts.map(p => p.id));
+            topRated.forEach(p => {
+                if (!existingIds.has(p.id)) recommendedProducts.push(p);
+            });
+        }
+
+        res.json(recommendedProducts.slice(0, 10));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // GET /api/products/:id — single product
 router.get('/:id', async (req, res) => {
     try {

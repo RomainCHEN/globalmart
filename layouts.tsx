@@ -4,7 +4,7 @@ import { useApp } from './context';
 import { useI18n } from './i18n';
 
 export const MainLayout = () => {
-    const { user, isLoggedIn, logout, cart, seniorMode, setSeniorMode, formatPrice } = useApp();
+    const { user, isLoggedIn, logout, cart, seniorMode, setSeniorMode, formatPrice, wishlistOnSaleCount } = useApp();
     const { t, lang, setLang } = useI18n();
     const navigate = useNavigate();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -15,6 +15,10 @@ export const MainLayout = () => {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
+            // Log search query
+            if (isLoggedIn) {
+                api.logSearch(searchQuery.trim()).catch(() => {});
+            }
             navigate(`/?search=${encodeURIComponent(searchQuery.trim())}`);
             setSearchOpen(false);
         }
@@ -116,6 +120,18 @@ export const MainLayout = () => {
                                 <Link to="/login" className="hidden lg:flex items-center gap-2 border-4 border-black bg-brutal-yellow px-4 py-2 font-black uppercase text-sm shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all">
                                     <span className="material-symbols-outlined text-lg">person</span>
                                     {t('nav.login')}
+                                </Link>
+                            )}
+
+                            {isLoggedIn && (
+                                <Link to="/dashboard?tab=wishlist" className="relative p-2 border-2 border-transparent hover:border-black transition-all group" aria-label="Wishlist notifications">
+                                    <span className="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">notifications</span>
+                                    {wishlistOnSaleCount > 0 && (
+                                        <span className="absolute top-1 right-1 bg-brutal-red w-3 h-3 rounded-full border-2 border-black animate-ping"></span>
+                                    )}
+                                    {wishlistOnSaleCount > 0 && (
+                                        <span className="absolute top-1 right-1 bg-brutal-red w-3 h-3 rounded-full border-2 border-black"></span>
+                                    )}
                                 </Link>
                             )}
 

@@ -29,6 +29,19 @@ router.post('/', requireAuth, async (req, res) => {
     try {
         const { product_id, rating, title, body } = req.body;
 
+        // Check if user has purchased this product and it is delivered
+        const { data: orders, error: orderError } = await supabaseAdmin
+            .from('orders')
+            .select('id, status, order_items!inner(product_id)')
+            .eq('user_id', req.user.id)
+            .eq('status', 'delivered')
+            .eq('order_items.product_id', product_id);
+
+        if (orderError) return res.status(400).json({ error: orderError.message });
+        if (!orders || orders.length === 0) {
+            return res.status(403).json({ error: 'Only users who have purchased and received this product can leave a review.' });
+        }
+
         const { data, error } = await supabaseAdmin
             .from('reviews')
             .insert({

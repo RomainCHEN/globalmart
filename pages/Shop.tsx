@@ -11,7 +11,7 @@ export const ShopHome = () => {
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
-    const [sort, setSort] = useState('newest');
+    const [sort, setSort] = useState('rating');
     const [priceRange, setPriceRange] = useState({ min: '', max: '' });
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -22,6 +22,7 @@ export const ShopHome = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [recommendations, setRecommendations] = useState<Product[]>([]);
     const LIMIT = 12;
 
     const fetchProducts = async (pageNum: number, append: boolean) => {
@@ -32,12 +33,18 @@ export const ShopHome = () => {
             if (selectedCategory) params.category = selectedCategory;
             if (priceRange.min) params.min_price = priceRange.min;
             if (priceRange.max) params.max_price = priceRange.max;
-            const data = await api.getProducts(params);
+            
+            const [data, recs] = await Promise.all([
+                api.getProducts(params),
+                (isLoggedIn && pageNum === 1 && !search && !selectedCategory) ? api.getRecommendations().catch(() => []) : Promise.resolve([])
+            ]);
+
             const newProducts = data.products || [];
             setAllProducts(prev => append ? [...prev, ...newProducts] : newProducts);
             setTotalProducts(data.total || 0);
             setTotalPages(data.totalPages || 1);
             setPage(pageNum);
+            if (recs && recs.length > 0) setRecommendations(recs);
         } catch {
             if (!append) setAllProducts([]);
         } finally {
@@ -133,6 +140,36 @@ export const ShopHome = () => {
 
                     {/* Product Grid */}
                     <div className="flex-1 w-full">
+                        {/* Recommendations Section */}
+                        {!loading && recommendations.length > 0 && !search && !selectedCategory && page === 1 && (
+                            <section className="mb-16 bg-brutal-pink/5 border-4 border-black p-8 shadow-brutal relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-brutal-pink opacity-10 -mr-16 -mt-16 rotate-45"></div>
+                                <h3 className="text-4xl font-black uppercase italic tracking-tighter mb-8 flex items-center gap-4 font-display">
+                                    <span className="material-symbols-outlined text-4xl bg-black text-white p-2 border-2 border-white shadow-brutal-sm">auto_awesome</span>
+                                    {lang === 'zh' ? '为您推荐' : 'Recommended for You'}
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    {recommendations.slice(0, 4).map(product => (
+                                        <article key={product.id} className="bg-white border-2 border-black shadow-brutal hover:-translate-y-1 transition-all flex flex-col h-full group">
+                                            <Link to={`/product/${product.id}`} className="flex-1 p-4">
+                                                <div className="aspect-square mb-4 bg-gray-50 border-2 border-black flex items-center justify-center p-4">
+                                                    <img src={product.image} alt={localized(product, 'name', lang)} className="w-full h-full object-contain group-hover:scale-105 transition-transform" />
+                                                </div>
+                                                <h4 className="font-black text-sm uppercase truncate mb-1">{localized(product, 'name', lang)}</h4>
+                                                <div className="flex items-center justify-between mt-2">
+                                                    <span className="font-black text-lg">{formatPrice(product.price)}</span>
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="material-symbols-outlined text-xs text-brutal-yellow filled">star</span>
+                                                        <span className="text-xs font-black">{product.rating}</span>
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        </article>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
                         {loading ? (
                             <div className="text-center py-20">
                                 <div className="inline-block border-4 border-black bg-brutal-yellow px-8 py-4 shadow-brutal animate-pulse">
@@ -290,6 +327,17 @@ export const ProductDetail = () => {
                         }
                     });
                     setSelectedOptions(defaults);
+                }
+
+                // Check for review parameter
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('review') === 'true') {
+                    setShowReviewForm(true);
+                    // Scroll to review form after a short delay
+                    setTimeout(() => {
+                        const el = document.getElementById('review-form-anchor');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }, 500);
                 }
             })
             .catch(() => { })
@@ -471,6 +519,7 @@ export const ProductDetail = () => {
 
             <div className="max-w-[1600px] mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
                 <div className="lg:col-span-8 space-y-16">
+                    <div id="review-form-anchor"></div>
                     <section aria-label={t('product.reviews')}>
                         <h3 className="text-5xl font-black uppercase mb-12 flex items-center gap-4 italic font-display">
                             <span className="bg-brutal-red text-white p-2 border-4 border-black text-3xl">★</span>

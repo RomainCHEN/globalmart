@@ -7,7 +7,7 @@ interface AppContextType {
     user: User | null;
     isLoggedIn: boolean;
     login: (email: string, password: string) => Promise<void>;
-    register: (email: string, password: string, name: string, role?: string, shipping_address?: any) => Promise<void>;
+    register: (email: string, password: string, name: string, role?: string, shipping_address?: any, extra?: any) => Promise<void>;
     logout: () => void;
     authLoading: boolean;
     // Cart
@@ -35,6 +35,7 @@ interface AppContextType {
     seniorMode: boolean;
     setSeniorMode: (enabled: boolean) => void;
     formatPrice: (price: number) => string;
+    wishlistOnSaleCount: number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -49,6 +50,7 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [productsLoading, setProductsLoading] = useState(false);
+    const [wishlistOnSaleCount, setWishlistOnSaleCount] = useState(0);
     const [seniorMode, setSeniorModeState] = useState<boolean>(() => localStorage.getItem('gm_senior_mode') === 'true');
 
     const setSeniorMode = (enabled: boolean) => {
@@ -128,10 +130,17 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
     useEffect(() => {
         if (user) {
             api.getWishlist()
-                .then(data => setWishlist(data.map((w: any) => w.product_id)))
+                .then(res => {
+                    const data = (res as any).data || res;
+                    setWishlist(data.map((w: any) => w.product_id));
+                    // Count items on sale
+                    const onSale = data.filter((w: any) => w.products && w.products.original_price && w.products.original_price > w.products.price);
+                    setWishlistOnSaleCount(onSale.length);
+                })
                 .catch(() => { });
         } else {
             setWishlist([]);
+            setWishlistOnSaleCount(0);
         }
     }, [user]);
 
@@ -164,8 +173,8 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
         }
     };
 
-    const register = async (email: string, password: string, name: string, role = 'user', shipping_address?: any) => {
-        const data = await api.register(email, password, name, role, shipping_address);
+    const register = async (email: string, password: string, name: string, role = 'user', shipping_address?: any, extra?: any) => {
+        const data = await api.register(email, password, name, role, shipping_address, extra);
         if (data.session) {
             localStorage.setItem('gm_session', JSON.stringify(data.session));
             const profile = await api.getMe();
@@ -287,7 +296,7 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
             selectedCartItems, setSelectedCartItems, removeItems, getCartItemId,
             wishlist, toggleWishlist, isInWishlist,
             categories, products, loadProducts, productsLoading,
-            seniorMode, setSeniorMode, formatPrice
+            seniorMode, setSeniorMode, formatPrice, wishlistOnSaleCount
         }}>
             {children}
         </AppContext.Provider>

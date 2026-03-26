@@ -471,6 +471,14 @@ export const OrderDetails = () => {
             
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
                 <div>
+                    {order.status === 'delivered' && (
+                        <div className="bg-brutal-green border-4 border-black p-4 mb-6 shadow-brutal flex items-center gap-4 animate-bounce-slow">
+                            <span className="material-symbols-outlined text-3xl font-black">celebration</span>
+                            <p className="font-black uppercase italic">
+                                {lang === 'zh' ? '您的订单已送达！分享您的使用体验并为商品评分吧。' : 'Your order has been delivered! Share your experience and rate the products.'}
+                            </p>
+                        </div>
+                    )}
                     <div className="flex items-center gap-3 mb-4">
                         <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none font-display">{t('order.title')} #{order.id.slice(0, 8)}</h2>
                         {order.stores && (
@@ -585,13 +593,23 @@ export const OrderDetails = () => {
                         </div>
                         {order.order_items.map(item => (
                             <div key={item.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center py-6 border-b-2 border-black last:border-0">
-                                <div className="col-span-6 flex items-center gap-4">
-                                    {item.product_image && (
-                                        <div className="w-16 h-16 border-2 border-black overflow-hidden bg-gray-100 shrink-0 shadow-brutal-sm">
-                                            <img src={item.product_image} alt="" className="w-full h-full object-contain" />
-                                        </div>
+                                <div className="col-span-6 flex items-center justify-between gap-4">
+                                    <Link to={`/product/${item.product_id}`} className="flex items-center gap-4 hover:text-brutal-blue transition-colors group">
+                                        {item.product_image && (
+                                            <div className="w-16 h-16 border-2 border-black overflow-hidden bg-gray-100 shrink-0 shadow-brutal-sm group-hover:shadow-brutal transition-all">
+                                                <img src={item.product_image} alt="" className="w-full h-full object-contain" />
+                                            </div>
+                                        )}
+                                        <h4 className="font-black uppercase text-sm leading-tight group-hover:underline">{item.product_name}</h4>
+                                    </Link>
+                                    {order.status === 'delivered' && (
+                                        <Link 
+                                            to={`/product/${item.product_id}?review=true`} 
+                                            className="bg-brutal-yellow border-2 border-black px-3 py-1 text-xs font-black uppercase shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
+                                        >
+                                            {lang === 'zh' ? '撰写评论' : 'Write Review'}
+                                        </Link>
                                     )}
-                                    <h4 className="font-black uppercase text-sm leading-tight">{item.product_name}</h4>
                                 </div>
                                 <div className="col-span-2 text-right font-bold">{formatPrice(item.price)}</div>
                                 <div className="col-span-1 text-center font-black">x{item.quantity}</div>

@@ -7,13 +7,39 @@ const router = Router();
 // GET /api/wishlist
 router.get('/', requireAuth, async (req, res) => {
     try {
+        // 1. Get user profile for birthday check
+        const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('birthday_month, birthday_day')
+            .eq('id', req.user.id)
+            .single();
+
+        const today = new Date();
+        const isBirthday = profile && 
+                           profile.birthday_month === (today.getMonth() + 1) && 
+                           profile.birthday_day === today.getDate();
+
+        // 2. Get wishlist items
         const { data, error } = await supabaseAdmin
             .from('wishlists')
             .select('*, products(*, categories(name, slug))')
             .eq('user_id', req.user.id)
             .order('created_at', { ascending: false });
+
         if (error) return res.status(400).json({ error: error.message });
-        res.json(data);
+
+        // 3. Apply discount if it's birthday
+        if (isBirthday && data) {
+            data.forEach(item => {
+                if (item.products) {
+                    item.products.original_price = item.products.price;
+                    item.products.price = Math.round(item.products.price * 0.9 * 100) / 100;
+                    item.is_birthday_discount = true;
+                }
+            });
+        }
+
+        res.json({ data, isBirthday });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

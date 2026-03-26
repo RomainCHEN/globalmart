@@ -1,78 +1,65 @@
-import express from 'express';
-import { createClient } from '@supabase/supabase-js';
+import { Router } from 'express';
+import { supabaseAdmin } from '../supabase.js';
 
-const router = express.Router();
+const router = Router();
 
-const supabaseAdmin = createClient(
-    process.env.VITE_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-// POST /api/migrate/bilingual — add name_zh and description_zh columns to products AND stores
-router.post('/bilingual', async (req, res) => {
+// POST /api/migrate — migrate and complete missing data
+router.post('/', async (req, res) => {
     try {
-        const results = { products: 'unknown', stores: 'unknown', orders: 'unknown' };
+        // 1. Update profiles with random birthdays
+        const { data: profiles, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('id, name, role, birthday_month');
+        
+        if (profileError) return res.status(400).json({ error: profileError.message });
 
-        // Check products table
-        const prodTest = await supabaseAdmin
-            .from('products')
-            .select('name_zh, description_zh')
-            .limit(1);
-        if (prodTest.error && prodTest.error.message.includes('does not exist')) {
-            results.products = 'missing — run SQL below';
-        } else {
-            results.products = 'ready';
+        const profileUpdates = profiles.map(p => {
+            const updates = {};
+            if (!p.birthday_month) {
+                updates.birthday_month = Math.floor(Math.random() * 12) + 1;
+                updates.birthday_day = Math.floor(Math.random() * 28) + 1;
+            }
+            if (p.role === 'seller') {
+                updates.contact_person = p.name || 'Person in Charge';
+                updates.contact_phone = '+852 ' + Math.floor(10000000 + Math.random() * 90000000);
+            }
+            return { id: p.id, ...updates };
+        }).filter(u => Object.keys(u).length > 1);
+
+        for (const update of profileUpdates) {
+            const id = update.id;
+            delete update.id;
+            await supabaseAdmin.from('profiles').update(update).eq('id', id);
         }
 
-        // Check stores table
-        const storeTest = await supabaseAdmin
+        // 2. Update stores with shop_photo
+        const { data: stores, error: storeError } = await supabaseAdmin
             .from('stores')
-            .select('name_zh, description_zh')
-            .limit(1);
-        if (storeTest.error && storeTest.error.message.includes('does not exist')) {
-            results.stores = 'missing — run SQL below';
-        } else {
-            results.stores = 'ready';
+            .select('id, logo, shop_photo');
+        
+        if (storeError) return res.status(400).json({ error: storeError.message });
+
+        const storeUpdates = stores.map(s => {
+            if (!s.shop_photo) {
+                // Use a default shop photo based on logo or generic
+                return { id: s.id, shop_photo: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80' };
+            }
+            return null;
+        }).filter(Boolean);
+
+        for (const update of storeUpdates) {
+            const id = update.id;
+            delete update.id;
+            await supabaseAdmin.from('stores').update(update).eq('id', id);
         }
 
-        // Check orders table for store_id
-        const orderTest = await supabaseAdmin
-            .from('orders')
-            .select('store_id')
-            .limit(1);
-        if (orderTest.error && orderTest.error.message.includes('column "store_id" does not exist')) {
-            results.orders = 'missing — run SQL below';
-        } else {
-            results.orders = 'ready';
-        }
-
-        const allReady = results.products === 'ready' && results.stores === 'ready' && results.orders === 'ready';
-        if (allReady) {
-            return res.json({ success: true, message: 'All schema updates ready', results });
-        }
-
-        res.status(400).json({
-            error: 'Some columns missing. Run this SQL in Supabase SQL Editor:',
-            results,
-            sql: [
-                "ALTER TABLE products ADD COLUMN IF NOT EXISTS name_zh TEXT DEFAULT '';",
-                "ALTER TABLE products ADD COLUMN IF NOT EXISTS description_zh TEXT DEFAULT '';",
-                "ALTER TABLE stores ADD COLUMN IF NOT EXISTS name_zh TEXT DEFAULT '';",
-                "ALTER TABLE stores ADD COLUMN IF NOT EXISTS description_zh TEXT DEFAULT '';",
-                "ALTER TABLE orders ADD COLUMN IF NOT EXISTS store_id UUID REFERENCES stores(id) ON DELETE SET NULL;"
-            ]
+        res.json({
+            message: 'Migration completed',
+            profilesUpdated: profileUpdates.length,
+            storesUpdated: storeUpdates.length
         });
     } catch (err) {
-        res.status(500).json({
-            error: err.message,
-            sql: [
-                "ALTER TABLE products ADD COLUMN IF NOT EXISTS name_zh TEXT DEFAULT '';",
-                "ALTER TABLE products ADD COLUMN IF NOT EXISTS description_zh TEXT DEFAULT '';",
-                "ALTER TABLE stores ADD COLUMN IF NOT EXISTS name_zh TEXT DEFAULT '';",
-                "ALTER TABLE stores ADD COLUMN IF NOT EXISTS description_zh TEXT DEFAULT '';",
-                "ALTER TABLE orders ADD COLUMN IF NOT EXISTS store_id UUID REFERENCES stores(id) ON DELETE SET NULL;"
-            ]
-        });
+        res.status(500).json({ error: err.message });
     }
 });
 

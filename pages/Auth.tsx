@@ -95,15 +95,26 @@ export const RegisterPage = () => {
     const [role, setRole] = useState('user');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [birthday, setBirthday] = useState({ month: '', day: '' });
+    const [vendorInfo, setVendorInfo] = useState({ contact_person: '', contact_phone: '', shop_name: '', shop_desc: '', shop_photo: '' });
     const [address, setAddress] = useState({ street: '', city: '', state: '', zip: '', country: '' });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        if (!birthday.month || !birthday.day) {
+            setError('Please provide your birthday.');
+            return;
+        }
         setLoading(true);
         try {
-            const shipping = { name, ...address };
-            await register(email, password, name, role, shipping);
+            const shipping = role === 'user' ? { name, ...address } : undefined;
+            const extra = { 
+                birthday_month: parseInt(birthday.month), 
+                birthday_day: parseInt(birthday.day),
+                ...(role === 'seller' ? vendorInfo : {})
+            };
+            await register(email, password, name, role, shipping, extra);
             navigate('/');
         } catch (err: any) {
             setError(err.message || 'Registration failed');
@@ -166,6 +177,88 @@ export const RegisterPage = () => {
                             placeholder="Min 6 characters"
                             aria-required="true"
                         />
+                    </div>
+
+                    {/* Vendor Fields */}
+                    {role === 'seller' && (
+                        <div className="border-4 border-black p-6 bg-brutal-green/10 space-y-4">
+                            <h3 className="text-xl font-black uppercase border-b-2 border-black pb-2 mb-4">Shop Information</h3>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase">Person-in-charge Name</label>
+                                <input 
+                                    type="text" required 
+                                    value={vendorInfo.contact_person} 
+                                    onChange={e => setVendorInfo(prev => ({ ...prev, contact_person: e.target.value }))}
+                                    className="w-full p-3 border-4 border-black font-bold focus:ring-0" 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase">Contact Phone</label>
+                                <input 
+                                    type="text" required 
+                                    value={vendorInfo.contact_phone} 
+                                    onChange={e => setVendorInfo(prev => ({ ...prev, contact_phone: e.target.value }))}
+                                    className="w-full p-3 border-4 border-black font-bold focus:ring-0" 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase">Shop Name</label>
+                                <input 
+                                    type="text" required 
+                                    value={vendorInfo.shop_name} 
+                                    onChange={e => setVendorInfo(prev => ({ ...prev, shop_name: e.target.value }))}
+                                    className="w-full p-3 border-4 border-black font-bold focus:ring-0" 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase">Shop Description</label>
+                                <textarea 
+                                    required 
+                                    value={vendorInfo.shop_desc} 
+                                    onChange={e => setVendorInfo(prev => ({ ...prev, shop_desc: e.target.value }))}
+                                    className="w-full p-3 border-4 border-black font-bold focus:ring-0 h-24" 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase">Shop Photo URL</label>
+                                <input 
+                                    type="text" required 
+                                    value={vendorInfo.shop_photo} 
+                                    onChange={e => setVendorInfo(prev => ({ ...prev, shop_photo: e.target.value }))}
+                                    className="w-full p-3 border-4 border-black font-bold focus:ring-0" 
+                                    placeholder="https://..."
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Birthday */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-black uppercase">Birthday (Month / Day)</label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <select 
+                                value={birthday.month} 
+                                onChange={e => setBirthday(prev => ({ ...prev, month: e.target.value }))}
+                                required
+                                className="w-full p-4 border-4 border-black focus:ring-0 focus:border-brutal-pink text-lg font-bold"
+                            >
+                                <option value="">Month</option>
+                                {[...Array(12)].map((_, i) => (
+                                    <option key={i+1} value={i+1}>{i+1}</option>
+                                ))}
+                            </select>
+                            <select 
+                                value={birthday.day} 
+                                onChange={e => setBirthday(prev => ({ ...prev, day: e.target.value }))}
+                                required
+                                className="w-full p-4 border-4 border-black focus:ring-0 focus:border-brutal-pink text-lg font-bold"
+                            >
+                                <option value="">Day</option>
+                                {[...Array(31)].map((_, i) => (
+                                    <option key={i+1} value={i+1}>{i+1}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     {/* Account Type */}

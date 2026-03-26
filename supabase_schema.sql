@@ -8,6 +8,10 @@ CREATE TABLE IF NOT EXISTS profiles (
   email TEXT NOT NULL DEFAULT '',
   avatar TEXT DEFAULT '',
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'seller', 'admin')),
+  birthday_month INTEGER,
+  birthday_day INTEGER,
+  contact_person TEXT DEFAULT '',
+  contact_phone TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -28,10 +32,23 @@ CREATE TABLE IF NOT EXISTS stores (
   description TEXT DEFAULT '',
   logo TEXT DEFAULT '',
   banner TEXT DEFAULT '',
+  shop_photo TEXT DEFAULT '',
   verified BOOLEAN DEFAULT FALSE,
   rating NUMERIC(2,1) DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 10. Search Logs
+CREATE TABLE IF NOT EXISTS search_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  query TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE search_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can insert own search logs" ON search_logs FOR INSERT WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+CREATE POLICY "Users see own search logs" ON search_logs FOR SELECT USING (auth.uid() = user_id);
 
 -- 4. Products
 CREATE TABLE IF NOT EXISTS products (
@@ -176,12 +193,16 @@ CREATE POLICY "Users delete own wishlist" ON wishlists FOR DELETE USING (auth.ui
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, name, email, role)
+  INSERT INTO public.profiles (id, name, email, role, birthday_month, birthday_day, contact_person, contact_phone)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'name', ''),
     NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'role', 'user')
+    COALESCE(NEW.raw_user_meta_data->>'role', 'user'),
+    (NEW.raw_user_meta_data->>'birthday_month')::INTEGER,
+    (NEW.raw_user_meta_data->>'birthday_day')::INTEGER,
+    COALESCE(NEW.raw_user_meta_data->>'contact_person', ''),
+    COALESCE(NEW.raw_user_meta_data->>'contact_phone', '')
   );
   RETURN NEW;
 END;

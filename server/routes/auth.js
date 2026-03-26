@@ -25,25 +25,26 @@ router.post('/register', async (req, res) => {
         });
         if (createError) return res.status(400).json({ error: createError.message });
 
-        // Save shipping address to profile if provided
-        if ((shipping_address || role === 'seller') && adminData.user) {
-            const updates = {};
-            if (shipping_address) updates.shipping_address = shipping_address;
-            
+        // Save shipping address to profile if provided (buyers)
+        if (shipping_address && adminData.user) {
             await supabaseAdmin
                 .from('profiles')
-                .update(updates)
+                .update({ shipping_address })
                 .eq('id', adminData.user.id);
-            
-            if (role === 'seller') {
-                await supabaseAdmin
-                    .from('stores')
-                    .insert({
-                        seller_id: adminData.user.id,
-                        name: shop_name || `${name}'s Shop`,
-                        description: shop_desc || '',
-                        shop_photo: shop_photo || ''
-                    });
+        }
+
+        // Create store for sellers during registration
+        if (role === 'seller' && adminData.user) {
+            const { error: storeError } = await supabaseAdmin
+                .from('stores')
+                .insert({
+                    seller_id: adminData.user.id,
+                    name: shop_name || `${name}'s Shop`,
+                    description: shop_desc || '',
+                    shop_photo: shop_photo || ''
+                });
+            if (storeError) {
+                console.error('Failed to create store during registration:', storeError.message);
             }
         }
 

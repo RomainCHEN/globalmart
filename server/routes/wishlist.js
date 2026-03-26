@@ -7,6 +7,8 @@ const router = Router();
 // GET /api/wishlist
 router.get('/', requireAuth, async (req, res) => {
     try {
+        const { month, day } = req.query;
+        
         // 1. Get user profile for birthday check
         const { data: profile } = await supabaseAdmin
             .from('profiles')
@@ -14,10 +16,13 @@ router.get('/', requireAuth, async (req, res) => {
             .eq('id', req.user.id)
             .single();
 
-        const today = new Date();
-        const isBirthday = profile && 
-                           profile.birthday_month === (today.getMonth() + 1) && 
-                           profile.birthday_day === today.getDate();
+        // Always use client-sent month/day (device date) to avoid timezone mismatch
+        const checkMonth = month ? parseInt(month) : 0;
+        const checkDay = day ? parseInt(day) : 0;
+
+        const isBirthday = !!(checkMonth && checkDay && profile && 
+                           profile.birthday_month === checkMonth && 
+                           profile.birthday_day === checkDay);
 
         // 2. Get wishlist items
         const { data, error } = await supabaseAdmin
@@ -32,7 +37,7 @@ router.get('/', requireAuth, async (req, res) => {
         if (isBirthday && data) {
             data.forEach(item => {
                 if (item.products) {
-                    item.products.original_price = item.products.price;
+                    item.products.original_price = item.products.original_price || item.products.price;
                     item.products.price = Math.round(item.products.price * 0.9 * 100) / 100;
                     item.is_birthday_discount = true;
                 }

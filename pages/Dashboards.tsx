@@ -32,9 +32,10 @@ export const UserDashboard = () => {
     useEffect(() => {
         if (!isLoggedIn) { navigate('/login'); return; }
         setLoading(true);
+        const today = new Date();
         Promise.all([
             loadOrders(statusFilter),
-            api.getWishlist().catch(() => ({ data: [], isBirthday: false })),
+            api.getWishlist(today.getMonth() + 1, today.getDate()).catch(() => ({ data: [], isBirthday: false })),
         ]).then(([, w]) => {
             setWishlistItems((w as any).data || []);
             setIsBirthday((w as any).isBirthday || false);
@@ -542,6 +543,7 @@ export const SellerDashboard = () => {
     const [storeDesc, setStoreDesc] = useState('');
     const [storeDescZh, setStoreDescZh] = useState('');
     const [storeLogo, setStoreLogo] = useState('');
+    const [shopPhoto, setShopPhoto] = useState('');
     const [pf, setPf] = useState({ name: '', name_zh: '', description: '', description_zh: '', price: '', original_price: '', category_id: '', stock: '', image: '', tags: '' });
     const resetPf = () => setPf({ name: '', name_zh: '', description: '', description_zh: '', price: '', original_price: '', category_id: '', stock: '', image: '', tags: '' });
     const [translating, setTranslating] = useState<string | null>(null);
@@ -566,7 +568,14 @@ export const SellerDashboard = () => {
             ]);
             const myStore = (storeRes as any[]).find((s: any) => s.seller_id === user?.id);
             setStore(myStore || null);
-            if (myStore) { setStoreName(myStore.name || ''); setStoreNameZh(myStore.name_zh || ''); setStoreDesc(myStore.description || ''); setStoreDescZh(myStore.description_zh || ''); setStoreLogo(myStore.logo || ''); }
+            if (myStore) { 
+                setStoreName(myStore.name || ''); 
+                setStoreNameZh(myStore.name_zh || ''); 
+                setStoreDesc(myStore.description || ''); 
+                setStoreDescZh(myStore.description_zh || ''); 
+                setStoreLogo(myStore.logo || ''); 
+                setShopPhoto(myStore.shop_photo || '');
+            }
             const myProds = ((prodRes as any).products || []).filter((p: any) => p.seller_id === user?.id || (myStore && p.store_id === myStore.id));
             setAllProducts(myProds);
             setProducts(myProds);
@@ -689,6 +698,25 @@ export const SellerDashboard = () => {
                                     </div>
                                 ) : (
                                     <>
+                                        {/* Shop Photo Banner */}
+                                        {shopPhoto && (
+                                            <div className="relative w-full h-56 border-4 border-black shadow-brutal overflow-hidden">
+                                                <img src={shopPhoto} alt={store.name} className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                                <div className="absolute bottom-4 left-6 flex items-center gap-4">
+                                                    <span className="text-4xl">{store.logo || '🏪'}</span>
+                                                    <div>
+                                                        <h2 className="text-3xl font-black uppercase text-white tracking-tighter drop-shadow-[2px_2px_0px_#000]">{store.name}</h2>
+                                                        {store.verified && (
+                                                            <span className="inline-flex items-center gap-1 bg-brutal-green border-2 border-black px-2 py-0.5 text-xs font-black uppercase mt-1">
+                                                                <span className="material-symbols-outlined text-sm filled">verified</span>
+                                                                {t('store.verified') || 'Verified'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                             <div className="bg-brutal-green border-4 border-black shadow-brutal p-6"><p className="font-black uppercase text-sm opacity-70 mb-2">{t('admin.store')}</p><h3 className="text-xl font-black truncate">{store.name}</h3></div>
                                             <div className="bg-brutal-yellow border-4 border-black shadow-brutal p-6"><p className="font-black uppercase text-sm opacity-70 mb-2">{t('store.rating')}</p><h3 className="text-4xl font-black">{store.rating || 0}</h3></div>
@@ -737,10 +765,27 @@ export const SellerDashboard = () => {
                                     </div>
                                     {/* Logo */}
                                     <div><label className="block font-black uppercase text-sm mb-2">{t('seller.storeLogo')}</label><input value={storeLogo} onChange={e => setStoreLogo(e.target.value)} className="w-full border-4 border-black p-3 font-bold focus:outline-none focus:border-brutal-blue" placeholder="🏠" /></div>
+                                    
+                                    {/* Shop Photo */}
+                                    <div className="space-y-3">
+                                        <label className="block font-black uppercase text-sm">Shop Photo URL</label>
+                                        <input 
+                                            value={shopPhoto} 
+                                            onChange={e => setShopPhoto(e.target.value)} 
+                                            className="w-full border-4 border-black p-3 font-bold focus:outline-none focus:border-brutal-blue" 
+                                            placeholder="https://images.unsplash.com/..." 
+                                        />
+                                        {shopPhoto && (
+                                            <div className="w-full h-48 border-4 border-black overflow-hidden bg-gray-100 shadow-brutal-sm">
+                                                <img src={shopPhoto} alt="Shop Preview" className="w-full h-full object-cover" />
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {!store ? (
                                         <button onClick={handleCreateStore} className="w-full border-4 border-black bg-brutal-green py-4 font-black uppercase text-lg shadow-brutal hover:-translate-y-1 transition-all">{t('seller.createStore')}</button>
                                     ) : (
-                                        <button onClick={async () => { await api.updateStore(store.id, { name: storeName, name_zh: storeNameZh, description: storeDesc, description_zh: storeDescZh, logo: storeLogo }); await loadData(); }} className="w-full border-4 border-black bg-brutal-blue text-white py-4 font-black uppercase text-lg shadow-brutal hover:-translate-y-1 transition-all">{t('seller.saveChanges')}</button>
+                                        <button onClick={async () => { await api.updateStore(store.id, { name: storeName, name_zh: storeNameZh, description: storeDesc, description_zh: storeDescZh, logo: storeLogo, shop_photo: shopPhoto }); await loadData(); }} className="w-full border-4 border-black bg-brutal-blue text-white py-4 font-black uppercase text-lg shadow-brutal hover:-translate-y-1 transition-all">{t('seller.saveChanges')}</button>
                                     )}
                                 </div>
                             </div>

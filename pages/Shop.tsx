@@ -9,7 +9,11 @@ export const ShopHome = () => {
     const { categories, addToCart, toggleWishlist, isInWishlist, isLoggedIn, formatPrice } = useApp();
     const { t, lang } = useI18n();
     const navigate = useNavigate();
-    const [search, setSearch] = useState('');
+    
+    // Get search from URL on mount
+    const initialSearch = new URLSearchParams(window.location.search).get('search') || '';
+    const [search, setSearch] = useState(initialSearch);
+    
     const [selectedCategory, setSelectedCategory] = useState('');
     const [sort, setSort] = useState('rating');
     const [priceRange, setPriceRange] = useState({ min: '', max: '' });
@@ -61,7 +65,22 @@ export const ShopHome = () => {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
+        const params = new URLSearchParams(window.location.search);
+        if (search.trim()) {
+            params.set('search', search.trim());
+        } else {
+            params.delete('search');
+        }
+        navigate(`/?${params.toString()}`);
     };
+
+    // Sync search state with URL query parameter changes
+    useEffect(() => {
+        const urlSearch = new URLSearchParams(window.location.search).get('search') || '';
+        if (urlSearch !== search) {
+            setSearch(urlSearch);
+        }
+    }, [window.location.search]);
 
     const handleLoadMore = () => {
         fetchProducts(page + 1, true);

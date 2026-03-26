@@ -103,7 +103,20 @@ export const MainLayout = () => {
 
                         {/* Right Actions */}
                         <div className="flex items-center gap-3">
-                            <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 border-2 border-transparent hover:border-black transition-all" aria-label="Search">
+                            <button 
+                                onClick={() => {
+                                    if (searchOpen && searchQuery.trim()) {
+                                        // If open and has query, clicking again performs search
+                                        const event = new Event('submit', { cancelable: true }) as any;
+                                        handleSearch(event);
+                                    } else {
+                                        setSearchOpen(!searchOpen);
+                                        if (searchOpen) setSearchQuery(''); // Clear on close
+                                    }
+                                }} 
+                                className="p-2 border-2 border-transparent hover:border-black transition-all" 
+                                aria-label="Search"
+                            >
                                 <span className="material-symbols-outlined">search</span>
                             </button>
 

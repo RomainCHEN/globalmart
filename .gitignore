@@ -42,3 +42,6 @@ tmp_*.js
 # OS
 Thumbs.db
 desktop.ini
+# Private files
+ISP-AIAP System Specification 2025_2026.pdf
+test_accounts.txt

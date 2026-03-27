@@ -16,11 +16,17 @@ router.get('/', requireAuth, async (req, res) => {
             .eq('id', req.user.id)
             .single();
 
-        // Always use client-sent month/day (device date) to avoid timezone mismatch
-        const checkMonth = month ? parseInt(month) : 0;
-        const checkDay = day ? parseInt(day) : 0;
+        // Use client-sent month/day (device date) or fallback to server date
+        let checkMonth = month ? parseInt(month) : 0;
+        let checkDay = day ? parseInt(day) : 0;
+        
+        if (!checkMonth || !checkDay) {
+            const now = new Date();
+            checkMonth = now.getMonth() + 1;
+            checkDay = now.getDate();
+        }
 
-        const isBirthday = !!(checkMonth && checkDay && profile && 
+        const isBirthday = !!(profile && 
                            profile.birthday_month === checkMonth && 
                            profile.birthday_day === checkDay);
 
@@ -37,7 +43,10 @@ router.get('/', requireAuth, async (req, res) => {
         if (isBirthday && data) {
             data.forEach(item => {
                 if (item.products) {
-                    item.products.original_price = item.products.original_price || item.products.price;
+                    // Only set original_price if it doesn't already exist or hasn't been set by this logic
+                    if (!item.products.original_price) {
+                        item.products.original_price = item.products.price;
+                    }
                     item.products.price = Math.round(item.products.price * 0.9 * 100) / 100;
                     item.is_birthday_discount = true;
                 }

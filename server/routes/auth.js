@@ -65,8 +65,44 @@ router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         const { data, error } = await supabaseAdmin.auth.signInWithPassword({ email, password });
-        if (error) return res.status(400).json({ error: error.message });
-        res.json({ user: data.user, session: data.session });
+        if (error) return res.status(401).json({ error: error.message });
+
+        // A21: Birthday check and notification
+        const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single();
+
+        if (profile && profile.birthday_month && profile.birthday_day) {
+            const now = new Date();
+            // Using local time of the server/database for the check
+            if (profile.birthday_month === (now.getMonth() + 1) && profile.birthday_day === now.getDate()) {
+                // Check if notification already sent today to avoid spamming
+                const todayStart = new Date();
+                todayStart.setHours(0, 0, 0, 0);
+
+                const { data: existingNotif } = await supabaseAdmin
+                    .from('notifications')
+                    .select('id')
+                    .eq('user_id', profile.id)
+                    .eq('type', 'birthday_reminder')
+                    .gte('created_at', todayStart.toISOString())
+                    .limit(1);
+
+                if (!existingNotif || existingNotif.length === 0) {
+                    await supabaseAdmin.from('notifications').insert({
+                        user_id: profile.id,
+                        type: 'birthday_reminder',
+                        title: 'Happy Birthday! 🎂',
+                        message: 'Enjoy a special 10% discount on all items in your wishlist today ONLY!',
+                        link: '/dashboard?tab=wishlist'
+                    });
+                }
+            }
+        }
+
+        res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

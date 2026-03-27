@@ -282,15 +282,20 @@ export const UserDashboard = () => {
                                                 <img src={p.image} alt={p.name} className="w-full h-full object-contain" />
                                             </div>
                                             <div className="flex-1 pr-6">
-                                                <h4 className="font-black uppercase truncate">{p.name}</h4>
+                                                <h4 className="font-black uppercase truncate">{localized(p, 'name', lang)}</h4>
                                                 <div className="mt-2">
                                                     {isOnSale ? (
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-2xl font-black text-brutal-red">${p.price}</span>
-                                                            <span className="text-sm font-bold line-through text-gray-500">${p.original_price}</span>
+                                                            <span className="text-2xl font-black text-brutal-red">{formatPrice(p.price)}</span>
+                                                            <span className="text-sm font-bold line-through text-gray-500">{formatPrice(p.original_price)}</span>
+                                                            {isBirthday && (
+                                                                <span className="bg-brutal-pink text-white text-[10px] font-black px-2 py-0.5 border-2 border-black animate-bounce">
+                                                                    BIRTHDAY 10% OFF!
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     ) : (
-                                                        <span className="text-2xl font-black">${p.price}</span>
+                                                        <span className="text-2xl font-black">{formatPrice(p.price)}</span>
                                                     )}
                                                 </div>
                                             </div>

@@ -233,11 +233,9 @@ export const ShopHome = () => {
                                                     <span className="material-symbols-outlined">add_shopping_cart</span>
                                                     {t('product.addToCart')}
                                                 </button>
-                                                {isLoggedIn && (
-                                                    <button onClick={() => toggleWishlist(product.id)} className={`px-4 py-3 flex items-center justify-center transition-colors ${isInWishlist(product.id) ? 'bg-brutal-pink text-white' : 'bg-white hover:bg-brutal-pink hover:text-white'}`} aria-label={isInWishlist(product.id) ? t('product.removeFromWishlist') : t('product.addToWishlist')}>
-                                                        <span className={`material-symbols-outlined ${isInWishlist(product.id) ? 'filled' : ''}`}>favorite</span>
-                                                    </button>
-                                                )}
+                                                <button onClick={() => { if (!isLoggedIn) { navigate('/login'); return; } toggleWishlist(product.id); }} className={`px-4 py-3 flex items-center justify-center transition-colors ${isInWishlist(product.id) ? 'bg-brutal-pink text-white' : 'bg-white hover:bg-brutal-pink hover:text-white'}`} aria-label={isInWishlist(product.id) ? t('product.removeFromWishlist') : t('product.addToWishlist')}>
+                                                    <span className={`material-symbols-outlined ${isInWishlist(product.id) ? 'filled' : ''}`}>favorite</span>
+                                                </button>
                                                 </div>
                                             </div>
                                         </article>

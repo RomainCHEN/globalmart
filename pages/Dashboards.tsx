@@ -18,7 +18,14 @@ export const UserDashboard = () => {
     const [isBirthday, setIsBirthday] = useState(false);
     const [profile, setProfile] = useState<any>(null);
     const [editProfile, setEditProfile] = useState(false);
-    const [profileForm, setProfileForm] = useState({ name: '', contact_person: '', contact_phone: '', shipping_address: { street: '', city: '', state: '', zip: '', country: '' } });
+    const [profileForm, setProfileForm] = useState({ 
+        name: '', 
+        contact_person: '', 
+        contact_phone: '', 
+        birthday_month: '',
+        birthday_day: '',
+        shipping_address: { street: '', city: '', state: '', zip: '', country: '' } 
+    });
 
     const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'profile'>(() => {
         const params = new URLSearchParams(window.location.search);
@@ -51,6 +58,8 @@ export const UserDashboard = () => {
                     name: p.name || '',
                     contact_person: p.contact_person || '',
                     contact_phone: p.contact_phone || '',
+                    birthday_month: p.birthday_month ? String(p.birthday_month) : '',
+                    birthday_day: p.birthday_day ? String(p.birthday_day) : '',
                     shipping_address: p.shipping_address || { street: '', city: '', state: '', zip: '', country: '' }
                 });
             }
@@ -60,7 +69,11 @@ export const UserDashboard = () => {
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const updated = await api.updateProfile(profileForm);
+            const body: any = { ...profileForm };
+            if (body.birthday_month) body.birthday_month = parseInt(body.birthday_month);
+            if (body.birthday_day) body.birthday_day = parseInt(body.birthday_day);
+            
+            const updated = await api.updateProfile(body);
             setProfile(updated);
             setEditProfile(false);
         } catch (err: any) {
@@ -138,13 +151,33 @@ export const UserDashboard = () => {
                                             <label className="text-sm font-black uppercase">{t('auth.name')}</label>
                                             <input type="text" value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} className="w-full p-3 border-4 border-black font-bold focus:ring-0 focus:border-brutal-pink" required />
                                         </div>
-                                        <div className="space-y-2 opacity-60">
+                                        <div className="space-y-2">
                                             <label className="text-sm font-black uppercase">{t('auth.birthdayHint')}</label>
                                             <div className="flex gap-4">
-                                                <input type="text" value={profile?.birthday_month || ''} disabled className="flex-1 p-3 border-4 border-black bg-gray-100 font-bold cursor-not-allowed" />
-                                                <input type="text" value={profile?.birthday_day || ''} disabled className="flex-1 p-3 border-4 border-black bg-gray-100 font-bold cursor-not-allowed" />
+                                                <input 
+                                                    type="number" 
+                                                    min="1" max="12"
+                                                    value={profileForm.birthday_month} 
+                                                    onChange={e => setProfileForm({ ...profileForm, birthday_month: e.target.value })}
+                                                    disabled={!!profile?.birthday_month} 
+                                                    placeholder="MM"
+                                                    className={`flex-1 p-3 border-4 border-black font-bold focus:ring-0 ${!!profile?.birthday_month ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:border-brutal-pink'}`} 
+                                                />
+                                                <input 
+                                                    type="number" 
+                                                    min="1" max="31"
+                                                    value={profileForm.birthday_day} 
+                                                    onChange={e => setProfileForm({ ...profileForm, birthday_day: e.target.value })}
+                                                    disabled={!!profile?.birthday_day} 
+                                                    placeholder="DD"
+                                                    className={`flex-1 p-3 border-4 border-black font-bold focus:ring-0 ${!!profile?.birthday_day ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:border-brutal-pink'}`} 
+                                                />
                                             </div>
-                                            <p className="text-[10px] font-bold text-brutal-red italic">{t('dash.birthdayLocked')}</p>
+                                            {profile?.birthday_month ? (
+                                                <p className="text-[10px] font-bold text-brutal-red italic">{t('dash.birthdayLocked')}</p>
+                                            ) : (
+                                                <p className="text-[10px] font-bold text-brutal-blue italic">{lang === 'zh' ? '* 生日设定后将无法修改' : '* Birthday cannot be changed once set'}</p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-sm font-black uppercase">{lang === 'zh' ? '联系人' : 'Contact Person'}</label>

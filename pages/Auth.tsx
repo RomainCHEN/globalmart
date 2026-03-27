@@ -102,16 +102,13 @@ export const RegisterPage = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        if (!birthday.month || !birthday.day) {
-            setError('Please provide your birthday.');
-            return;
-        }
+        
         setLoading(true);
         try {
             const shipping = role === 'user' ? { name, ...address } : undefined;
             const extra = { 
-                birthday_month: parseInt(birthday.month), 
-                birthday_day: parseInt(birthday.day),
+                birthday_month: birthday.month ? parseInt(birthday.month) : null, 
+                birthday_day: birthday.day ? parseInt(birthday.day) : null,
                 ...(role === 'seller' ? vendorInfo : {})
             };
             await register(email, password, name, role, shipping, extra);
@@ -239,7 +236,6 @@ export const RegisterPage = () => {
                             <select 
                                 value={birthday.month} 
                                 onChange={e => setBirthday(prev => ({ ...prev, month: e.target.value }))}
-                                required
                                 className="w-full p-4 border-4 border-black focus:ring-0 focus:border-brutal-pink text-lg font-bold"
                             >
                                 <option value="">Month</option>
@@ -250,7 +246,6 @@ export const RegisterPage = () => {
                             <select 
                                 value={birthday.day} 
                                 onChange={e => setBirthday(prev => ({ ...prev, day: e.target.value }))}
-                                required
                                 className="w-full p-4 border-4 border-black focus:ring-0 focus:border-brutal-pink text-lg font-bold"
                             >
                                 <option value="">Day</option>

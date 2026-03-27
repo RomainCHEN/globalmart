@@ -24,3 +24,4 @@ Passwords for these sellers: Gm123456!
 ## 3. Notes
 - These accounts are already linked to their respective stores.
 - You can use these to test seller-specific features, product management, and order fulfillment.
+

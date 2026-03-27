@@ -164,13 +164,29 @@ router.get('/me', requireAuth, async (req, res) => {
 // Update profile
 router.put('/me', requireAuth, async (req, res) => {
     try {
-        const { name, avatar, shipping_address, contact_person, contact_phone } = req.body;
+        const { name, avatar, shipping_address, contact_person, contact_phone, birthday_month, birthday_day } = req.body;
+        
+        // Fetch current profile to check if birthday is already set
+        const { data: currentProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('birthday_month, birthday_day')
+            .eq('id', req.user.id)
+            .single();
+
         const updates = {};
         if (name !== undefined) updates.name = name;
         if (avatar !== undefined) updates.avatar = avatar;
         if (shipping_address !== undefined) updates.shipping_address = shipping_address;
         if (contact_person !== undefined) updates.contact_person = contact_person;
         if (contact_phone !== undefined) updates.contact_phone = contact_phone;
+
+        // A21: Only allow setting birthday if it was NULL (one-time supplement)
+        if (birthday_month !== undefined && (!currentProfile?.birthday_month)) {
+            updates.birthday_month = birthday_month;
+        }
+        if (birthday_day !== undefined && (!currentProfile?.birthday_day)) {
+            updates.birthday_day = birthday_day;
+        }
 
         const { data, error } = await supabaseAdmin
             .from('profiles')

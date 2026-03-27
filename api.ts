@@ -79,7 +79,15 @@ export const api = {
         request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
     logout: () => request('/auth/logout', { method: 'POST' }),
     getMe: () => request('/auth/me'),
-    updateProfile: (data: { name?: string; avatar?: string; shipping_address?: any }) =>
+    updateProfile: (data: { 
+        name?: string; 
+        avatar?: string; 
+        shipping_address?: any;
+        contact_person?: string;
+        contact_phone?: string;
+        birthday_month?: number;
+        birthday_day?: number;
+    }) =>
         request('/auth/me', { method: 'PUT', body: JSON.stringify(data) }),
 
     // Products

@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   birthday_day INTEGER,
   contact_person TEXT DEFAULT '',
   contact_phone TEXT DEFAULT '',
+  shipping_address JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -37,6 +38,7 @@ CREATE TABLE IF NOT EXISTS stores (
   banner TEXT DEFAULT '',
   shop_photo TEXT DEFAULT '',
   verified BOOLEAN DEFAULT FALSE,
+  is_online BOOLEAN DEFAULT FALSE,
   rating NUMERIC(2,1) DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

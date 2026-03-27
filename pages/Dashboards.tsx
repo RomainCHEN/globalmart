@@ -792,6 +792,16 @@ export const SellerDashboard = () => {
         }
     };
 
+    const handleToggleStore = async (online: boolean) => {
+        if (!store) return;
+        try {
+            const updated = await api.toggleStoreOnline(store.id, online);
+            setStore(updated);
+        } catch (err: any) {
+            alert(err.message);
+        }
+    };
+
     const tabs = [
         { key: 'dashboard', icon: 'dashboard', label: t('seller.dashboard') },
         { key: 'analytics', icon: 'monitoring', label: t('seller.analytics') },
@@ -887,9 +897,35 @@ export const SellerDashboard = () => {
 
                         {/* STORE EDIT */}
                         {tab === 'store' && (
-                            <div className="space-y-8 max-w-2xl">
-                                <h1 className="text-5xl font-black uppercase tracking-tighter">{store ? t('seller.editStore') : t('seller.createStore')}</h1>
+                            <div className="space-y-8 max-w-4xl">
+                                <h1 className="text-5xl font-black uppercase tracking-tighter">{t('seller.myStore')}</h1>
+                                
+                                {store && (
+                                    <div className={`border-4 border-black p-8 shadow-brutal transition-colors ${store.is_online ? 'bg-brutal-green/10' : 'bg-gray-100'}`}>
+                                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                                            <div>
+                                                <h2 className="text-3xl font-black uppercase italic mb-2 flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-4xl">
+                                                        {store.is_online ? 'visibility' : 'visibility_off'}
+                                                    </span>
+                                                    {t('seller.storeStatus')}: {store.is_online ? t('seller.online') : t('seller.offline')}
+                                                </h2>
+                                                <p className="font-bold text-gray-600">
+                                                    {store.is_online ? t('seller.onlineDesc') : t('seller.offlineDesc')}
+                                                </p>
+                                            </div>
+                                            <button 
+                                                onClick={() => handleToggleStore(!store.is_online)}
+                                                className={`px-8 py-4 border-4 border-black font-black uppercase text-xl shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all ${store.is_online ? 'bg-brutal-red text-white' : 'bg-brutal-green'}`}
+                                            >
+                                                {store.is_online ? t('seller.goOffline') : t('seller.goOnline')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="bg-white border-4 border-black shadow-brutal p-8 space-y-6">
+                                    <h3 className="text-xl font-black uppercase border-b-4 border-black pb-2">{store ? t('seller.editStore') : t('seller.createStore')}</h3>
                                     <div className="space-y-3">
                                         <div><label className="block font-black uppercase text-sm mb-2">🇬🇧 {t('seller.storeNameEn')} *</label><input value={storeName} onChange={e => setStoreName(e.target.value)} className="w-full border-4 border-black p-3 font-bold text-lg focus:outline-none focus:border-brutal-blue" placeholder={t('seller.storeName')} /></div>
                                         <div><label className="block font-black uppercase text-sm mb-2">🇨🇳 {t('seller.storeNameZh')}</label><input value={storeNameZh} onChange={e => setStoreNameZh(e.target.value)} className="w-full border-4 border-black p-3 font-bold text-lg focus:outline-none focus:border-brutal-blue" placeholder={t('seller.storeNameZh')} /></div>

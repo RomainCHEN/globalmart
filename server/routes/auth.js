@@ -52,7 +52,8 @@ router.post('/register', async (req, res) => {
                     seller_id: adminData.user.id,
                     name: shop_name || `${name}'s Shop`,
                     description: shop_desc || '',
-                    shop_photo: shop_photo || ''
+                    shop_photo: shop_photo || '',
+                    is_online: false
                 });
             if (storeError) {
                 console.error('Failed to create store during registration:', storeError.message);

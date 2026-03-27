@@ -9,15 +9,17 @@ router.get('/', async (req, res) => {
     try {
         const { search, category, min_price, max_price, sort, page = 1, limit = 20, tag, include_disabled } = req.query;
 
+        // A21: Only show enabled products and products from online stores for the public storefront
         let query = supabaseAdmin
             .from('products')
-            .select('*, categories(name, slug), product_images(url, sort_order), stores(id, name, logo, verified)', { count: 'exact' });
+            .select('*, categories(name, slug), product_images(url, sort_order), stores!inner(id, name, logo, verified, is_online)', { count: 'exact' });
 
-        // NOTE: The 'enabled' column may not exist in the products table yet.
-        // If it exists, filter out disabled products for the storefront.
-        // If it doesn't exist, skip the filter to avoid breaking the query.
-        // The toggle feature requires adding the column: ALTER TABLE products ADD COLUMN enabled BOOLEAN DEFAULT TRUE;
-        // For now, disabled filtering is skipped to prevent query failures.
+        if (include_disabled !== 'true') {
+            query = query.eq('enabled', true);
+            // !inner join above ensures we only get products with a store, 
+            // and this filter ensures that store is online.
+            query = query.eq('stores.is_online', true);
+        }
 
         if (search) {
             query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,name_zh.ilike.%${search}%,description_zh.ilike.%${search}%,tags.cs.{"${search}"}`);

@@ -162,6 +162,8 @@ export const api = {
     },
     updateStore: (id: string, data: any) =>
         request(`/stores/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    toggleStoreOnline: (id: string, is_online: boolean) =>
+        request(`/stores/${id}/toggle-online`, { method: 'PATCH', body: JSON.stringify({ is_online }) }),
     createStore: (data: { name: string; name_zh?: string; description?: string; description_zh?: string; logo?: string }) =>
         request('/stores', { method: 'POST', body: JSON.stringify(data) }),
 

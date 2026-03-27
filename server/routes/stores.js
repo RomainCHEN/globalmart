@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { supabaseAdmin } from '../supabase.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, optionalAuth } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -41,12 +41,13 @@ router.post('/', requireAuth, async (req, res) => {
     }
 });
 
-// GET /api/stores — list all stores
+// GET /api/stores — list all online stores
 router.get('/', async (req, res) => {
     try {
         const { data, error } = await supabaseAdmin
             .from('stores')
             .select('*, profiles(name, avatar)')
+            .eq('is_online', true)
             .order('created_at', { ascending: false });
         if (error) return res.status(400).json({ error: error.message });
 
@@ -60,6 +61,34 @@ router.get('/', async (req, res) => {
         }));
 
         res.json(storesWithCounts);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PATCH /api/stores/:id/toggle-online — toggle store online/offline status (seller only)
+router.patch('/:id/toggle-online', requireAuth, async (req, res) => {
+    try {
+        const { is_online } = req.body;
+        const { data: store } = await supabaseAdmin
+            .from('stores')
+            .select('seller_id')
+            .eq('id', req.params.id)
+            .single();
+
+        if (!store || store.seller_id !== req.user.id) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('stores')
+            .update({ is_online })
+            .eq('id', req.params.id)
+            .select()
+            .single();
+
+        if (error) return res.status(400).json({ error: error.message });
+        res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -120,15 +149,32 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
     }
 });
 
-// GET /api/stores/:id
-router.get('/:id', async (req, res) => {
+// GET /api/stores/:id — single store detail
+router.get('/:id', optionalAuth, async (req, res) => {
     try {
         const { data, error } = await supabaseAdmin
             .from('stores')
-            .select('*, profiles(name)')
+            .select('*, profiles(name, avatar, email, role)')
             .eq('id', req.params.id)
             .single();
-        if (error) return res.status(404).json({ error: 'Store not found' });
+
+        if (error || !data) return res.status(404).json({ error: 'Store not found' });
+
+        // If store is offline, only owner or admin can see it
+        if (!data.is_online) {
+            const isOwner = req.user && req.user.id === data.seller_id;
+            const isAdmin = req.user && data.profiles?.role === 'admin'; // wait, role check logic
+            // Re-fetch requester role for security if not owner
+            if (!isOwner) {
+                if (req.user) {
+                    const { data: requester } = await supabaseAdmin.from('profiles').select('role').eq('id', req.user.id).single();
+                    if (requester?.role !== 'admin') return res.status(404).json({ error: 'Store is offline' });
+                } else {
+                    return res.status(404).json({ error: 'Store is offline' });
+                }
+            }
+        }
+
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -136,8 +182,23 @@ router.get('/:id', async (req, res) => {
 });
 
 // GET /api/stores/:id/products
-router.get('/:id/products', async (req, res) => {
+router.get('/:id/products', optionalAuth, async (req, res) => {
     try {
+        const { data: store } = await supabaseAdmin.from('stores').select('seller_id, is_online').eq('id', req.params.id).single();
+        if (!store) return res.status(404).json({ error: 'Store not found' });
+
+        if (!store.is_online) {
+            const isOwner = req.user && req.user.id === store.seller_id;
+            if (!isOwner) {
+                if (req.user) {
+                    const { data: requester } = await supabaseAdmin.from('profiles').select('role').eq('id', req.user.id).single();
+                    if (requester?.role !== 'admin') return res.status(404).json({ error: 'Store is offline' });
+                } else {
+                    return res.status(404).json({ error: 'Store is offline' });
+                }
+            }
+        }
+
         const { search } = req.query;
         let query = supabaseAdmin
             .from('products')

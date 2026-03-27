@@ -25,11 +25,22 @@ router.post('/register', async (req, res) => {
         });
         if (createError) return res.status(400).json({ error: createError.message });
 
-        // Save shipping address to profile if provided (buyers)
-        if (shipping_address && adminData.user) {
+        // Update profile with extra info (Auth trigger handles initial profile creation, 
+        // but we need to ensure these specific fields are set)
+        if (adminData.user) {
+            const profileUpdates = {
+                name,
+                role: role || 'user',
+                birthday_month,
+                birthday_day,
+                contact_person,
+                contact_phone,
+                shipping_address: shipping_address || null
+            };
+            
             await supabaseAdmin
                 .from('profiles')
-                .update({ shipping_address })
+                .update(profileUpdates)
                 .eq('id', adminData.user.id);
         }
 

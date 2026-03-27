@@ -72,7 +72,7 @@ export const Cart = () => {
                         <div className="flex items-center gap-4 border-4 border-black bg-gray-100 px-6 py-4 shadow-brutal">
                             <label className="flex items-center gap-3 cursor-pointer select-none">
                                 <input type="checkbox" checked={isAllSelected} onChange={toggleAll} className="w-6 h-6 accent-black cursor-pointer" />
-                                <span className="font-black uppercase text-sm">{t('cart.selectAll') || 'Select All'}</span>
+                                <span className="font-black uppercase text-sm">{t('cart.selectAll')}</span>
                             </label>
                         </div>
                         {/* Store-grouped items */}
@@ -85,7 +85,7 @@ export const Cart = () => {
                                         <input type="checkbox" checked={allGroupChecked} onChange={() => toggleStoreGroup(storeId)} className="w-5 h-5 accent-black cursor-pointer" />
                                         <Link to={group.store ? `/store/${group.store.id}` : '/'} className="flex items-center gap-2 hover:text-brutal-blue">
                                             <span className="material-symbols-outlined text-lg">storefront</span>
-                                            <span className="font-black uppercase text-sm">{group.store?.name || 'Store'}</span>
+                                            <span className="font-black uppercase text-sm">{group.store?.name || t('nav.store')}</span>
                                         </Link>
                                     </div>
                                     {group.items.map(item => {
@@ -134,7 +134,7 @@ export const Cart = () => {
                         <div className="border-4 border-black bg-white p-8 shadow-brutal-lg">
                             <h2 className="text-3xl font-black mb-8 border-b-4 border-black pb-4 font-display uppercase">{t('checkout.manifest')}</h2>
                             <div className="space-y-4 pb-8 border-b-4 border-black font-bold uppercase">
-                                <div className="flex justify-between"><span>{t('cart.selectedItems') || 'Selected'}</span><span className="text-lg">{selectedCount} / {cart.length}</span></div>
+                                <div className="flex justify-between"><span>{t('cart.selectedItems')}</span><span className="text-lg">{selectedCount} / {cart.length}</span></div>
                                 <div className="flex justify-between text-lg"><span>{t('cart.subtotal')}</span><span>{formatPrice(selectedTotal)}</span></div>
                                 <div className="flex justify-between"><span>{t('cart.shipping')}</span><span className="text-brutal-green">{t('cart.free')}</span></div>
                             </div>
@@ -230,7 +230,7 @@ export const Checkout = () => {
             if (createdOrders.length === 1) {
                 navigate(`/order/${createdOrders[0].id}`);
             } else {
-                alert(t('checkout.multiStoreNotice') || `${createdOrders.length} orders created (one per store).`);
+                alert(t('checkout.multiStoreNotice'));
                 navigate('/dashboard');
             }
         } catch (err: any) {
@@ -246,7 +246,7 @@ export const Checkout = () => {
                 <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
                     <div className="bg-white border-8 border-black p-8 max-w-md w-full shadow-[20px_20px_0px_0px_rgba(0,0,0,1)]">
                         <h3 className="text-3xl font-black uppercase italic mb-6 border-b-4 border-black pb-2">
-                            {lang === 'zh' ? '支付确认 (DEMO)' : 'PAYMENT CONFIRM (DEMO)'}
+                            {lang === 'zh' ? '支付确认 (演示)' : 'PAYMENT CONFIRM (DEMO)'}
                         </h3>
                         <div className="space-y-6 text-center">
                             {paymentMethod === 'wechat' || paymentMethod === 'alipay' ? (
@@ -256,14 +256,14 @@ export const Checkout = () => {
                                         <span className="material-symbols-outlined text-6xl">qr_code_2</span>
                                     </div>
                                     <p className="font-black text-xl uppercase tracking-tighter">
-                                        {paymentMethod === 'wechat' ? '微信支付' : '支付宝支付'}
+                                        {paymentMethod === 'wechat' ? t('checkout.wechatPay') || '微信支付' : t('checkout.alipay') || '支付宝'}
                                     </p>
                                     <p className="font-bold text-gray-600 italic">{lang === 'zh' ? '请使用手机扫描上方二维码' : 'Please scan the QR code with your phone'}</p>
                                 </div>
                             ) : (
                                 <div className="space-y-4 text-left">
                                     <div className="bg-brutal-blue text-white p-4 border-4 border-black font-black uppercase italic">
-                                        Credit Card: XXXX-XXXX-XXXX-1234
+                                        {t('checkout.creditCard')}: XXXX-XXXX-XXXX-1234
                                     </div>
                                     <p className="font-bold text-gray-600 italic">{lang === 'zh' ? '正在连接国际支付网关...' : 'Connecting to international gateway...'}</p>
                                 </div>
@@ -289,7 +289,7 @@ export const Checkout = () => {
                         <div className="space-y-6">
                             <div className="space-y-2">
                                 <label className="text-sm font-black uppercase">{t('checkout.name')}</label>
-                                <input type="text" value={shipping.name} onChange={e => setShipping(s => ({ ...s, name: e.target.value }))} className="w-full p-4 border-4 border-black focus:ring-0 text-lg font-bold" placeholder="Full Name" aria-label={t('checkout.name')} />
+                                <input type="text" value={shipping.name} onChange={e => setShipping(s => ({ ...s, name: e.target.value }))} className="w-full p-4 border-4 border-black focus:ring-0 text-lg font-bold" placeholder={t('checkout.name')} aria-label={t('checkout.name')} />
                             </div>
                             <AddressSelector address={shipping as any} onChange={(updated) => setShipping(s => ({ ...s, ...updated }))} />
                         </div>
@@ -305,7 +305,7 @@ export const Checkout = () => {
                                 <div className={`flex items-center justify-between p-4 border-4 border-black transition-all ${paymentMethod === 'credit_card' ? 'bg-brutal-blue text-white' : 'hover:bg-gray-100'}`}>
                                     <div className="flex items-center gap-3">
                                         <div className={`w-5 h-5 border-2 border-black ${paymentMethod === 'credit_card' ? 'bg-white' : 'bg-transparent'}`}></div>
-                                        <span className="font-black uppercase text-sm">{lang === 'zh' ? '国际银行卡' : 'CREDIT CARD'}</span>
+                                        <span className="font-black uppercase text-sm">{t('checkout.creditCard')}</span>
                                     </div>
                                     <span className="material-symbols-outlined">credit_card</span>
                                 </div>
@@ -343,10 +343,10 @@ export const Checkout = () => {
                                 {checkoutItems.map(item => (
                                     <div key={item.id} className="flex gap-3 items-center border-b-2 border-black/5 pb-3 last:border-0">
                                         <div className="w-12 h-12 border-2 border-black overflow-hidden bg-gray-200 shrink-0">
-                                            <img src={item.image} alt={item.name} className="object-contain w-full h-full" />
+                                            <img src={item.image} alt={localized(item, 'name', lang)} className="object-contain w-full h-full" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-black uppercase truncate">{item.name}</p>
+                                            <p className="text-xs font-black uppercase truncate">{localized(item, 'name', lang)}</p>
                                             <p className="text-sm font-black italic">{formatPrice(item.price)} x {item.quantity}</p>
                                         </div>
                                     </div>
@@ -447,7 +447,7 @@ export const OrderDetails = () => {
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="border-4 border-black bg-white px-8 py-4 shadow-brutal text-center">
                     <span className="material-symbols-outlined text-6xl text-gray-400 block mb-4">error</span>
-                    <span className="text-2xl font-black uppercase">Order not found</span>
+                    <span className="text-2xl font-black uppercase">{lang === 'zh' ? '订单未找到' : 'Order not found'}</span>
                     <Link to="/dashboard" className="block mt-4 text-brutal-blue font-black underline">{t('dash.myOrders')}</Link>
                 </div>
             </div>
@@ -484,7 +484,7 @@ export const OrderDetails = () => {
                         {order.stores && (
                             <Link to={`/store/${order.stores.id}`} className="bg-brutal-yellow border-4 border-black px-4 py-1 flex items-center gap-2 hover:shadow-brutal transition-all">
                                 <span className="material-symbols-outlined font-black">storefront</span>
-                                <span className="font-black uppercase italic">{order.stores.name}</span>
+                                <span className="font-black uppercase italic">{localized(order.stores, 'name', lang)}</span>
                             </Link>
                         )}
                     </div>

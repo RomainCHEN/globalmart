@@ -1,0 +1,1007 @@
+ 
+ 
+ 
+Faculty of Applied Sciences 
+Bachelor of Science in Computing 
+ 
+ 
+COMP3114 Information System Project 
+Final Report 
+ 
+Academic Year 2025/26  
+2nd semester 
+ 
+ 
+Online Shopping Mall 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Group number: 
+Your group number 
+Group members: 
+Leader name (his/her student ID) 
+ 
+2nd member name (his/her student ID) 
+ 
+3rd member name (his/her student ID) 
+ 
+4th member name (his/her student ID) 
+ 
+5th member name (his/her student ID) 
+ 
+6th member name (his/her student ID) 
+ 
+ 
+Supervisor: 
+Your supervisor 
+Assessor: 
+Your assessor 
+ 
+ 
+Submission Date: 
+XXX XX, 2026 
+
+ 
+ 
+ 
+ 1 
+Table of Contents  
+1 
+Introduction ................................................................................................................................................................ 4 
+2 
+Project Management................................................................................................................................................ 5 
+2.1 
+Team Charter .................................................................................................................................................. 5 
+2.2 
+Project Scope Management....................................................................................................................... 5 
+2.3 
+Project Time Management ........................................................................................................................ 6 
+2.4 
+Project Risk Management .......................................................................................................................... 8 
+2.5 
+Job Distribution ............................................................................................................................................. 8 
+2.6 
+Retrospective on Team Dynamic............................................................................................................ 9 
+3 
+Requirements Analysis ........................................................................................................................................ 10 
+3.1 
+Analysis Scheme and Methods ............................................................................................................. 10 
+3.2 
+User Requirements ................................................................................................................................... 11 
+3.3 
+Implemented Features of the Specification .................................................................................... 11 
+3.4 
+[others …] ...................................................................................................................................................... 12 
+4 
+System Design ......................................................................................................................................................... 13 
+4.1 
+Architectural Design ................................................................................................................................. 14 
+4.2 
+Data Modelling ............................................................................................................................................ 14 
+4.3 
+Dynamic Modelling ................................................................................................................................... 15 
+4.4 
+[others …] ...................................................................................................................................................... 17 
+5 
+Project Outcome ..................................................................................................................................................... 18 
+5.1 
+[A topic] ......................................................................................................................................................... 19 
+5.2 
+[Another topic]............................................................................................................................................ 19 
+5.3 
+[Yet another topic] .................................................................................................................................... 19 
+6 
+Software Quality ..................................................................................................................................................... 21 
+
+ 
+ 
+ 
+ 2 
+6.1 
+Software Verification................................................................................................................................ 21 
+6.2 
+Security .......................................................................................................................................................... 21 
+6.3 
+Reflection on User Experience ............................................................................................................. 21 
+6.4 
+[other qualities …] ..................................................................................................................................... 22 
+7 
+Conclusion and Further Work .......................................................................................................................... 23 
+References ........................................................................................................................................................................ 24 
+Appendix A. Ethics Checklist ..................................................................................................................................... 25 
+Appendix B. Declaration of the Use of Generative AI ...................................................................................... 28 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 3 
+Table of Figures 
+Figure 1: PDM ..................................................................................................................................................................... 7 
+Figure 2: Sample Entity Relationship Diagram ................................................................................................. 15 
+Figure 3: Sample activity diagram from Wikipedia ......................................................................................... 16 
+Figure 4: Sample state diagram for www.geeksforgeeks.org ..................................................................... 16 
+Figure 5: Shopping UI in Amazon ........................................................................................................................... 19 
+ 
+ 
+
+ 
+ 
+ 
+ 4 
+1 Introduction 
+In the first chapter, you introduce your project by answering two key questions. 1) What is the 
+system you’re going to build? 2) Why this system is relevant / useful to the stakeholders? Usually 
+you start with the background and motivation. 
+Describe the background and motivation of this project from the perspectives of various 
+stakeholders. This should be short, e.g. within 1 page. (Put more detailed product comparison or 
+technical background related to system design in later chapters.) What kinds of products / 
+services are you selling in the system? Is online sale of such products popular for business and 
+consumers? Show some market statistics to substantiate the relevance of your project. Describe 
+common features of e-commerce web sites / apps that are particularly important for your project. 
+Next, describe the general functions of your online shopping mall, which kind of products are sold, 
+and what special considerations in problem domain, if any, are considered. You should also draw 
+readers’ attention to unique features of your work, e.g. streamlined user shopping experience, 
+use of modern software development process or tool, comprehensive consideration of web 
+security in system design and testing, application of artificial intelligence technologies.  Keep the 
+description concise and high-level, e.g. within 1 page. 
+Finally, end this chapter with a summary of the whole report. An example is shown below. 
+This report is organized as follows: Chapter 2 explains the requirements of the system. Chapter 3 
+presents our design approach. Chapter 4 illustrates the developed system. [and so on …] 
+ 
+
+ 
+ 
+ 
+ 5 
+2 Project Management 
+This first paragraph should be an introduction to the content of the chapter and its purpose in the 
+entire project.  
+2.1 Team Charter 
+A team Charter focuses on the agreements in how the team will operate and is created as a team, 
+which typically contains: 
+• 
+Project missions 
+• 
+Team purpose 
+• 
+Team members, their roles, responsibilities and expertise 
+• 
+Communication guidelines (meeting times, face-to-face, group, email, conference calls, 
+how often? …) (the ground rules for team cooperation) 
+• 
+Decision-making process for the requirements, schedule and other issues (if your team 
+has an argument on a project issue, how your team come to an agreement.) 
+• 
+Conflict Resolution 
+2.2 Project Scope Management 
+In this section, you must identify all the activities involved to get the whole development project 
+done.  Here is an example: 
+Project Scope 
+1. System Analysis 
+1.1. 
+Ground study on the e-payment implementation of similar projects. 
+1.2. 
+Requirement collection  
+1.2.1. 
+Develop a prototype to demo… 
+1.2.2. 
+Collect requirements through interviews… 
+1.2.3. 
+Validate requirements specifications 
+1.2.4. 
+Compile the finalized requirement specification document 
+2. System Design 
+2.1. 
+Design the overall software architecture. 
+2.2. 
+Design database. 
+2.3. 
+Design end-user interfaces on mobile phones. 
+2.4. 
+Design interfaces for admin functions on desktop computers. 
+2.5. 
+Design the security scheme for safeguarding the transactions over the internet. 
+
+ 
+ 
+ 
+ 6 
+3. System Implementation 
+3.1. 
+Create the individual web pages for the site. 
+3.2. 
+Create database. 
+3.3. 
+Source necessary library modules for client-side coding. 
+3.4. 
+Server-site coding and testing 
+3.4.1. 
+Code the server-site modules (system admin and operations). 
+3.4.2. 
+Code the server-site modules (end-user services). 
+3.5. 
+Client-site coding and testing 
+3.5.1. 
+Code the client-site modules (system admin and operations) 
+3.5.2. 
+Code the client-site modules (end-user services) 
+3.6. 
+Integrate the server-side modules and the web pages. 
+3.7. 
+Performance stress tests on the system 
+3.8. 
+Have the sponsor and end-user representatives perform UAT on the system. 
+3.9. 
+Report writing 
+4. System Deployment 
+4.1. 
+Install the web site on the client’s web server for operation. 
+4.2. 
+Create technical training materials for the staff on how to use and maintain the operations. 
+4.3. 
+Train the staff on operating and maintaining the system. 
+2.3 Project Time Management 
+Exhibit an Activity List with the fields (Activity code, Activity, Duration, and Predecessor). The 
+activities are all the works involved in accomplishing the project. Before devising the list, you 
+must identify all the activities involved to get the whole development project done. Although most 
+of the functional requirements are given for this student project, you still need to identify all 
+necessary activities as if you start everything from scratch. 
+Activity 
+Description 
+Duration 
+(man-day) 
+Predecessor/ 
+Dependency 
+1.1 
+Ground study on the e-payment implementation of 
+similar projects. 
+3 
+ 
+1.2.1 
+Develop a prototype to demo… 
+4 
+1.1 
+1.2.2 
+Collect requirements through interviews… 
+5 
+1.2.2 
+1.2.3 
+Validate requirements specifications 
+1 
+1.2.3 
+
+ 
+ 
+ 
+ 7 
+2.1 
+Design the overall software architecture 
+1 
+1.2.3 
+2.2 
+Design database 
+3 
+1.2.3 
+… 
+ 
+ 
+ 
+3.4.1 
+Code the server-site modules (system admin and 
+operations) 
+5 
+ 
+… 
+ 
+ 
+ 
+3.6 
+Integrate the server-side modules and the web 
+pages. 
+3 
+3.4.1, 3.4.2, 
+3.5.1, 3.5.2 
+… 
+ 
+ 
+ 
+4.3 
+Train the staff on operating and maintaining the 
+system 
+5 
+4.1, 4.2 
+Table 1: Activity List 
+Draw a PDM (Precedence Diagramming Method) based on the Activity List. The PDM should be 
+further specified with the 4 dates (early start, early finish, late start and late finish) for each 
+activity. Exhibit the critical path(s). 
+ 
+ 
+Figure 1: PDM 
+ 
+Show the schedule in the form of Gantt Chart. Note that the left side of the Gantt Chart must match 
+with the Activity List. Show the Gantt Chart in a readable form. 
+
+ 
+ 
+ 
+ 8 
+2.4 Project Risk Management 
+Assess the potential project risks for your project and devise appropriate risk responses to each 
+identified risk. A project risk is the one that poses negative impacts (don’t discuss the positive 
+risks) on the project goals (achieving the target scope, time and cost). You must give 3 relevant, 
+non-trivial potential risks and assess them as the given example below. A “non-trivial risk” means 
+the risk having a significant value in at least one of the two aspects of risk assessment (probability 
+and impact). 
+ 
+Risk 1: The crash of the storage hard-disk  
+⚫ 
+Description: xxxxxxx (general description of the risk; description of what causes you to 
+perceive this as a risk; etc.) 
+⚫ 
+Probability of occurrence: low to medium level (low/medium/high) 
+⚫ 
+Impact: It is disastrous that all program codes and data  xxxx, leading to xxxxx (how this 
+affects your project goals) 
+⚫ 
+Response: xxxxxxx (the strategy to resolve the difficulties caused by the risk) 
+2.5 Job Distribution  
+Provide a list of activities (Activity List) with the percentages of the contributions for all members. 
+An activity may be shared among more than one member. An example for a group of four is given 
+below. 
+Member 1: [name]  (Overall contribution percentage: 30%) 
+• 
+Planning the project schedule and task allocations (80%) 
+• 
+Data modelling. (50%) 
+• 
+User requirement analysis 
+• 
+… 
+Member 2: [name]  (Overall contribution percentage: 30%) 
+• 
+Coding: Block B (functions 1-5) 
+• 
+Testing: Block B(functions 1-8) 
+• 
+… 
+Member 3: [name]  (Overall contribution percentage: 20%) 
+
+ 
+ 
+ 
+ 9 
+• 
+Coding: Block A (function 1,2..) 
+• 
+Report writing: chap 1, 2, 3. 
+• 
+… 
+Member 4: [name]  (Overall contribution percentage: 20%) 
+• 
+Coding: Block A (functions 4,5,7) 
+• 
+Testing: Block A (functions 1-10) 
+• 
+Data modelling. (50%) 
+• 
+Report proof reading 
+• 
+… 
+2.6 Retrospective on Team Dynamic 
+Provide an overview of your team formation and reflect on the communication and coordination 
+that occurred during the project. What challenges did you face, such as language barriers, 
+different backgrounds, scheduling conflicts, team coordination, or differences in skill levels and 
+skill sets? How did these issues impact your work? How did you do to tackle the issues? Are there 
+any strategies would you implement if you encounter similar challenges in the future? 
+ 
+
+ 
+ 
+ 
+ 10 
+3 Requirements Analysis 
+In this chapter, you explain how you determine the needs or conditions that your developed 
+system will meet. The first three sections are required. Section 2.1 covers the requirements on 
+system features. Section 2.2 covers the user requirements. Section 2.3 lists the basic requirements 
+in the System Specification that your team has chosen and successfully implemented, and 
+summarizes your work related to any further requirements. 
+Depending on your project scope, you may add more sections to elaborate other aspects of 
+requirements analysis. Below are some examples. 
+• 
+Requirement of advanced functions. Explain the rationale behind your design of some 
+advanced functions and the potential user groups of your system. What are their concerns? 
+For example, product recommendation can help consumers to discover products of 
+interest among a huge number of products, and user generated content (e.g. comments) 
+inform potential purchase from new consumers and help them evaluate the product 
+quality. Take another example, ease of use, amount of information shown in one page, age 
+group, visual impairment, device variety and capability, all of these may lead to the 
+requirements of some advanced features. 
+• 
+Business requirements. Some non-functional requirements are important for business. 
+Search Engine Optimization increases the visits of potential customers from web search 
+engines. Information security measures protect the business data and minimize the 
+downtime of the online business. Explain the importance of these features to the business. 
+• 
+Societal and environmental considerations: In the development process, you can take into 
+account the societal and environmental needs to ensure responsible and sustainable 
+practices. Describe the measures you have implemented to mitigate potential issues and 
+contribute to positive change. For example, the system may promote environmental 
+awareness by encouraging the reduction of disposable plastic cutlery consumption. An 
+online store that sells tobacco and alcoholic beverages also need to ensures strict 
+adherence to relevant local laws and regulations. 
+3.1 Analysis Scheme and Methods 
+In chapter 1, you mentioned the kind of products your system is selling. In this section, describe 
+how you come up with the common and specific features of e-commerce web sites / apps that are 
+particularly important for your project. Are there any particular methods for gathering 
+
+ 
+ 
+ 
+ 11 
+information for establishing a system specification? How do you proceed with your analysis 
+scheme? 
+Do you take some related system / web sites as reference in requirement analysis? Which are 
+these systems? Describe reference systems that are used in the modelling and design. Which 
+features of your system are modelled after these web sites?  Did you make some changes to make 
+the features simpler to use, or more suitable for your products? (For example, consumers who 
+buy books have different concern from those who are buying mobile phones.) 
+You may have identified more system requirements than you can fulfil in this project. State clearly 
+which requirements have been fulfilled in your developed system. If appropriate, state in which 
+sections in this report the reader can find more information. 
+3.2 User Requirements 
+In this section, identify the user groups who will use the system and outline their specific 
+requirements. Explore common use cases and their special concerns. The exact functional 
+requirements, which are listed as blocks in the system specification, will be documented in 
+Section 2.3.  Therefore, in this section, focus on other issues. 
+User requirements will define and affect different aspects of the system development. Some 
+examples are user experience (UX), information security, service guarantee, and customer 
+feedback. You can employ different methods to gather insights and feedback from potential users, 
+e.g. user interviews, user observation and analysis, reflection on user experience in related works.  
+You may have identified more user requirements than you can fulfil in this project. State clearly 
+which requirements have been fulfilled in your developed system. If appropriate, state in which 
+sections in this report the reader can find more information. 
+3.3 Implemented Features of the Specification 
+In this project you are required to design and implement a certain number of basic requirements 
+and further requirements as described in the System Specification. This section provides a 
+consolidated account of the fulfilment of these requirements.  
+For the basic requirements, you must clearly list the blocks (e.g. block A, B, C) for which you have 
+completed the implementation. If you did not complete all items in a block, list the missing one. 
+Keep the description concise here. You can refer the readers to the system specification for detail.  
+
+ 
+ 
+ 
+ 12 
+Design and implementation of the further requirements are not required in this project in order 
+to achieve a passing grade. However, you must fulfil a certain number of the further requirements 
+to obtain a high grade. In addition to the implementation detail, you are expected to explain how 
+the further requirements are addressed in other project tasks. In this section, you provide a 
+summary of your work on each further requirement, and list the sections in this report that 
+provide more information. 
+Use a table similar to the following to describe your selection of the basic and further 
+requirements, their completion status, and relevant sections in this report for more information. 
+Block 
+Completion status and relevant sections in this report 
+A 
+All items implemented 
+B 
+All items implemented 
+C 
+All items implemented except C5 
+NF1 Accessibility 
+The system UI supports both Chinese and English, and a user can 
+switch the UI language in user settings. Product description is also 
+provided for both languages. More information can be found in the 
+following sections. 
+section 4.2: bilingual product attributes in data modelling 
+section 4.5: implementation of bilingual interface using Django 
+section 5.3: user interface 
+NF4 Web app 
+security 
+The system uses the standard Django’s security feature to realize 
+XSS protection, CSRF protection and SQL injection protection. In 
+addition, we deploy the system behind a reverse proxy which blocks 
+common web attacks. More information can be found in the 
+following sections. 
+section 2.4: web security requirements 
+section 4.1: system architecture with reverse proxy 
+section 4.4: configuration of reverse proxy 
+section 6.1: test cases related to XSS, CSRF. intrusion detection 
+testing 
+section 6.2: security features in the system 
+3.4 [others …] 
+Add sections to organize your content if needed. 
+ 
+
+ 
+ 
+ 
+ 13 
+4 System Design 
+This chapter focuses on designing a system that satisfies the needs and considerations outlined 
+in the previous chapter. The design process typically begins with high-level designs, which are 
+closer to the business data and features exposed to users. From there, the discussion progresses 
+towards lower-level details, explaining how to effectively implement these designs using suitable 
+development tools and techniques. 
+Start this chapter with a paragraph that introduces the content of the chapter, describing the 
+sections and preferably relating them into a coherent overall design of the whole system. Some 
+typical sections are the following. 
+1. Architectural design describes the high-level structural model of your system. 
+2. Data modelling describes the structure of your database (and how you store other data like 
+images), and the reasoning that support your design.  
+3. Dynamic modelling explains the dynamic aspect your system, i.e. how your system changes and 
+react when a user carries out some function. 
+You may change the section titles as needed, or break a long section in several. The ordering of 
+the sections here is just a suggestion. Discuss with group members to determine a logical order. 
+Depending on the basic and further requirements you have selected from the Project Specification, 
+you may have done some sophisticated design work on some aspects or features. Use a separate 
+section to explain your design. Below are some plausible sections. 
+4. Mobile UX design: How the UI is optimized for mobile device? What are some considerations in 
+the design of the protocol between the mobile client and the backend server? How are web 
+standards used to improve the accessibility?  
+5. Search engine optimization: special consideration in the system design to make the page 
+content easier for search engine to index? Structure of the URLs referring to products. 
+6. Web application security: Server-side data encryption. Mitigating of common web application 
+attacks. Data security and backup. 
+7. Product recommendations: Describe the algorithm used to recommend products. What user 
+and product data are used? Other design in UI to facilitate product discovery? 
+
+ 
+ 
+ 
+ 14 
+8. Reports and analytics: Report design, with reference to related products. Special consideration 
+in database design to accelerate analytics report generation.  
+In these sections, avoid including long or trivial code listings. You may include some programming 
+code but show only the challenging or more interesting ones. Some cases that are worth of 
+explaining are: 
+• 
+Code pieces that are especially critical for correct system operation. 
+• 
+Non-standard, innovative way (algorithm, data structure) to solve a problem. 
+• 
+Unforeseen problems in implementation, and how you overcome them. 
+4.1 Architectural Design 
+Describe the high-level structural model of your system, e.g. three layers, relationship between 
+browser, server, and database, any JavaScript running on browser-side, any stored procedure 
+running in database system. 
+Next, describe the development tools and environment employed in your system. For instance, 
+specify the programming languages used on the server-side, any libraries utilized for file uploads, 
+and whether you leverage any Web UI frameworks like Bootstrap. Additionally, indicate the 
+database system you have chosen to employ. 
+Explain your technical choices and provide reasoning behind each decision. For instance, if there 
+are multiple Web UI frameworks available, explain the factors that influenced your selection. It 
+would be helpful to include background information about the development tools and 
+environment to provide suitable context for understanding the rationale behind your choices. 
+Remember to include references in the "References" section to allow readers to access further 
+information if desired. 
+4.2 Data Modelling 
+Describe considerations in data modelling (e.g. what are important entities? Are there any many-
+to-many relationships and how do you model them? How do you track the progress of a 
+transaction in database?) Use ER diagram / UML model to illustrate your database schema. Also 
+describe the format of files imported or exported by your solution. Give rationale behind your 
+design. Examples: How does price change affect the data model? If a user can write review for the 
+same product only once per purchase, does your database model enforce this relationship? 
+
+ 
+ 
+ 
+ 15 
+Describe your diagram and refer to your diagram in text. The following is an example. Refer to 
+the figure (e.g. Figure 1 shows …) in your text. 
+Figure 2 shows the entity relationship diagram of the database of this project. The entity COURSE 
+represents a course with a given name and course number, and a course may have 1 or more 
+classes. A class is represented by the entity CLASS. It includes …  
+ 
+Figure 2: Sample Entity Relationship Diagram 
+4.3 Dynamic Modelling 
+Explain the interaction or dynamics of your system (e.g. state change of a purchase order, transfer 
+of data in different state of a purchase order.) You may use activity diagram, sequence diagram, 
+state diagram, etc. 
+Activity diagrams are commonly used to describe the flow of activities in a system or a process. 
+An example is given in Figure 3. You must write a paragraph (or more) to explain the sequence 
+and steps in the activity diagram. When the activity diagram includes many paths from the start 
+to the end, you can help the reader to understand better by explaining the most common path 
+first. Afterwards, describe the auxiliary paths and loops. 
+ 
+
+ 
+ 
+ 
+ 16 
+ 
+Figure 3: Sample activity diagram from Wikipedia 
+Another common kind of diagram in dynamic modelling is State diagrams. For example, you can 
+use a diagram like Figure 4 to describe permissible transition between states of a purchase order 
+and the events that trigger such transition. 
+ 
+Figure 4: Sample state diagram from www.geeksforgeeks.org 
+ 
+
+ 
+ 
+ 
+ 17 
+Make sure small text in diagrams is readable when printed on A4 paper. 
+4.4 [others …] 
+This is the space for your group to exhibit your findings and design details from your study on the 
+Advanced Feature(s) or Non-Functional requirements you have chosen.  
+ 
+
+ 
+ 
+ 
+ 18 
+5 Project Outcome 
+This chapter, together with the demonstration video, describes the project outcome, your 
+developed system. Their different roles are as follows. 
+• 
+The demo video illustrates the working of each item in the selected blocks of basic 
+requirements. You must label each part of the video clearly with the item code, e.g. A1, A2. 
+If you have completed some further requirements, you should also illustrate them in the 
+demo video. The video content should agree with Section 2.3 “Implemented Features of 
+the Specification”. 
+• 
+This chapter describes the system features on a higher level. It DOES NOT repeat all the 
+content of the video. In addition, you can provide a deeper explanation of some system 
+features. 
+You should describe the major non-trivial functions with captured screen images or other 
+diagrams/figures in this chapter. Make sure that the text in the images is readable when the page 
+is printed on A4 paper.  
+You DON’T need to describe every function with captured screen images in this chapter. Focus on 
+the major functions. Refer to the demonstration video for others where appropriate.  As an 
+example, the login process is usually simple, and is better explained in the video instead step-by-
+step short description with several screen captures. Moreover, you DON’T need to describe each 
+minor step in a process with captured screen images. In most cases, text description is enough. 
+This chapter SHOULD NOT be written as a user guide. 
+Organize the content of this chapter in a logical coherent flow. For example, you should explain 
+the progress of a transaction as performed in your system. Organize your description in a logical 
+coherent flow. For example, you can explain the steps of a purchase from product searching to 
+shipment in a section, and then the catalogue maintenance in another section. Alternatively, you 
+may separate customer’s features from vendor’s features. 
+This chapter, together with the demonstration video, should be detail enough for evaluating how 
+well you have implemented all the items listed in Section 2.3. This enables your assessor to fully 
+understand the project outcome without a system demo. You should also include sample report 
+layouts (if applicable). 
+
+ 
+ 
+ 
+ 19 
+5.1 [A topic] 
+Sample text sample text sample text. Sample text sample text sample text sample text sample text.  
+A sample list below: 
+• 
+Sample list item 
+• 
+Sample list item 
+5.2 [Another topic] 
+Sample text sample text sample text. Sample text sample text sample text sample text sample text.   
+ 
+Images from https://www.growcode.com/blog/mobile-shopping-cart-design-mcommerce/ 
+Figure 5: Shopping UI in Amazon 
+5.3 [Yet another topic] 
+Sample text sample text sample text. Sample text sample text sample text sample text sample text.   
+Sample text sample text sample text sample text sample text. Sample text sample text sample text 
+sample text. Sample text, sample text:  sample text, sample text sample text. Sample text sample 
+text. 
+
+ 
+ 
+ 
+ 20 
+ 
+ 
+
+ 
+ 
+ 
+ 21 
+6 Software Quality 
+6.1 Software Verification  
+Describe the software testing approach employed by your group to ensure the correctness of the 
+system, including the responsible group members for running the tests and whether manual or 
+automated testing is conducted. Specify the types of tests applied, such as debugging techniques, 
+unit tests, integration tests, and acceptance tests. 
+Explain the design of test cases and/or the utilization of requirement-based tests. Elaborate on 
+how you ensure the implementation of major, non-trivial functions with adequate data validation 
+and error checking. Additionally, describe the sample data used to test the robustness and 
+correctness of your system, while avoiding repetitive testing. 
+6.2 Security 
+Identify security vulnerabilities and implement suitable mitigation measures throughout the 
+developed system, encompassing aspects such as data security, and protection against malicious 
+user input, cross-site scripting (XSS), and cross-site request forgery (CSRF). In this section, 
+provide an overview of these security measures from an external perspective of the system. 
+Further design decisions and implementation details of these security measures should be 
+provided in Chapter 4.  
+If you have conducted any relevant system tests, such as stress tests to assess resistance against 
+DoS attacks, provide a description of the test results in this section. 
+6.3 Reflection on User Experience 
+In this section, reflect on the user experience of your system as it relates to various demographics 
+of potential users, including different age groups, cultural backgrounds, and abilities (such as 
+visual impairments and motor disabilities). Discuss the design considerations implemented to 
+create an inclusive system that meets the needs of a diverse user base. Highlight any accessibility 
+features and standards that were integrated into your design, and explain how the testing process 
+actively involved users from different backgrounds to ensure the system's effectiveness and 
+usability for all.  
+
+ 
+ 
+ 
+ 22 
+6.4 [other qualities …] 
+Identify other qualities for your software system and justify why the identified qualities should 
+be concerned. Besides, define the required level of each identified quality and suggest ways to 
+ensure the level of quality to be reached.  
+This is the space for your group to exhibit your findings and design details from your study on the 
+Non-Functional requirement(s) you have chosen.  
+ 
+
+ 
+ 
+ 
+ 23 
+7 Conclusion and Further Work 
+Conclude your work in 1 or 2 pages. 
+Summarize your work and show that the system you’ve developed satisfies the requirements that 
+you identified at the start of the project. 
+Describe limitations and suggest future works. For example, if your system does not have a 
+feature X, how can you extend it in the future? 
+ 
+
+ 
+ 
+ 
+ 24 
+References 
+[1] Harold Abelson, Gerald Jay Sussman, and Julie Sussman. Structure and Interpretation of Computer 
+Programs. MIT Press, Cambridge, Massachusetts, 1985. 
+[2] Robert Baumgartner, Georg Gottlob, and Sergio Flesca. Visual information extraction with Lixto. In 
+Proceedings of the 27th International Conference on Very Large Databases, pages 119–128, Rome, Italy, 
+September 2001.Morgan Kaufmann. 
+[3] Ronald J. Brachman and James G. Schmolze. An overview of the KL-ONE knowledge representation 
+system. Cognitive Science, 9(2):171–216, April–June 1985. 
+[4] Georg Gottlob, Nicola Leone, and Francesco Scarcello. Hypertree decompositions and tractable 
+queries. Journal of Computer and System Sciences, 64(3):579–627,May 2002. 
+[5] Georg Gottlob. Complexity results for nonmonotonic logics. Journal of Logic and Computation, 
+2(3):397–425, June 1992. 
+[6] Hector J. Levesque. Foundations of a functional approach to knowledge representation. Artificial 
+Intelligence, 23(2):155–212, July 1984. 
+[7] Hector J. Levesque. A logic of implicit and explicit belief. In Proceedings of the Fourth National 
+Conference on Artificial Intelligence, pages 198–202, Austin, Texas, August 1984. American Association 
+for Artificial Intelligence. 
+[8] Bernhard Nebel. On the compilability and expressive power of propositional planning formalisms. 
+Journal of Artificial Intelligence Research, 12:271–315, 2000. 
+[9] Ivan Marsic. A short guide for writing a thesis. http://www.ece.rutgers.edu/~marsic/thesis-
+guide.html, 2004 [Mar. 6, 2014]. 
+[10] Matlab documentation. http://www.mathworks.com/help/?s_tid=hp_ff_s_doc  [Mar. 6, 2014]. 
+[11] George Sparling. Spacetime is spinorial; new dimensions are timelike. arXiv:gr-qc/0610068v1, 2006. 
+[12] Ryan Rifkin. Everything old is new again: a fresh look at historical approaches in machine learning. 
+Ph.d thesis, MIT, 2002.  
+ 
+
+ 
+ 
+ 
+ 25 
+Appendix A. Ethics Checklist 
+Name of student: 
+(leader of the team, if 
+applicable) 
+ 
+Student number: 
+ 
+ 
+Programme: 
+ BSc in Computing                    BSc in AI 
+ 
+Module: 
+ 
+ 
+Title of project: 
+ 
+ 
+Supervisor: 
+ 
+ 
+ 
+Instructions 
+Answer the following questions honestly. If your answer falls into a shaded box, you must provide 
+additional information on how you will handle the related ethics issues on the last page of this 
+form. 
+ 
+Project summary 
+Please provide more information on your project/dissertation proposal below (100-200 
+words). 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 26 
+Participants (Consent procedures and possible harm) 
+ 
+ 
+Yes 
+No 
+N/A 
+1 
+Does your project include human participants? 
+ 
+If no, you can skip the rest of this section. 
+ 
+ 
+ 
+2 
+Will any of the participants be from vulnerable groups, e.g. 
+children under 18, people with communication difficulties, 
+patients in hospital? 
+ 
+If yes, please specify:  _______________________    
+ 
+ 
+ 
+3 
+Will you tell participants that their participation is voluntary? 
+ 
+ 
+ 
+4 
+Will you obtain written consent for participation? 
+ 
+ 
+ 
+5 
+Will you tell participants that they may withdraw from the 
+research at any time and for any reasons without penalty? 
+ 
+ 
+ 
+6 
+Is there any realistic risk that any participants could 
+experience either physical or psychological distress or 
+discomfort? 
+ 
+ 
+ 
+ 
+Data Protection 
+ 
+ 
+Yes 
+No 
+N/A 
+7 
+Will any non-anonymised and/or personalized data be 
+generated and/or stored? 
+ 
+ 
+ 
+8 
+Will you have access to documents containing sensitive data 
+about living individuals? 
+ 
+ 
+ 
+ 
+Researcher Safety 
+ 
+ 
+Yes 
+No 
+N/A 
+9 
+Will you be exposed to any risks greater than those 
+encountered in their normal study/working life? E.g. 
+operation of non-standard equipment or extended 
+ 
+ 
+ 
+10 
+Will you be exposed to highly addictive or illegal activities 
+(e.g. gambling, drugs) during the research? 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 27 
+Please explain how the identified potential research ethics issue will be handled. 
+ 
+ 
+ 
+ 
+ 
+Any other issues? 
+ 
+Declaration 
+Student 
+ 
+I have read the instruction carefully and 
+reported honestly the potential ethics issues 
+about the project. 
+ 
+ 
+ 
+ 
+───────────── 
+Date: 
+Supervisor 
+ 
+To the best of my knowledge, the student has 
+reported honestly the potential ethics issues 
+about his/her project. 
+ 
+ 
+ 
+ 
+───────────── 
+Date: 
+ 
+This form is largely based on the ethical approval documents from Cardiff University https://www.cs.cf.ac.uk/ethics/ and University 
+of Glasgow http://www.dcs.gla.ac.uk/ethics/  
+
+ 
+ 
+ 
+ 28 
+Appendix B. Declaration of the Use of Generative AI 
+Please make sure you understand the policy about using generative AI, and such use must be 
+explicitly acknowledged. The teacher/supervisor responsible for the assessment will provide specific 
+guidance regarding acceptable usage. Failure to follow the rules for your work constitutes academic 
+dishonesty. 
+Please tick either one below. 
+☐ 
+I have used generative AI in this assessment work 
+☐ 
+I did not use generative AI in this assessment work (please go to sign) 
+Generative AI tool used (name and version): 
+________________________________________________________ 
+For each relevant area, briefly describe how the information was generated, as well as explain 
+how the output was used in your work. Put N/A if not appropriate. 
+Type of usage 
+GenAI assistance received 
+Student action on generated content 
+Brainstorming and idea 
+generation 
+ 
+ 
+Literature review and 
+background research 
+ 
+ 
+Data analysis 
+ 
+ 
+Programming support 
+ 
+ 
+Visualization and diagram 
+production 
+ 
+ 
+Text Rewriting and 
+Drafting 
+ 
+ 
+Other (please specify):  
+ 
+ 
+ 
+Student signature: 
+Date: 
+ 

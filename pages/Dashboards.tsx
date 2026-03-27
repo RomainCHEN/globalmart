@@ -7,11 +7,11 @@ import { api } from '../api';
 import { Order, WishlistItem, Product } from '../types';
 
 /* ═══════════════════════════════════════════
-   BUYER DASHBOARD  (unchanged)
+   BUYER DASHBOARD
    ═══════════════════════════════════════════ */
 export const UserDashboard = () => {
     const { user, isLoggedIn, logout, formatPrice } = useApp();
-    const { t } = useI18n();
+    const { t, lang } = useI18n();
     const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
     const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
@@ -147,11 +147,11 @@ export const UserDashboard = () => {
                                             <p className="text-[10px] font-bold text-brutal-red italic">{t('dash.birthdayLocked')}</p>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-sm font-black uppercase">Contact Person</label>
+                                            <label className="text-sm font-black uppercase">{lang === 'zh' ? '联系人' : 'Contact Person'}</label>
                                             <input type="text" value={profileForm.contact_person} onChange={e => setProfileForm({ ...profileForm, contact_person: e.target.value })} className="w-full p-3 border-4 border-black font-bold focus:ring-0 focus:border-brutal-pink" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-sm font-black uppercase">Contact Phone</label>
+                                            <label className="text-sm font-black uppercase">{lang === 'zh' ? '联系电话' : 'Contact Phone'}</label>
                                             <input type="text" value={profileForm.contact_phone} onChange={e => setProfileForm({ ...profileForm, contact_phone: e.target.value })} className="w-full p-3 border-4 border-black font-bold focus:ring-0 focus:border-brutal-pink" />
                                         </div>
                                     </div>
@@ -184,7 +184,7 @@ export const UserDashboard = () => {
                                             </div>
                                         </div>
                                         <div className="space-y-4">
-                                            <div><p className="text-xs font-black uppercase text-gray-500 mb-1">Contact Info</p><p className="text-lg font-bold">{profile?.contact_person || '—'} {profile?.contact_phone ? `(${profile.contact_phone})` : ''}</p></div>
+                                            <div><p className="text-xs font-black uppercase text-gray-500 mb-1">{lang === 'zh' ? '联系信息' : 'Contact Info'}</p><p className="text-lg font-bold">{profile?.contact_person || '—'} {profile?.contact_phone ? `(${profile.contact_phone})` : ''}</p></div>
                                             <div>
                                                 <p className="text-xs font-black uppercase text-gray-500 mb-1">{t('auth.shippingAddress')}</p>
                                                 {profile?.shipping_address ? (
@@ -193,7 +193,7 @@ export const UserDashboard = () => {
                                                         <p>{profile.shipping_address.city}, {profile.shipping_address.state} {profile.shipping_address.zip}</p>
                                                         <p>{profile.shipping_address.country}</p>
                                                     </div>
-                                                ) : <p className="text-gray-400 italic">No address saved</p>}
+                                                ) : <p className="text-gray-400 italic">{lang === 'zh' ? '暂未保存地址' : 'No address saved'}</p>}
                                             </div>
                                         </div>
                                     </div>
@@ -217,11 +217,11 @@ export const UserDashboard = () => {
                                     <div className="flex flex-wrap justify-between items-start gap-4">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <h4 className="font-black uppercase text-lg">Order #{order.id.slice(0, 8)}</h4>
+                                                <h4 className="font-black uppercase text-lg">{t('order.title')} #{order.id.slice(0, 8)}</h4>
                                                 {order.stores && (
                                                     <div className="flex items-center gap-1 bg-brutal-yellow border-2 border-black px-2 py-0.5 text-[10px] font-black uppercase">
                                                         <span className="material-symbols-outlined text-[12px]">storefront</span>
-                                                        {order.stores.name}
+                                                        {localized(order.stores, 'name', lang)}
                                                     </div>
                                                 )}
                                             </div>
@@ -241,7 +241,7 @@ export const UserDashboard = () => {
                                                     {order.order_items.length > 3 && (
                                                         <span className="text-xs font-black border-2 border-black px-2 py-1 bg-gray-100">+{order.order_items.length - 3}</span>
                                                     )}
-                                                    <span className="text-xs font-bold text-gray-500 ml-1">{order.order_items.length} {order.order_items.length === 1 ? 'item' : 'items'}</span>
+                                                    <span className="text-xs font-bold text-gray-500 ml-1">{order.order_items.length} {order.order_items.length === 1 ? t('order.productName') : t('order.items')}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -259,38 +259,38 @@ export const UserDashboard = () => {
                                 <div className="bg-brutal-pink border-4 border-black p-6 shadow-brutal flex items-center gap-6 animate-pulse mb-6">
                                     <span className="material-symbols-outlined text-6xl text-white font-black">cake</span>
                                     <div>
-                                        <h3 className="text-2xl font-black uppercase text-white italic tracking-tighter">Happy Birthday! 🎂</h3>
-                                        <p className="font-black text-black uppercase bg-white px-2 py-1 mt-1 inline-block">Enjoy 10% OFF all items in your wishlist today ONLY!</p>
+                                        <h3 className="text-2xl font-black uppercase text-white italic tracking-tighter">{t('notif.birthday.title')}</h3>
+                                        <p className="font-black text-black uppercase bg-white px-2 py-1 mt-1 inline-block">{t('notif.birthday.msg')}</p>
                                     </div>
                                 </div>
                             )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {wishlistItems.length === 0 ? (
-                                    <div className="col-span-2 border-4 border-dashed border-black p-12 text-center"><p className="text-xl font-black uppercase text-gray-500">Wishlist is empty</p></div>
+                                    <div className="col-span-2 border-4 border-dashed border-black p-12 text-center"><p className="text-xl font-black uppercase text-gray-500">{lang === 'zh' ? '心愿单是空的' : 'Wishlist is empty'}</p></div>
                                 ) : wishlistItems.map(item => {
-                                    if (!item.products) return null;
-                                    const p = item.products;
+                                    const p = item.products || (item as any); // Handle flat vs nested structure
+                                    if (!p || !p.id) return null;
                                     const isOnSale = p.original_price && p.original_price > p.price;
                                     return (
-                                        <Link to={`/product/${item.product_id}`} key={item.id} className="bg-white border-4 border-black shadow-brutal hover:-translate-x-1 hover:-translate-y-1 hover:shadow-brutal-lg transition-all flex gap-4 p-4 relative overflow-hidden">
+                                        <Link to={`/product/${p.id}`} key={item.id} className="bg-white border-4 border-black shadow-brutal hover:-translate-x-1 hover:-translate-y-1 hover:shadow-brutal-lg transition-all flex gap-4 p-4 relative overflow-hidden min-h-[140px]">
                                             {isOnSale && (
-                                                <div className="absolute top-2 -right-6 bg-brutal-red text-white text-xs font-black px-8 py-1 rotate-45 border-y-2 border-black">
-                                                    ON SALE
+                                                <div className="absolute top-2 -right-6 bg-brutal-red text-white text-xs font-black px-8 py-1 rotate-45 border-y-2 border-black z-10">
+                                                    {t('tag.SALE')}
                                                 </div>
                                             )}
                                             <div className="w-24 h-24 border-4 border-black overflow-hidden bg-gray-100 shrink-0">
-                                                <img src={p.image} alt={p.name} className="w-full h-full object-contain" />
+                                                <img src={p.image} alt={localized(p, 'name', lang)} className="w-full h-full object-contain" />
                                             </div>
-                                            <div className="flex-1 pr-6">
-                                                <h4 className="font-black uppercase truncate">{localized(p, 'name', lang)}</h4>
-                                                <div className="mt-2">
+                                            <div className="flex-1 min-w-0 pr-6">
+                                                <h4 className="font-black uppercase text-sm leading-tight break-words h-[2.5rem] overflow-hidden line-clamp-2 mb-2">{localized(p, 'name', lang)}</h4>
+                                                <div className="mt-auto">
                                                     {isOnSale ? (
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex flex-wrap items-center gap-2">
                                                             <span className="text-2xl font-black text-brutal-red">{formatPrice(p.price)}</span>
                                                             <span className="text-sm font-bold line-through text-gray-500">{formatPrice(p.original_price)}</span>
                                                             {isBirthday && (
-                                                                <span className="bg-brutal-pink text-white text-[10px] font-black px-2 py-0.5 border-2 border-black animate-bounce">
-                                                                    BIRTHDAY 10% OFF!
+                                                                <span className="bg-brutal-pink text-white text-[10px] font-black px-2 py-0.5 border-2 border-black animate-bounce block w-fit">
+                                                                    {lang === 'zh' ? '生日特惠 9 折!' : 'BIRTHDAY 10% OFF!'}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -314,7 +314,7 @@ export const UserDashboard = () => {
                         </div>
                         <h3 className="text-3xl font-display font-black uppercase mb-1 text-white">{user.name}</h3>
                         <p className="font-bold border-2 border-black bg-white inline-block px-3 mb-4">{user.email}</p>
-                        <p className="font-black uppercase text-sm bg-brutal-yellow text-black border-2 border-black inline-block px-3 py-1 ml-2">{user.role}</p>
+                        <p className="font-black uppercase text-sm bg-brutal-yellow text-black border-2 border-black inline-block px-3 py-1 ml-2">{t(`auth.${user.role}Register`) || user.role}</p>
                     </div>
                 </div>
             </div>
@@ -323,13 +323,13 @@ export const UserDashboard = () => {
 };
 
 /* ═══════════════════════════════════════════
-   ADMIN DASHBOARD  – full platform control
+   ADMIN DASHBOARD
    ═══════════════════════════════════════════ */
 export const AdminDashboard = () => {
     const { isLoggedIn, user, logout, formatPrice } = useApp();
-    const { t } = useI18n();
+    const { t, lang } = useI18n();
     const navigate = useNavigate();
-    const [section, setSection] = useState<'overview' | 'users' | 'stores' | 'products' | 'orders'>('overview');
+    const [section, setSection] = useState<'overview' | 'users' | 'stores' | 'products' | 'orders' | 'settings'>('overview');
     const [stats, setStats] = useState<any>(null);
     const [users, setUsers] = useState<any[]>([]);
     const [stores, setStores] = useState<any[]>([]);
@@ -462,7 +462,7 @@ export const AdminDashboard = () => {
                                         { label: t('admin.totalStores'), value: stats.totalStores, bg: 'bg-brutal-blue text-white', icon: 'storefront' },
                                         { label: t('admin.totalProducts'), value: stats.totalProducts, bg: 'bg-brutal-green', icon: 'inventory_2' },
                                         { label: t('admin.totalOrders'), value: stats.totalOrders, bg: 'bg-brutal-orange', icon: 'shopping_cart' },
-                                        { label: t('admin.revenue'), value: `$${stats.totalRevenue}`, bg: 'bg-black text-white', icon: 'monetization_on' },
+                                        { label: t('admin.revenue'), value: formatPrice(stats.totalRevenue), bg: 'bg-black text-white', icon: 'monetization_on' },
                                     ].map(s => (
                                         <div key={s.label} className={`${s.bg} border-4 border-black shadow-brutal p-6`}>
                                             <div className="flex justify-between items-start mb-4">
@@ -484,9 +484,9 @@ export const AdminDashboard = () => {
                                     <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onKeyDown={e => e.key === 'Enter' && loadSection()} placeholder={t('admin.searchUsers')} className="border-4 border-black p-3 font-bold flex-1 min-w-[200px]" />
                                     <select value={roleFilter} onChange={e => { setRoleFilter(e.target.value); }} className="border-4 border-black p-3 font-bold bg-white">
                                         <option value="">{t('admin.allRoles')}</option>
-                                        <option value="user">User</option>
-                                        <option value="seller">Seller</option>
-                                        <option value="admin">Admin</option>
+                                        <option value="user">{lang === 'zh' ? '买家' : 'User'}</option>
+                                        <option value="seller">{lang === 'zh' ? '卖家' : 'Seller'}</option>
+                                        <option value="admin">{lang === 'zh' ? '管理员' : 'Admin'}</option>
                                     </select>
                                     <button onClick={loadSection} className="border-4 border-black bg-brutal-yellow px-6 py-3 font-black uppercase shadow-brutal">{t('general.search')}</button>
                                 </div>
@@ -540,12 +540,12 @@ export const AdminDashboard = () => {
                                         <tbody>
                                             {stores.map(s => (
                                                 <tr key={s.id} className="border-b-2 border-black hover:bg-brutal-yellow/10">
-                                                    <td className="p-4"><div className="flex items-center gap-3"><span className="text-2xl">{s.logo || '🏪'}</span><span className="font-black">{s.name}</span></div></td>
+                                                    <td className="p-4"><div className="flex items-center gap-3"><span className="text-2xl">{s.logo || '🏪'}</span><span className="font-black">{localized(s, 'name', lang)}</span></div></td>
                                                     <td className="p-4 text-sm font-bold">{s.profiles?.name || s.profiles?.email || '—'}</td>
                                                     <td className="p-4 text-center font-black">{s.product_count || 0}</td>
                                                     <td className="p-4 text-center font-black">{s.rating}</td>
                                                     <td className="p-4 text-center">
-                                                        <button onClick={() => handleVerifyStore(s.id, !s.verified)} className={`px-3 py-1 border-2 border-black text-xs font-black uppercase ${s.verified ? 'bg-brutal-green' : 'bg-gray-200'}`}>{s.verified ? `✓ ${t('store.verified')}` : t('store.unverified')}</button>
+                                                        <button onClick={() => handleVerifyStore(s.id, !s.verified)} className={`px-3 py-1 border-2 border-black text-xs font-black uppercase transition-all ${s.verified ? 'bg-brutal-green' : 'bg-gray-200 hover:bg-brutal-yellow'}`}>{s.verified ? `✓ ${t('store.verified')}` : t('store.unverified')}</button>
                                                     </td>
                                                     <td className="p-4 text-right">
                                                         <button onClick={() => handleDeleteStore(s.id)} className="border-2 border-black px-3 py-1 font-bold text-xs uppercase hover:bg-brutal-red hover:text-white transition-all">{t('general.delete')}</button>
@@ -578,12 +578,12 @@ export const AdminDashboard = () => {
                                                     <td className="p-4">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-10 h-10 border-2 border-black overflow-hidden bg-gray-100 shrink-0">{p.image && <img src={p.image} alt="" className="w-full h-full object-contain" />}</div>
-                                                            <span className="font-bold text-sm">{p.name}</span>
+                                                            <span className="font-bold text-sm">{localized(p, 'name', lang)}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="p-4 text-sm font-bold text-gray-600">{p.categories?.name || '—'}</td>
-                                                    <td className="p-4 text-sm font-bold text-gray-600">{p.stores?.name || '—'}</td>
-                                                    <td className="p-4 text-right font-black">${p.price}</td>
+                                                    <td className="p-4 text-sm font-bold text-gray-600">{(p as any).categories?.name || '—'}</td>
+                                                    <td className="p-4 text-sm font-bold text-gray-600">{(p as any).stores?.name || '—'}</td>
+                                                    <td className="p-4 text-right font-black">{formatPrice(p.price)}</td>
                                                     <td className="p-4 text-right"><span className={`px-2 py-0.5 border-2 border-black text-xs font-black ${(p.stock || 0) > 0 ? 'bg-brutal-green' : 'bg-brutal-red text-white'}`}>{p.stock || 0}</span></td>
                                                     <td className="p-4 text-right">
                                                         <button onClick={() => handleDeleteProduct(p.id)} className="border-2 border-black px-3 py-1 font-bold text-xs uppercase hover:bg-brutal-red hover:text-white transition-all">{t('general.delete')}</button>
@@ -608,12 +608,12 @@ export const AdminDashboard = () => {
                                             <div className="flex flex-wrap justify-between items-start gap-4 mb-3">
                                                 <div>
                                                     <h3 className="font-black text-lg">#{o.id.slice(0, 8)}</h3>
-                                                    <p className="text-sm font-bold text-gray-500">Buyer: {o.profiles?.name || o.profiles?.email || t('general.unknown')}</p>
+                                                    <p className="text-sm font-bold text-gray-500">{lang === 'zh' ? '买家' : 'Buyer'}: {o.profiles?.name || o.profiles?.email || t('general.unknown')}</p>
                                                     <p className="text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-2xl font-black">${o.total}</p>
-                                                    <span className={`inline-block px-2 py-0.5 border-2 border-black text-xs font-black uppercase mt-1 ${o.status === 'delivered' ? 'bg-brutal-green' : o.status === 'shipped' ? 'bg-brutal-blue text-white' : 'bg-brutal-yellow'}`}>{o.status}</span>
+                                                    <p className="text-2xl font-black">{formatPrice(o.total)}</p>
+                                                    <span className={`inline-block px-2 py-0.5 border-2 border-black text-xs font-black uppercase mt-1 ${o.status === 'delivered' ? 'bg-brutal-green' : o.status === 'shipped' ? 'bg-brutal-blue text-white' : o.status === 'cancelled' ? 'bg-brutal-red text-white' : 'bg-brutal-yellow'}`}>{t(`order.${o.status}`)}</span>
                                                 </div>
                                             </div>
                                             {o.order_items && <p className="text-sm font-bold text-gray-600 mb-3">{o.order_items.map((item: any) => `${item.product_name} ×${item.quantity}`).join(', ')}</p>}
@@ -635,7 +635,7 @@ export const AdminDashboard = () => {
 };
 
 /* ═══════════════════════════════════════════
-   SELLER DASHBOARD – store & product mgmt
+   SELLER DASHBOARD
    ═══════════════════════════════════════════ */
 export const SellerDashboard = () => {
     const { isLoggedIn, user, formatPrice } = useApp();
@@ -749,7 +749,6 @@ export const SellerDashboard = () => {
         await loadData();
     };
 
-    // A14/A15: Product search filter
     const handleProductSearch = (query: string) => {
         setProductSearch(query);
         if (!query.trim()) {
@@ -814,16 +813,16 @@ export const SellerDashboard = () => {
                                         {/* Shop Photo Banner */}
                                         {shopPhoto && (
                                             <div className="relative w-full h-56 border-4 border-black shadow-brutal overflow-hidden">
-                                                <img src={shopPhoto} alt={store.name} className="w-full h-full object-cover" />
+                                                <img src={shopPhoto} alt={localized(store, 'name', lang)} className="w-full h-full object-cover" />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                                 <div className="absolute bottom-4 left-6 flex items-center gap-4">
                                                     <span className="text-4xl">{store.logo || '🏪'}</span>
                                                     <div>
-                                                        <h2 className="text-3xl font-black uppercase text-white tracking-tighter drop-shadow-[2px_2px_0px_#000]">{store.name}</h2>
+                                                        <h2 className="text-3xl font-black uppercase text-white tracking-tighter drop-shadow-[2px_2px_0px_#000]">{localized(store, 'name', lang)}</h2>
                                                         {store.verified && (
                                                             <span className="inline-flex items-center gap-1 bg-brutal-green border-2 border-black px-2 py-0.5 text-xs font-black uppercase mt-1">
                                                                 <span className="material-symbols-outlined text-sm filled">verified</span>
-                                                                {t('store.verified') || 'Verified'}
+                                                                {t('store.verified')}
                                                             </span>
                                                         )}
                                                     </div>
@@ -831,9 +830,9 @@ export const SellerDashboard = () => {
                                             </div>
                                         )}
                                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                            <div className="bg-brutal-green border-4 border-black shadow-brutal p-6"><p className="font-black uppercase text-sm opacity-70 mb-2">{t('admin.store')}</p><h3 className="text-xl font-black truncate">{store.name}</h3></div>
+                                            <div className="bg-brutal-green border-4 border-black shadow-brutal p-6"><p className="font-black uppercase text-sm opacity-70 mb-2">{t('admin.store')}</p><h3 className="text-xl font-black truncate">{localized(store, 'name', lang)}</h3></div>
                                             <div className="bg-brutal-yellow border-4 border-black shadow-brutal p-6"><p className="font-black uppercase text-sm opacity-70 mb-2">{t('store.rating')}</p><h3 className="text-4xl font-black">{store.rating || 0}</h3></div>
-                                            <div className="bg-brutal-blue text-white border-4 border-black shadow-brutal p-6"><p className="font-black uppercase text-sm opacity-70 mb-2">{t('seller.products')}</p><h3 className="text-4xl font-black">{products.length}</h3></div>
+                                            <div className="bg-brutal-blue text-white border-4 border-black shadow-brutal p-6"><p className="font-black uppercase text-sm opacity-70 mb-2">{t('seller.products')}</p><h3 className="text-4xl font-black">{allProducts.length}</h3></div>
                                             <div className="bg-brutal-pink text-white border-4 border-black shadow-brutal p-6"><p className="font-black uppercase text-sm opacity-70 mb-2">{t('seller.orders')}</p><h3 className="text-4xl font-black">{orders.length}</h3></div>
                                         </div>
                                         <div className="bg-white border-4 border-black shadow-brutal p-6">
@@ -842,8 +841,8 @@ export const SellerDashboard = () => {
                                                 <div key={o.id} className="flex justify-between items-center border-b-2 border-black py-3 last:border-0">
                                                     <div><span className="font-black">#{o.id.slice(0, 8)}</span><span className="ml-3 text-sm text-gray-500">{o.profiles?.name || o.profiles?.email}</span></div>
                                                     <div className="flex items-center gap-3">
-                                                        <span className={`px-2 py-0.5 border-2 border-black text-xs font-black uppercase ${o.status === 'delivered' ? 'bg-brutal-green' : o.status === 'shipped' ? 'bg-brutal-blue text-white' : 'bg-brutal-yellow'}`}>{o.status}</span>
-                                                        <span className="font-black">${o.total}</span>
+                                                        <span className={`px-2 py-0.5 border-2 border-black text-xs font-black uppercase ${o.status === 'delivered' ? 'bg-brutal-green' : o.status === 'shipped' ? 'bg-brutal-blue text-white' : o.status === 'cancelled' ? 'bg-brutal-red text-white' : 'bg-brutal-yellow'}`}>{t(`order.${o.status}`)}</span>
+                                                        <span className="font-black">{formatPrice(o.total)}</span>
                                                     </div>
                                                 </div>
                                             ))}
@@ -853,12 +852,11 @@ export const SellerDashboard = () => {
                             </div>
                         )}
 
-                        {/* STORE */}
+                        {/* STORE EDIT */}
                         {tab === 'store' && (
                             <div className="space-y-8 max-w-2xl">
                                 <h1 className="text-5xl font-black uppercase tracking-tighter">{store ? t('seller.editStore') : t('seller.createStore')}</h1>
                                 <div className="bg-white border-4 border-black shadow-brutal p-8 space-y-6">
-                                    {/* Store Name - Bilingual */}
                                     <div className="space-y-3">
                                         <div><label className="block font-black uppercase text-sm mb-2">🇬🇧 {t('seller.storeNameEn')} *</label><input value={storeName} onChange={e => setStoreName(e.target.value)} className="w-full border-4 border-black p-3 font-bold text-lg focus:outline-none focus:border-brutal-blue" placeholder={t('seller.storeName')} /></div>
                                         <div><label className="block font-black uppercase text-sm mb-2">🇨🇳 {t('seller.storeNameZh')}</label><input value={storeNameZh} onChange={e => setStoreNameZh(e.target.value)} className="w-full border-4 border-black p-3 font-bold text-lg focus:outline-none focus:border-brutal-blue" placeholder={t('seller.storeNameZh')} /></div>
@@ -867,7 +865,6 @@ export const SellerDashboard = () => {
                                             <button type="button" disabled={!storeNameZh.trim() || translating === 'storeNameRev'} onClick={async () => { setTranslating('storeNameRev'); try { const r = await api.translate(storeNameZh, 'zh', 'en', 'name'); setStoreName((r as any).translated); } catch { alert(t('seller.translatingError')); } setTranslating(null); }} className="px-3 py-1 border-2 border-black text-xs font-black bg-brutal-yellow hover:bg-brutal-blue hover:text-white transition-colors disabled:opacity-50">{translating === 'storeNameRev' ? t('seller.translating') : '中文 → EN'}</button>
                                         </div>
                                     </div>
-                                    {/* Store Description - Bilingual */}
                                     <div className="space-y-3">
                                         <div><label className="block font-black uppercase text-sm mb-2">🇬🇧 {t('seller.storeDescEn')}</label><textarea value={storeDesc} onChange={e => setStoreDesc(e.target.value)} rows={3} className="w-full border-4 border-black p-3 font-bold focus:outline-none focus:border-brutal-blue resize-none" placeholder={t('seller.storeDesc')} /></div>
                                         <div><label className="block font-black uppercase text-sm mb-2">🇨🇳 {t('seller.storeDescZh')}</label><textarea value={storeDescZh} onChange={e => setStoreDescZh(e.target.value)} rows={3} className="w-full border-4 border-black p-3 font-bold focus:outline-none focus:border-brutal-blue resize-none" placeholder={t('seller.storeDescZh')} /></div>
@@ -876,17 +873,15 @@ export const SellerDashboard = () => {
                                             <button type="button" disabled={!storeDescZh.trim() || translating === 'storeDescRev'} onClick={async () => { setTranslating('storeDescRev'); try { const r = await api.translate(storeDescZh, 'zh', 'en', 'description'); setStoreDesc((r as any).translated); } catch { alert(t('seller.translatingError')); } setTranslating(null); }} className="px-3 py-1 border-2 border-black text-xs font-black bg-brutal-yellow hover:bg-brutal-blue hover:text-white transition-colors disabled:opacity-50">{translating === 'storeDescRev' ? t('seller.translating') : '中文 → EN'}</button>
                                         </div>
                                     </div>
-                                    {/* Logo */}
                                     <div><label className="block font-black uppercase text-sm mb-2">{t('seller.storeLogo')}</label><input value={storeLogo} onChange={e => setStoreLogo(e.target.value)} className="w-full border-4 border-black p-3 font-bold focus:outline-none focus:border-brutal-blue" placeholder="🏠" /></div>
                                     
-                                    {/* Shop Photo */}
                                     <div className="space-y-3">
-                                        <label className="block font-black uppercase text-sm">Shop Photo URL</label>
+                                        <label className="block font-black uppercase text-sm">{lang === 'zh' ? '店铺封面图 URL' : 'Shop Photo URL'}</label>
                                         <input 
                                             value={shopPhoto} 
                                             onChange={e => setShopPhoto(e.target.value)} 
                                             className="w-full border-4 border-black p-3 font-bold focus:outline-none focus:border-brutal-blue" 
-                                            placeholder="https://images.unsplash.com/..." 
+                                            placeholder="https://..." 
                                         />
                                         {shopPhoto && (
                                             <div className="w-full h-48 border-4 border-black overflow-hidden bg-gray-100 shadow-brutal-sm">
@@ -904,7 +899,7 @@ export const SellerDashboard = () => {
                             </div>
                         )}
 
-                        {/* PRODUCTS */}
+                        {/* PRODUCTS MANAGEMENT */}
                         {tab === 'products' && (
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center">
@@ -917,7 +912,6 @@ export const SellerDashboard = () => {
                                             <h2 className="text-2xl font-black uppercase">{editingProduct ? t('seller.editProduct') : t('seller.addProduct')}</h2>
                                             <button onClick={() => { setShowAddProduct(false); setEditingProduct(null); resetPf(); }} className="border-2 border-black px-3 py-1 font-black hover:bg-brutal-red hover:text-white">✕</button>
                                         </div>
-                                        {/* Bilingual Name Fields */}
                                         <div className="border-2 border-dashed border-gray-300 p-4 space-y-3 bg-gray-50">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className="material-symbols-outlined text-sm">translate</span>
@@ -951,7 +945,6 @@ export const SellerDashboard = () => {
                                             <div><label className="block font-black text-xs uppercase mb-1">{t('seller.stock')}</label><input type="number" value={pf.stock} onChange={e => setPf({ ...pf, stock: e.target.value })} className="w-full border-3 border-black p-2 font-bold" /></div>
                                             <div className="md:col-span-2">
                                                 <label className="block font-black text-xs uppercase mb-2">{t('seller.imageUrl')}</label>
-                                                {/* Mode toggle */}
                                                 <div className="flex gap-0 mb-3">
                                                     <button type="button" onClick={() => setImageMode('upload')} className={`flex-1 px-4 py-2 border-3 border-black font-black text-sm uppercase transition-colors ${imageMode === 'upload' ? 'bg-brutal-blue text-white' : 'bg-white hover:bg-gray-100'}`}>
                                                         <span className="material-symbols-outlined text-sm align-middle mr-1">cloud_upload</span>
@@ -1002,16 +995,14 @@ export const SellerDashboard = () => {
                                                 ) : (
                                                     <input value={pf.image} onChange={e => setPf({ ...pf, image: e.target.value })} className="w-full border-3 border-black p-2 font-bold" placeholder="https://..." />
                                                 )}
-                                                {/* Preview */}
                                                 {pf.image && (
                                                     <div className="mt-3 relative inline-block">
                                                         <div className="w-24 h-24 border-3 border-black overflow-hidden bg-gray-100">
-                                                            <img src={pf.image} alt="Preview" className="w-full h-full object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                                            <img src={pf.image} alt="Preview" className="w-full h-full object-contain" />
                                                         </div>
                                                         <button type="button" onClick={() => setPf({ ...pf, image: '' })} className="absolute -top-2 -right-2 w-6 h-6 bg-brutal-red text-white border-2 border-black flex items-center justify-center font-black text-xs hover:scale-110 transition-transform">✕</button>
                                                     </div>
                                                 )}
-                                                {/* Multi-image gallery management */}
                                                 {editingProduct && productImages.length > 0 && (
                                                     <div className="mt-4 border-3 border-dashed border-gray-400 p-3 bg-gray-50">
                                                         <h4 className="font-black text-xs uppercase mb-3 flex items-center gap-1">
@@ -1036,7 +1027,7 @@ export const SellerDashboard = () => {
                                                                             </button>
                                                                         )}
                                                                         <button onClick={async () => {
-                                                                            if (!confirm(t('admin.deleteConfirm') || 'Delete this?')) return;
+                                                                            if (!confirm(t('admin.deleteConfirm'))) return;
                                                                             await api.deleteProductImage(editingProduct!.id, img.id);
                                                                             setProductImages(prev => prev.filter((i: any) => i.id !== img.id));
                                                                         }} className="text-[9px] font-black bg-brutal-red text-white px-2 py-0.5 border border-white">
@@ -1051,7 +1042,6 @@ export const SellerDashboard = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        {/* Bilingual Description Fields */}
                                         <div className="border-2 border-dashed border-gray-300 p-4 space-y-3 bg-gray-50">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className="material-symbols-outlined text-sm">translate</span>
@@ -1083,7 +1073,6 @@ export const SellerDashboard = () => {
                                     </div>
                                 )}
 
-                                {/* A14/A15: Product search */}
                                 <div className="flex gap-4 items-center">
                                     <div className="flex-1 flex items-center border-4 border-black bg-white shadow-brutal">
                                         <span className="material-symbols-outlined p-3 text-gray-500">search</span>
@@ -1114,9 +1103,9 @@ export const SellerDashboard = () => {
                                             ) : products.map(p => (
                                                 <tr key={p.id} className={`border-b-2 border-black hover:bg-brutal-yellow/10 ${(p as any).enabled === false ? 'opacity-50' : ''}`}>
                                                     <td className="p-4 font-mono text-xs text-gray-500">{p.id.slice(0, 8)}</td>
-                                                    <td className="p-4"><div className="flex items-center gap-3"><div className="w-12 h-12 border-2 border-black overflow-hidden bg-gray-100">{p.image && <img src={p.image} alt={p.name} className="w-full h-full object-contain" />}</div><span className="font-black text-sm">{p.name}</span></div></td>
+                                                    <td className="p-4"><div className="flex items-center gap-3"><div className="w-12 h-12 border-2 border-black overflow-hidden bg-gray-100">{p.image && <img src={p.image} alt={localized(p, 'name', lang)} className="w-full h-full object-contain" />}</div><span className="font-black text-sm">{localized(p, 'name', lang)}</span></div></td>
                                                     <td className="p-4 text-sm font-bold text-gray-600">{(p as any).categories?.name || '—'}</td>
-                                                    <td className="p-4 text-right font-black">${p.price}</td>
+                                                    <td className="p-4 text-right font-black">{formatPrice(p.price)}</td>
                                                     <td className="p-4 text-right"><span className={`px-2 py-0.5 border-2 border-black text-xs font-black ${(p.stock || 0) > 0 ? 'bg-brutal-green' : 'bg-brutal-red text-white'}`}>{p.stock || 0}</span></td>
                                                     <td className="p-4 text-center">
                                                         <button onClick={() => handleToggleProduct(p)} className={`px-3 py-1 border-2 border-black text-xs font-black uppercase transition-all ${(p as any).enabled !== false ? 'bg-brutal-green hover:bg-brutal-red hover:text-white' : 'bg-gray-300 hover:bg-brutal-green'}`}>
@@ -1135,7 +1124,7 @@ export const SellerDashboard = () => {
                             </div>
                         )}
 
-                        {/* ORDERS — A20/B2 */}
+                        {/* SELLER ORDERS */}
                         {tab === 'orders' && (
                             <div className="space-y-6">
                                 <h1 className="text-5xl font-black uppercase tracking-tighter">{t('seller.orders')}</h1>
@@ -1154,14 +1143,14 @@ export const SellerDashboard = () => {
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <h3 className="font-black text-xl uppercase italic">#{o.id.slice(0, 8)}</h3>
                                                                 <span className={`px-2 py-0.5 border-2 border-black text-[10px] font-black uppercase ${o.status === 'delivered' ? 'bg-brutal-green' : o.status === 'shipped' ? 'bg-brutal-blue text-white' : o.status === 'cancelled' ? 'bg-brutal-red text-white' : 'bg-brutal-yellow'}`}>
-                                                                    {t(`order.${o.status}`) || o.status}
+                                                                    {t(`order.${o.status}`)}
                                                                 </span>
                                                             </div>
                                                             <p className="text-sm font-bold text-gray-500">
                                                                 {new Date(o.created_at).toLocaleString()}
                                                             </p>
                                                             <p className="text-sm font-black uppercase mt-1">
-                                                                {t('admin.name')}: {o.profiles?.name || o.profiles?.email || '—'}
+                                                                {lang === 'zh' ? '购买者' : 'Buyer'}: {o.profiles?.name || o.profiles?.email || '—'}
                                                             </p>
                                                         </div>
                                                         <div className="text-right">
@@ -1179,7 +1168,6 @@ export const SellerDashboard = () => {
                                                     {expandedOrder === o.id && (
                                                         <div className="mt-6 pt-6 border-t-2 border-dashed border-black/20 space-y-6">
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                                {/* Items */}
                                                                 <div>
                                                                     <h4 className="font-black uppercase text-xs text-gray-400 mb-3">{t('order.items')}</h4>
                                                                     <div className="space-y-3">
@@ -1196,7 +1184,6 @@ export const SellerDashboard = () => {
                                                                         ))}
                                                                     </div>
                                                                 </div>
-                                                                {/* Shipping */}
                                                                 <div>
                                                                     <h4 className="font-black uppercase text-xs text-gray-400 mb-3">{t('order.shippingInfo')}</h4>
                                                                     <div className="text-sm font-bold uppercase space-y-1">
@@ -1208,7 +1195,6 @@ export const SellerDashboard = () => {
                                                                 </div>
                                                             </div>
 
-                                                            {/* Status Management */}
                                                             <div className="bg-gray-100 p-4 border-2 border-black">
                                                                 <h4 className="font-black uppercase text-xs mb-3">{t('seller.updateStatus')}</h4>
                                                                 <div className="flex flex-wrap gap-2">
@@ -1250,7 +1236,7 @@ export const SellerDashboard = () => {
                             </div>
                         )}
 
-                        {/* ANALYTICS — Anticate Sales Decision Support */}
+                        {/* ANALYTICS */}
                         {tab === 'analytics' && (
                             <div className="space-y-8">
                                 <h1 className="text-5xl font-black uppercase tracking-tighter">{t('seller.analytics')}</h1>
@@ -1259,7 +1245,6 @@ export const SellerDashboard = () => {
                                 </p>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                    {/* Most Popular Products */}
                                     <div className="bg-white border-4 border-black shadow-brutal p-6">
                                         <h2 className="text-2xl font-black uppercase mb-6 flex items-center gap-2">
                                             <span className="material-symbols-outlined text-brutal-pink">trending_up</span>
@@ -1282,7 +1267,6 @@ export const SellerDashboard = () => {
                                         </div>
                                     </div>
 
-                                    {/* Search Trends */}
                                     <div className="bg-white border-4 border-black shadow-brutal p-6">
                                         <h2 className="text-2xl font-black uppercase mb-6 flex items-center gap-2">
                                             <span className="material-symbols-outlined text-brutal-blue">search_insights</span>

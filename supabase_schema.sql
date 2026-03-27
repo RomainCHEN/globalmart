@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 CREATE TABLE IF NOT EXISTS categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL UNIQUE,
+  name_zh TEXT DEFAULT '',
   slug TEXT NOT NULL UNIQUE,
   icon TEXT DEFAULT 'category',
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -29,7 +30,9 @@ CREATE TABLE IF NOT EXISTS stores (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   seller_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
+  name_zh TEXT DEFAULT '',
   description TEXT DEFAULT '',
+  description_zh TEXT DEFAULT '',
   logo TEXT DEFAULT '',
   banner TEXT DEFAULT '',
   shop_photo TEXT DEFAULT '',
@@ -70,7 +73,9 @@ CREATE TABLE IF NOT EXISTS products (
   store_id UUID REFERENCES stores(id) ON DELETE SET NULL,
   category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
+  name_zh TEXT DEFAULT '',
   description TEXT DEFAULT '',
+  description_zh TEXT DEFAULT '',
   price NUMERIC(10,2) NOT NULL,
   original_price NUMERIC(10,2),
   stock INTEGER DEFAULT 0,
@@ -79,6 +84,7 @@ CREATE TABLE IF NOT EXISTS products (
   tags TEXT[] DEFAULT '{}',
   specs JSONB DEFAULT '{}',
   image TEXT DEFAULT '',
+  enabled BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

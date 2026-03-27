@@ -41,14 +41,22 @@ router.post('/', requireAuth, async (req, res) => {
     }
 });
 
-// GET /api/stores — list all online stores
-router.get('/', async (req, res) => {
+// GET /api/stores — list stores (optionally including offline for owners)
+router.get('/', optionalAuth, async (req, res) => {
     try {
-        const { data, error } = await supabaseAdmin
+        const { mine } = req.query;
+        let query = supabaseAdmin
             .from('stores')
             .select('*, profiles(name, avatar)')
-            .eq('is_online', true)
             .order('created_at', { ascending: false });
+
+        if (mine === 'true' && req.user) {
+            query = query.eq('seller_id', req.user.id);
+        } else {
+            query = query.eq('is_online', true);
+        }
+
+        const { data, error } = await query;
         if (error) return res.status(400).json({ error: error.message });
 
         // Get product counts for each store

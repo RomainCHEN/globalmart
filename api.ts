@@ -154,7 +154,10 @@ export const api = {
         request(`/wishlist/${productId}`, { method: 'DELETE' }),
 
     // Stores
-    getStores: () => request('/stores'),
+    getStores: (params?: Record<string, string>) => {
+        const q = params ? '?' + new URLSearchParams(params).toString() : '';
+        return request(`/stores${q}`);
+    },
     getStore: (id: string) => request(`/stores/${id}`),
     getStoreProducts: (id: string, params?: Record<string, string>) => {
         const q = params ? '?' + new URLSearchParams(params).toString() : '';

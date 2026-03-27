@@ -706,7 +706,7 @@ export const SellerDashboard = () => {
         setLoading(true);
         try {
             const [storeRes, prodRes, orderRes, catRes, analyticRes] = await Promise.all([
-                api.getStores().catch(() => []),
+                api.getStores({ mine: 'true' }).catch(() => []),
                 api.getProducts({ limit: '100', include_disabled: 'true' }).catch(() => ({ products: [] })),
                 api.getSellerOrders().catch(() => ({ orders: [] })),
                 api.getCategories().catch(() => []),

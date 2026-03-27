@@ -1134,7 +1134,114 @@ export const SellerDashboard = () => {
                         {tab === 'orders' && (
                             <div className="space-y-6">
                                 <h1 className="text-5xl font-black uppercase tracking-tighter">{t('seller.orders')}</h1>
-                                {/* ... orders content ... */}
+                                <div className="bg-white border-4 border-black shadow-brutal overflow-hidden">
+                                    {orders.length === 0 ? (
+                                        <div className="p-12 text-center">
+                                            <span className="material-symbols-outlined text-6xl text-gray-300 block mb-4">receipt_long</span>
+                                            <p className="font-black text-xl uppercase text-gray-500">{t('seller.noOrders')}</p>
+                                        </div>
+                                    ) : (
+                                        <div className="divide-y-4 divide-black">
+                                            {orders.map((o: any) => (
+                                                <div key={o.id} className="p-6 hover:bg-brutal-yellow/5 transition-colors">
+                                                    <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <h3 className="font-black text-xl uppercase italic">#{o.id.slice(0, 8)}</h3>
+                                                                <span className={`px-2 py-0.5 border-2 border-black text-[10px] font-black uppercase ${o.status === 'delivered' ? 'bg-brutal-green' : o.status === 'shipped' ? 'bg-brutal-blue text-white' : o.status === 'cancelled' ? 'bg-brutal-red text-white' : 'bg-brutal-yellow'}`}>
+                                                                    {t(`order.${o.status}`) || o.status}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-sm font-bold text-gray-500">
+                                                                {new Date(o.created_at).toLocaleString()}
+                                                            </p>
+                                                            <p className="text-sm font-black uppercase mt-1">
+                                                                {t('admin.name')}: {o.profiles?.name || o.profiles?.email || '—'}
+                                                            </p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-3xl font-black font-display tracking-tight">{formatPrice(o.total)}</p>
+                                                            <button 
+                                                                onClick={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
+                                                                className="text-xs font-black uppercase underline hover:text-brutal-blue mt-2 block ml-auto"
+                                                            >
+                                                                {expandedOrder === o.id ? t('general.hide') : t('general.details')}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Expanded Details & Actions */}
+                                                    {expandedOrder === o.id && (
+                                                        <div className="mt-6 pt-6 border-t-2 border-dashed border-black/20 space-y-6">
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                                {/* Items */}
+                                                                <div>
+                                                                    <h4 className="font-black uppercase text-xs text-gray-400 mb-3">{t('order.items')}</h4>
+                                                                    <div className="space-y-3">
+                                                                        {o.order_items?.map((item: any) => (
+                                                                            <div key={item.id} className="flex gap-3 items-center">
+                                                                                <div className="w-10 h-10 border-2 border-black bg-gray-100 shrink-0">
+                                                                                    <img src={item.product_image} alt="" className="w-full h-full object-contain" />
+                                                                                </div>
+                                                                                <div className="flex-1 min-w-0">
+                                                                                    <p className="text-sm font-black uppercase truncate">{item.product_name}</p>
+                                                                                    <p className="text-xs font-bold text-gray-500">{formatPrice(item.price)} x {item.quantity}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                                {/* Shipping */}
+                                                                <div>
+                                                                    <h4 className="font-black uppercase text-xs text-gray-400 mb-3">{t('order.shippingInfo')}</h4>
+                                                                    <div className="text-sm font-bold uppercase space-y-1">
+                                                                        <p>{o.shipping_name}</p>
+                                                                        <p>{o.shipping_street}</p>
+                                                                        <p>{o.shipping_city}, {o.shipping_zip}</p>
+                                                                        <p>{o.shipping_country}</p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Status Management */}
+                                                            <div className="bg-gray-100 p-4 border-2 border-black">
+                                                                <h4 className="font-black uppercase text-xs mb-3">{t('seller.updateStatus')}</h4>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {['pending', 'shipped', 'delivered', 'hold', 'cancelled'].map(s => (
+                                                                        <button 
+                                                                            key={s} 
+                                                                            disabled={o.status === s}
+                                                                            onClick={() => handleOrderStatus(o.id, s)}
+                                                                            className={`px-4 py-2 border-2 border-black font-black uppercase text-[10px] transition-all ${o.status === s ? 'bg-black text-white shadow-none' : 'bg-white shadow-brutal-sm hover:bg-brutal-yellow active:shadow-none'}`}
+                                                                        >
+                                                                            {t(`order.${s}`)}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                                {o.status === 'refund_requested' && (
+                                                                    <div className="mt-4 p-3 bg-brutal-red/10 border-2 border-brutal-red flex items-center justify-between">
+                                                                        <p className="text-xs font-black uppercase text-brutal-red italic">⚠️ {t('order.refundRequested')}</p>
+                                                                        <button 
+                                                                            onClick={async () => {
+                                                                                if (confirm(t('order.approveRefundConfirm'))) {
+                                                                                    await api.approveRefund(o.id);
+                                                                                    loadData();
+                                                                                }
+                                                                            }}
+                                                                            className="bg-brutal-red text-white border-2 border-black px-4 py-1 text-xs font-black uppercase shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                                                                        >
+                                                                            {t('order.approveRefund')}
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 

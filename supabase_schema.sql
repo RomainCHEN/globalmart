@@ -117,6 +117,12 @@ CREATE TABLE IF NOT EXISTS orders (
   shipping_zip TEXT DEFAULT '',
   shipping_country TEXT DEFAULT '',
   payment_method TEXT DEFAULT 'credit_card',
+  shipped_at TIMESTAMPTZ,
+  delivered_at TIMESTAMPTZ,
+  hold_at TIMESTAMPTZ,
+  cancelled_at TIMESTAMPTZ,
+  refund_requested_at TIMESTAMPTZ,
+  refunded_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -125,12 +131,25 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  product_id UUID NOT NULL REFERENCES products(id) ON DELETE SET NULL,
+  product_id UUID REFERENCES products(id) ON DELETE SET NULL,
   product_name TEXT NOT NULL,
   product_image TEXT DEFAULT '',
   price NUMERIC(10,2) NOT NULL,
   quantity INTEGER NOT NULL DEFAULT 1
 );
+
+-- 8b. Cart Items (server-side cart)
+CREATE TABLE IF NOT EXISTS cart_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, product_id)
+);
+
+ALTER TABLE cart_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own cart" ON cart_items FOR ALL USING (auth.uid() = user_id);
 
 -- 9. Wishlists
 CREATE TABLE IF NOT EXISTS wishlists (

@@ -6,17 +6,29 @@ const router = Router();
 
 // POST /api/orders — create order
 router.post('/', requireAuth, async (req, res) => {
+    let createdOrderId = null;
     try {
         const { items, shipping, payment_method, store_id } = req.body;
 
-        const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: 'Items array is required and cannot be empty' });
+        }
+
+        // Validate items and calculate total
+        let total = 0;
+        for (const item of items) {
+            if (!item.product_id || !item.price || !item.quantity) {
+                return res.status(400).json({ error: 'Each item must have product_id, price, and quantity' });
+            }
+            total += Number(item.price) * Number(item.quantity);
+        }
 
         const { data: order, error: orderError } = await supabaseAdmin
             .from('orders')
             .insert({
                 user_id: req.user.id,
                 store_id: store_id || null,
-                total,
+                total: total,
                 shipping_name: shipping?.name || '',
                 shipping_street: shipping?.street || '',
                 shipping_city: shipping?.city || '',
@@ -28,31 +40,51 @@ router.post('/', requireAuth, async (req, res) => {
             .select()
             .single();
 
-        if (orderError) return res.status(400).json({ error: orderError.message });
+        if (orderError) {
+            console.error('Order creation error:', orderError);
+            return res.status(400).json({ error: orderError.message });
+        }
+
+        createdOrderId = order.id;
 
         const orderItems = items.map(item => ({
             order_id: order.id,
             product_id: item.product_id,
-            product_name: item.name,
+            product_name: item.name || 'Unknown Product',
             product_image: item.image || '',
-            price: item.price,
-            quantity: item.quantity
+            price: Number(item.price),
+            quantity: Number(item.quantity)
         }));
 
         const { error: itemsError } = await supabaseAdmin
             .from('order_items')
             .insert(orderItems);
 
-        if (itemsError) return res.status(400).json({ error: itemsError.message });
+        if (itemsError) {
+            console.error('Order items insertion error:', itemsError);
+            // Cleanup: delete the partial order
+            await supabaseAdmin.from('orders').delete().eq('id', order.id);
+            return res.status(400).json({ error: `Failed to record order items: ${itemsError.message}` });
+        }
 
-        // Clear user's cart after successful order
-        await supabaseAdmin
-            .from('cart_items')
-            .delete()
-            .eq('user_id', req.user.id);
+        // Clear user's cart after successful order (if using database cart)
+        try {
+            await supabaseAdmin
+                .from('cart_items')
+                .delete()
+                .eq('user_id', req.user.id);
+        } catch (cartErr) {
+            console.warn('Failed to clear cart after order:', cartErr.message);
+            // Don't fail the whole request just because cart cleanup failed
+        }
 
         res.status(201).json(order);
     } catch (err) {
+        console.error('Unexpected order creation error:', err);
+        if (createdOrderId) {
+            // Attempt cleanup if something else failed after order creation
+            await supabaseAdmin.from('orders').delete().eq('id', createdOrderId);
+        }
         res.status(500).json({ error: err.message });
     }
 });

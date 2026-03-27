@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, NavLink, useNavigate } from 'react-router-dom';
 import { useApp } from './context';
 import { useI18n } from './i18n';
+import { api } from './api';
 
 export const MainLayout = () => {
     const { user, isLoggedIn, logout, cart, seniorMode, setSeniorMode, formatPrice, wishlistOnSaleCount } = useApp();
@@ -27,7 +28,6 @@ export const MainLayout = () => {
 
     const fetchNotifications = async () => {
         try {
-            const { api } = await import('./api');
             const serverNotifs = await api.getNotifications().catch(() => []);
             
             // Client-side generated notifications (Birthday & Wishlist Sales)
@@ -79,7 +79,6 @@ export const MainLayout = () => {
 
     const markAllRead = async () => {
         try {
-            const { api } = await import('./api');
             const serverIds = notifications.filter(n => !n.is_read && n.id !== 'birthday' && n.id !== 'wishlist-sale').map(n => n.id);
             await Promise.all(serverIds.map(id => api.markNotificationAsRead(id)));
             setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));

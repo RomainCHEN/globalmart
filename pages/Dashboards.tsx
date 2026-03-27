@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AddressSelector } from '../components/AddressSelector';
 import { useApp } from '../context';
-import { useI18n } from '../i18n';
+import { useI18n, localized } from '../i18n';
 import { api } from '../api';
 import { Order, WishlistItem, Product } from '../types';
 

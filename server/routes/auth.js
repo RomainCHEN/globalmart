@@ -39,9 +39,12 @@ router.post('/register', async (req, res) => {
 
         const userId = adminData.user.id;
 
-        // Ensure profile is updated (Auth trigger handles initial profile creation, 
-        // but we explicitly update to be sure and handle shipping_address)
-        const profileUpdates = {
+        // Ensure profile exists and is updated. 
+        // We use upsert here to be safe: if the trigger already created it, we update;
+        // if the trigger is slow, we create it now. This prevents FK errors when creating the store.
+        const profileData = {
+            id: userId,
+            email,
             name,
             role: role || 'user',
             birthday_month,
@@ -51,34 +54,48 @@ router.post('/register', async (req, res) => {
             shipping_address: shipping_address || null
         };
         
+        console.log(`Ensuring profile exists for ${userId}`);
         const { error: profileError } = await supabaseAdmin
             .from('profiles')
-            .update(profileUpdates)
-            .eq('id', userId);
+            .upsert(profileData);
         
         if (profileError) {
-            console.error('Failed to update profile during registration:', profileError.message);
-            // We don't necessarily abort here as the trigger might have done it, 
-            // but for a seller, it's a sign that stores insert might also fail.
+            console.error('Failed to upsert profile during registration:', profileError.message);
+            // We continue anyway, but this is a red flag.
         }
 
         // Create store for sellers during registration
         if (role === 'seller') {
             console.log(`Creating store for seller ${userId}: ${shop_name}`);
-            const { data: storeData, error: storeError } = await supabaseAdmin
+            
+            const storePayload = {
+                seller_id: userId,
+                name: shop_name || `${name}'s Shop`,
+                description: shop_desc || '',
+                is_online: false
+            };
+
+            // Try to include shop_photo, but fallback if the column doesn't exist
+            let { data: storeData, error: storeError } = await supabaseAdmin
                 .from('stores')
-                .insert({
-                    seller_id: userId,
-                    name: shop_name || `${name}'s Shop`,
-                    description: shop_desc || '',
-                    shop_photo: shop_photo || '',
-                    is_online: false
-                })
+                .insert({ ...storePayload, shop_photo: shop_photo || '' })
                 .select()
                 .single();
 
+            if (storeError && (storeError.message.includes("shop_photo") || storeError.code === '42703')) {
+                console.warn('Fallback: shop_photo column missing, retrying without it');
+                const retry = await supabaseAdmin
+                    .from('stores')
+                    .insert(storePayload)
+                    .select()
+                    .single();
+                storeData = retry.data;
+                storeError = retry.error;
+            }
+
             if (storeError) {
                 console.error('Failed to create store during registration:', storeError.message);
+                // Return a specific error if store creation fails so user knows account exists but store failed
                 return res.status(400).json({ error: `User created but store creation failed: ${storeError.message}` });
             }
             console.log('Store created successfully:', storeData.id);

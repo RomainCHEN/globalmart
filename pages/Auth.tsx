@@ -112,7 +112,7 @@ export const RegisterPage = () => {
                 ...(role === 'seller' ? vendorInfo : {})
             };
             await register(email, password, name, role, shipping, extra);
-            navigate('/');
+            navigate('/dashboard');
         } catch (err: any) {
             setError(err.message || 'Registration failed');
         } finally {

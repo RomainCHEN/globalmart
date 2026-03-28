@@ -9,6 +9,8 @@ router.post('/register', async (req, res) => {
     try {
         const { email, password, name, role, shipping_address, birthday_month, birthday_day, contact_person, contact_phone, shop_name, shop_desc, shop_photo } = req.body;
 
+        console.log(`Starting registration for ${email} with role ${role}`);
+
         // Create user with admin API (auto-confirms email)
         const { data: adminData, error: createError } = await supabaseAdmin.auth.admin.createUser({
             email,
@@ -20,54 +22,80 @@ router.post('/register', async (req, res) => {
                 birthday_month,
                 birthday_day,
                 contact_person,
-                contact_phone
+                contact_phone,
+                shop_name,
+                shop_desc,
+                shop_photo
             }
         });
-        if (createError) return res.status(400).json({ error: createError.message });
+        if (createError) {
+            console.error('Registration failed at createUser:', createError.message);
+            return res.status(400).json({ error: createError.message });
+        }
 
-        // Update profile with extra info (Auth trigger handles initial profile creation, 
-        // but we need to ensure these specific fields are set)
-        if (adminData.user) {
-            const profileUpdates = {
-                name,
-                role: role || 'user',
-                birthday_month,
-                birthday_day,
-                contact_person,
-                contact_phone,
-                shipping_address: shipping_address || null
-            };
-            
-            await supabaseAdmin
-                .from('profiles')
-                .update(profileUpdates)
-                .eq('id', adminData.user.id);
+        if (!adminData.user) {
+            return res.status(500).json({ error: 'User creation failed - no user returned' });
+        }
+
+        const userId = adminData.user.id;
+
+        // Ensure profile is updated (Auth trigger handles initial profile creation, 
+        // but we explicitly update to be sure and handle shipping_address)
+        const profileUpdates = {
+            name,
+            role: role || 'user',
+            birthday_month,
+            birthday_day,
+            contact_person,
+            contact_phone,
+            shipping_address: shipping_address || null
+        };
+        
+        const { error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .update(profileUpdates)
+            .eq('id', userId);
+        
+        if (profileError) {
+            console.error('Failed to update profile during registration:', profileError.message);
+            // We don't necessarily abort here as the trigger might have done it, 
+            // but for a seller, it's a sign that stores insert might also fail.
         }
 
         // Create store for sellers during registration
-        if (role === 'seller' && adminData.user) {
-            const { error: storeError } = await supabaseAdmin
+        if (role === 'seller') {
+            console.log(`Creating store for seller ${userId}: ${shop_name}`);
+            const { data: storeData, error: storeError } = await supabaseAdmin
                 .from('stores')
                 .insert({
-                    seller_id: adminData.user.id,
+                    seller_id: userId,
                     name: shop_name || `${name}'s Shop`,
                     description: shop_desc || '',
                     shop_photo: shop_photo || '',
                     is_online: false
-                });
+                })
+                .select()
+                .single();
+
             if (storeError) {
                 console.error('Failed to create store during registration:', storeError.message);
+                return res.status(400).json({ error: `User created but store creation failed: ${storeError.message}` });
             }
+            console.log('Store created successfully:', storeData.id);
         }
 
         // Immediately sign them in so we return a session
         const { data: loginData, error: loginError } = await supabaseAdmin.auth.signInWithPassword({
             email, password
         });
-        if (loginError) return res.status(400).json({ error: loginError.message });
+        if (loginError) {
+            console.error('Registration successful but initial login failed:', loginError.message);
+            return res.status(400).json({ error: `Registration successful but login failed: ${loginError.message}` });
+        }
 
         res.json({ user: loginData.user, session: loginData.session });
     } catch (err) {
+        console.error('Unexpected error during registration:', err.message);
         res.status(500).json({ error: err.message });
     }
 });

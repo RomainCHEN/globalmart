@@ -700,38 +700,52 @@ export const SellerDashboard = () => {
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [productImages, setProductImages] = useState<any[]>([]);
 
-    useEffect(() => { if (!isLoggedIn) { navigate('/login'); return; } loadData(); }, [isLoggedIn]);
+    useEffect(() => { 
+        if (isLoggedIn && user) { 
+            loadData(); 
+        } else if (!isLoggedIn && !loading) {
+            navigate('/login');
+        }
+    }, [isLoggedIn, user]);
 
     const loadData = async () => {
+        if (!user) return;
         setLoading(true);
+        console.log('SellerHub: Loading data for user', user.id);
         try {
             const [storeRes, prodRes, orderRes, catRes, analyticRes] = await Promise.all([
-                api.getStores({ mine: 'true' }).catch(() => []),
+                api.getStores({ mine: 'true' }).catch(err => { console.error('Failed to fetch stores:', err); return []; }),
                 api.getProducts({ limit: '100', include_disabled: 'true' }).catch(() => ({ products: [] })),
                 api.getSellerOrders().catch(() => ({ orders: [] })),
                 api.getCategories().catch(() => []),
                 api.getStoreAnalytics().catch(() => ({ topProducts: [], searchTrends: [] }))
             ]);
-            const myStore = (storeRes as any[]).find((s: any) => s.seller_id === user?.id);
+
+            console.log('SellerHub: Stores received:', storeRes);
+            const myStore = (storeRes as any[]).find((s: any) => String(s.seller_id) === String(user.id));
             setStore(myStore || null);
-            if (myStore) { 
-                setStoreName(myStore.name || ''); 
-                setStoreNameZh(myStore.name_zh || ''); 
-                setStoreDesc(myStore.description || ''); 
-                setStoreDescZh(myStore.description_zh || ''); 
-                setStoreLogo(myStore.logo || ''); 
+            if (myStore) {
+                console.log('SellerHub: Found store', myStore.id);
+                setStoreName(myStore.name || '');
+                setStoreNameZh(myStore.name_zh || '');
+                setStoreDesc(myStore.description || '');
+                setStoreDescZh(myStore.description_zh || '');
+                setStoreLogo(myStore.logo || '');
                 setShopPhoto(myStore.shop_photo || '');
+            } else {
+                console.warn('SellerHub: No store found for user', user.id);
             }
-            const myProds = ((prodRes as any).products || []).filter((p: any) => p.seller_id === user?.id || (myStore && p.store_id === myStore.id));
+            const myProds = ((prodRes as any).products || []).filter((p: any) => String(p.seller_id) === String(user.id) || (myStore && p.store_id === myStore.id));
             setAllProducts(myProds);
             setProducts(myProds);
             setOrders((orderRes as any).orders || []);
             setCategories(catRes as any[]);
             setAnalytics(analyticRes);
-        } catch { }
+        } catch (err: any) {
+            console.error('SellerHub: Unexpected error in loadData:', err);
+        }
         setLoading(false);
     };
-
     const handleCreateStore = async () => {
         if (!storeName.trim()) return;
         await api.createStore({ name: storeName, name_zh: storeNameZh, description: storeDesc, description_zh: storeDescZh, logo: storeLogo });

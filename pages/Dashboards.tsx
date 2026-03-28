@@ -853,6 +853,20 @@ export const SellerDashboard = () => {
                                     </div>
                                 ) : (
                                     <>
+                                        {!store.is_online && (
+                                            <div className="bg-brutal-yellow border-4 border-black p-6 shadow-brutal flex items-center justify-between gap-6 animate-pulse">
+                                                <div className="flex items-center gap-4">
+                                                    <span className="material-symbols-outlined text-4xl">info</span>
+                                                    <div>
+                                                        <p className="font-black uppercase text-lg">{lang === 'zh' ? '店铺待上线' : 'Store Pending Online'}</p>
+                                                        <p className="font-bold text-sm">{lang === 'zh' ? '您的店铺已根据注册信息创建成功，请前往“我的店铺”开启营业。' : 'Your store was created based on your registration info. Go to "My Store" to go online.'}</p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => setTab('store')} className="bg-black text-white px-6 py-2 font-black uppercase text-sm border-2 border-black hover:bg-white hover:text-black transition-all">
+                                                    {t('seller.myStore')}
+                                                </button>
+                                            </div>
+                                        )}
                                         {/* Shop Photo Banner */}
                                         {shopPhoto && (
                                             <div className="relative w-full h-56 border-4 border-black shadow-brutal overflow-hidden">

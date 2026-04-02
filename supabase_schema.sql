@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   store_id UUID REFERENCES stores(id) ON DELETE SET NULL,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'shipped', 'out_for_delivery', 'delivered', 'hold', 'cancelled', 'refund_requested', 'refunded')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'shipped', 'out_for_delivery', 'delivered', 'hold', 'cancelled', 'refund_requested', 'refunded', 'ticket_issued', 'completed')),
   total NUMERIC(10,2) NOT NULL DEFAULT 0,
   shipping_name TEXT DEFAULT '',
   shipping_street TEXT DEFAULT '',
@@ -126,6 +126,7 @@ CREATE TABLE IF NOT EXISTS orders (
   shipping_country TEXT DEFAULT '',
   payment_method TEXT DEFAULT 'credit_card',
   status_history JSONB DEFAULT '[]',
+  tracking_number TEXT,
   ticket_issued_at TIMESTAMPTZ,
   shipped_at TIMESTAMPTZ,
   delivered_at TIMESTAMPTZ,
@@ -133,6 +134,7 @@ CREATE TABLE IF NOT EXISTS orders (
   cancelled_at TIMESTAMPTZ,
   refund_requested_at TIMESTAMPTZ,
   refunded_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

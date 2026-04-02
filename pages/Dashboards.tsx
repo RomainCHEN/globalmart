@@ -720,7 +720,7 @@ export const SellerDashboard = () => {
         }
     }, [isLoggedIn, user]);
 
-    // Refresh analytics when tab changes
+    // Refresh analytics or orders when tab changes
     useEffect(() => {
         if (tab === 'analytics' && isLoggedIn) {
             api.getStoreAnalytics()
@@ -734,6 +734,11 @@ export const SellerDashboard = () => {
                 .catch(() => {
                     setAnalytics({ topProducts: [], searchTrends: [] });
                 });
+        }
+        if (tab === 'orders' && isLoggedIn) {
+            api.getSellerOrders()
+                .then(res => setOrders((res as any).orders || []))
+                .catch(() => {});
         }
     }, [tab, isLoggedIn]);
 
@@ -1347,16 +1352,18 @@ export const SellerDashboard = () => {
                                                                                     <div className="absolute left-4 top-8 bottom-[-16px] w-0.5 bg-black/10" />
                                                                                 )}
                                                                                 <div className={`size-8 border-2 border-black flex items-center justify-center shrink-0 z-10 ${
-                                                                                    record.status === 'delivered' ? 'bg-brutal-green' : 
+                                                                                    record.status === 'delivered' || record.status === 'completed' ? 'bg-brutal-green' : 
                                                                                     record.status === 'cancelled' ? 'bg-brutal-red text-white' : 
                                                                                     record.status === 'shipped' ? 'bg-brutal-blue text-white' : 
-                                                                                    record.status === 'hold' ? 'bg-orange-400' : 'bg-brutal-yellow'
+                                                                                    record.status === 'hold' ? 'bg-orange-400' : 
+                                                                                    record.status === 'ticket_issued' ? 'bg-brutal-pink text-white' : 'bg-brutal-yellow'
                                                                                 }`}>
                                                                                     <span className="material-symbols-outlined text-sm font-black">
-                                                                                        {record.status === 'delivered' ? 'task_alt' : 
+                                                                                        {record.status === 'delivered' || record.status === 'completed' ? 'task_alt' : 
                                                                                          record.status === 'cancelled' ? 'cancel' : 
                                                                                          record.status === 'shipped' ? 'local_shipping' : 
-                                                                                         record.status === 'hold' ? 'pause_circle' : 'history'}
+                                                                                         record.status === 'hold' ? 'pause_circle' : 
+                                                                                         record.status === 'ticket_issued' ? 'confirmation_number' : 'history'}
                                                                                     </span>
                                                                                 </div>
                                                                                 <div className="flex-1">
@@ -1371,11 +1378,16 @@ export const SellerDashboard = () => {
                                                                                     <p className="text-[10px] font-bold mt-0.5">
                                                                                         <span className="text-gray-500 uppercase">{lang === 'zh' ? '操作人' : 'By'}:</span>{' '}
                                                                                         <span className="text-black">{record.actor_name}</span>{' '}
-                                                                                        <span className="bg-gray-100 px-1 border border-black/10 rounded text-[8px] uppercase">
+                                                                                        <span className="bg-gray-100 px-1 border border-black/10 rounded text-[8px] uppercase mr-2">
                                                                                             {record.actor_role === 'seller' ? (lang === 'zh' ? '卖家' : 'Seller') : 
                                                                                              record.actor_role === 'admin' ? (lang === 'zh' ? '管理员' : 'Admin') : 
                                                                                              (lang === 'zh' ? '买家' : 'Customer')}
                                                                                         </span>
+                                                                                        {record.tracking_number && (
+                                                                                            <span className="bg-black text-white px-2 py-0.5 text-[8px] font-black uppercase">
+                                                                                                {lang === 'zh' ? '单号' : 'Tracking'}: {record.tracking_number}
+                                                                                            </span>
+                                                                                        )}
                                                                                     </p>
                                                                                 </div>
                                                                             </div>
@@ -1387,11 +1399,19 @@ export const SellerDashboard = () => {
                                                             <div className="bg-gray-100 p-4 border-2 border-black">
                                                                 <h4 className="font-black uppercase text-xs mb-3">{t('seller.updateStatus')}</h4>
                                                                 <div className="flex flex-wrap gap-2">
-                                                                    {['pending', 'ordered', 'shipped', 'delivered', 'hold', 'cancelled'].map(s => (
+                                                                    {['pending', 'shipped', 'delivered', 'hold', 'cancelled', 'ticket_issued', 'completed'].map(s => (
                                                                         <button 
                                                                             key={s} 
                                                                             disabled={o.status === s}
-                                                                            onClick={() => handleOrderStatus(o.id, s)}
+                                                                            onClick={async () => {
+                                                                                let tracking = undefined;
+                                                                                if (s === 'shipped') {
+                                                                                    tracking = prompt(lang === 'zh' ? '请输入快递单号:' : 'Please enter tracking number:');
+                                                                                    if (tracking === null) return;
+                                                                                }
+                                                                                await api.updateOrderStatus(o.id, s, tracking);
+                                                                                loadData();
+                                                                            }}
                                                                             className={`px-4 py-2 border-2 border-black font-black uppercase text-[10px] transition-all ${o.status === s ? 'bg-black text-white shadow-none' : 'bg-white shadow-brutal-sm hover:bg-brutal-yellow active:shadow-none'}`}
                                                                         >
                                                                             {t(`order.${s}`)}

@@ -1432,7 +1432,7 @@ export const SellerDashboard = () => {
                                                             </span>
                                                             <span className="px-4 py-3 font-black text-2xl">
                                                                 {t_item.count}
-                                                            </div>
+                                                            </span>
                                                         </div>
                                                     ))}
                                                 </div>

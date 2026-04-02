@@ -1404,13 +1404,17 @@ export const SellerDashboard = () => {
                                                                             key={s} 
                                                                             disabled={o.status === s}
                                                                             onClick={async () => {
-                                                                                let tracking = undefined;
-                                                                                if (s === 'shipped') {
-                                                                                    tracking = prompt(lang === 'zh' ? '请输入快递单号:' : 'Please enter tracking number:');
-                                                                                    if (tracking === null) return;
+                                                                                try {
+                                                                                    let tracking = undefined;
+                                                                                    if (s === 'shipped') {
+                                                                                        tracking = prompt(lang === 'zh' ? '请输入快递单号:' : 'Please enter tracking number:') || undefined;
+                                                                                        if (tracking === undefined) return;
+                                                                                    }
+                                                                                    await api.updateOrderStatus(o.id, s, tracking);
+                                                                                    await loadData();
+                                                                                } catch (err: any) {
+                                                                                    alert(err.message || 'Failed to update order status');
                                                                                 }
-                                                                                await api.updateOrderStatus(o.id, s, tracking);
-                                                                                loadData();
                                                                             }}
                                                                             className={`px-4 py-2 border-2 border-black font-black uppercase text-[10px] transition-all ${o.status === s ? 'bg-black text-white shadow-none' : 'bg-white shadow-brutal-sm hover:bg-brutal-yellow active:shadow-none'}`}
                                                                         >

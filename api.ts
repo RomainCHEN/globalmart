@@ -116,8 +116,8 @@ export const api = {
         return request(`/orders${q}`);
     },
     getOrder: (id: string) => request(`/orders/${id}`),
-    updateOrderStatus: (id: string, status: string) =>
-        request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    updateOrderStatus: (id: string, status: string, tracking_number?: string) =>
+        request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, tracking_number }) }),
     cancelOrder: (id: string) =>
         request(`/orders/${id}/cancel`, { method: 'PATCH' }),
     requestRefund: (id: string) =>

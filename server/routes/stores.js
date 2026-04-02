@@ -109,59 +109,75 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
         const { data: store } = await supabaseAdmin.from('stores').select('id').eq('seller_id', req.user.id).single();
         if (!store) return res.status(404).json({ error: 'Store not found' });
 
-        const { data: products } = await supabaseAdmin.from('products').select('id, name, category_id').eq('store_id', store.id);
+        const { data: products } = await supabaseAdmin.from('products').select('id, name, name_zh, category_id, price, image, tags').eq('store_id', store.id);
         if (!products || products.length === 0) return res.json({ topProducts: [], searchTrends: [] });
 
         const productIds = products.map(p => p.id);
         const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
 
         // 2. Get top products by browse count
-        // Using count for each product
-        const topProductsData = await Promise.all(products.map(async (p) => {
-            const { count } = await supabaseAdmin
-                .from('browse_logs')
-                .select('*', { count: 'exact', head: true })
-                .eq('product_id', p.id);
-            return { ...p, views: count || 0 };
-        }));
+        const { data: browseStats, error: browseError } = await supabaseAdmin
+            .from('browse_logs')
+            .select('product_id')
+            .in('product_id', productIds);
+        
+        if (browseError) throw browseError;
 
-        const topProducts = topProductsData
+        const browseCounts = (browseStats || []).reduce((acc, log) => {
+            acc[log.product_id] = (acc[log.product_id] || 0) + 1;
+            return acc;
+        }, {});
+
+        const topProducts = products
+            .map(p => ({
+                id: p.id,
+                name: p.name,
+                name_zh: p.name_zh,
+                price: p.price,
+                image: p.image,
+                views: browseCounts[p.id] || 0
+            }))
             .sort((a, b) => b.views - a.views)
             .slice(0, 5);
 
-        // 3. Get search trends related to seller's products/categories
-        // Extract relevant keywords from seller's products to filter trends
+        // 3. Get search trends related to seller's products
         const sellerKeywords = new Set();
         products.forEach(p => {
-            p.name.split(/\s+/).forEach(word => {
-                const clean = word.toLowerCase().replace(/[^a-z0-9]/g, '');
-                if (clean.length > 2) sellerKeywords.add(clean);
+            const parts = [p.name, p.name_zh, p.tags ? p.tags.join(' ') : ''];
+            parts.join(' ').toLowerCase().split(/[\s,.\-\/]+/).forEach(word => {
+                if (word.length > 2) sellerKeywords.add(word);
             });
         });
 
-        const { data: searchLogs } = await supabaseAdmin
+        const { data: searchLogs, error: searchError } = await supabaseAdmin
             .from('search_logs')
             .select('query')
             .order('created_at', { ascending: false })
-            .limit(500);
+            .limit(1000);
         
-        const keywords = (searchLogs || []).map(l => l.query.toLowerCase().trim());
+        if (searchError) throw searchError;
+
         const trendCounts = {};
-        
-        keywords.forEach(k => {
-            // Check if this search query is relevant to the seller
-            const isRelevant = Array.from(sellerKeywords).some(sk => k.includes(sk));
+        (searchLogs || []).forEach(log => {
+            const q = log.query.toLowerCase().trim();
+            if (!q) return;
+            
+            // If the query contains any of the seller's keywords
+            const isRelevant = Array.from(sellerKeywords).some(sk => q.includes(sk));
             if (isRelevant) {
-                trendCounts[k] = (trendCounts[k] || 0) + 1;
+                trendCounts[q] = (trendCounts[q] || 0) + 1;
             }
         });
 
         const searchTrends = Object.entries(trendCounts)
             .map(([query, count]) => ({ query, count }))
-            .sort((a, b) => b.count - a.count)
+            .sort((a, b) => (b.count as number) - (a.count as number))
             .slice(0, 10);
 
-        res.json({ topProducts, searchTrends });
+        res.json({ 
+            topProducts: topProducts || [], 
+            searchTrends: searchTrends || [] 
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

@@ -1391,34 +1391,45 @@ export const SellerDashboard = () => {
                                         </div>
                                         
                                         <div className="space-y-6 flex-1">
-                                            {analytics.topProducts.length === 0 ? (
+                                            {(!analytics || !analytics.topProducts || analytics.topProducts.length === 0) ? (
                                                 <div className="h-full flex flex-col items-center justify-center py-20 text-gray-400 border-4 border-dashed border-gray-100">
                                                     <span className="material-symbols-outlined text-6xl mb-4">analytics</span>
                                                     <p className="font-black uppercase">{lang === 'zh' ? '暂无浏览数据' : 'No view data yet'}</p>
                                                 </div>
                                             ) : (
-                                                analytics.topProducts.map((p, idx) => (
-                                                    <div key={p.id} className="group flex items-center gap-6 p-4 border-4 border-black bg-[#f9f9f9] hover:bg-brutal-yellow transition-all hover:-translate-y-1 relative">
-                                                        <div className="absolute -top-3 -left-3 size-10 bg-black text-white flex items-center justify-center font-black italic border-2 border-white rotate-12 group-hover:rotate-0 transition-transform z-10">
-                                                            {idx + 1}
-                                                        </div>
-                                                        <div className="w-20 h-20 border-4 border-black overflow-hidden bg-white shrink-0">
-                                                            <img src={p.image} alt="" className="w-full h-full object-contain" />
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <h3 className="font-black uppercase text-lg truncate mb-1">{localized(p, 'name', lang)}</h3>
-                                                            <div className="flex items-center gap-4">
-                                                                <span className="text-2xl font-black tracking-tighter">{formatPrice(p.price)}</span>
-                                                                <span className="text-xs font-bold bg-black text-white px-2 py-0.5 rounded uppercase">
-                                                                    {p.views || 0} {lang === 'zh' ? '次访问' : 'Views'}
-                                                                </span>
+                                                analytics.topProducts.map((p, idx) => {
+                                                    if (!p) return null;
+                                                    return (
+                                                        <div key={p.id || idx} className="group flex items-center gap-6 p-4 border-4 border-black bg-[#f9f9f9] hover:bg-brutal-yellow transition-all hover:-translate-y-1 relative">
+                                                            <div className="absolute -top-3 -left-3 size-10 bg-black text-white flex items-center justify-center font-black italic border-2 border-white rotate-12 group-hover:rotate-0 transition-transform z-10">
+                                                                {idx + 1}
                                                             </div>
+                                                            <div className="w-20 h-20 border-4 border-black overflow-hidden bg-white shrink-0">
+                                                                {p.image ? (
+                                                                    <img src={p.image} alt="" className="w-full h-full object-contain" />
+                                                                ) : (
+                                                                    <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                                                                        <span className="material-symbols-outlined text-gray-300">image</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <h3 className="font-black uppercase text-lg truncate mb-1">{p ? localized(p, 'name', lang) : '---'}</h3>
+                                                                <div className="flex items-center gap-4">
+                                                                    <span className="text-2xl font-black tracking-tighter">{formatPrice(p.price || 0)}</span>
+                                                                    <span className="text-xs font-bold bg-black text-white px-2 py-0.5 rounded uppercase">
+                                                                        {p.views || 0} {lang === 'zh' ? '次访问' : 'Views'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            {p.id && (
+                                                                <Link to={`/product/${p.id}`} className="size-12 border-4 border-black bg-white flex items-center justify-center hover:bg-brutal-blue hover:text-white transition-colors">
+                                                                    <span className="material-symbols-outlined font-black">open_in_new</span>
+                                                                </Link>
+                                                            )}
                                                         </div>
-                                                        <Link to={`/product/${p.id}`} className="size-12 border-4 border-black bg-white flex items-center justify-center hover:bg-brutal-blue hover:text-white transition-colors">
-                                                            <span className="material-symbols-outlined font-black">open_in_new</span>
-                                                        </Link>
-                                                    </div>
-                                                ))
+                                                    );
+                                                })
                                             )}
                                         </div>
                                     </div>
@@ -1431,23 +1442,26 @@ export const SellerDashboard = () => {
                                         </div>
 
                                         <div className="flex-1">
-                                            {analytics.searchTrends.length === 0 ? (
+                                            {(!analytics || !analytics.searchTrends || analytics.searchTrends.length === 0) ? (
                                                 <div className="h-full flex flex-col items-center justify-center py-20 text-gray-400 border-4 border-dashed border-gray-100">
                                                     <span className="material-symbols-outlined text-6xl mb-4">search_off</span>
                                                     <p className="font-black uppercase">{lang === 'zh' ? '暂无相关搜索' : 'No related searches'}</p>
                                                 </div>
                                             ) : (
                                                 <div className="flex flex-wrap gap-4">
-                                                    {analytics.searchTrends.map((t_item, idx) => (
-                                                        <div key={idx} className="flex items-center border-4 border-black bg-white shadow-brutal-sm hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all overflow-hidden">
-                                                            <span className="bg-brutal-orange text-white px-4 py-3 font-black uppercase italic border-r-4 border-black">
-                                                                {t_item.query}
-                                                            </span>
-                                                            <span className="px-4 py-3 font-black text-2xl">
-                                                                {t_item.count}
-                                                            </span>
-                                                        </div>
-                                                    ))}
+                                                    {analytics.searchTrends.map((t_item, idx) => {
+                                                        if (!t_item) return null;
+                                                        return (
+                                                            <div key={idx} className="flex items-center border-4 border-black bg-white shadow-brutal-sm hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all overflow-hidden">
+                                                                <span className="bg-brutal-orange text-white px-4 py-3 font-black uppercase italic border-r-4 border-black">
+                                                                    {t_item.query || '---'}
+                                                                </span>
+                                                                <span className="px-4 py-3 font-black text-2xl">
+                                                                    {t_item.count || 0}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                             

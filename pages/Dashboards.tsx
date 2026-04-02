@@ -724,8 +724,16 @@ export const SellerDashboard = () => {
     useEffect(() => {
         if (tab === 'analytics' && isLoggedIn) {
             api.getStoreAnalytics()
-                .then(data => setAnalytics(data))
-                .catch(() => {});
+                .then(data => {
+                    if (data && !data.error) {
+                        setAnalytics(data);
+                    } else {
+                        setAnalytics({ topProducts: [], searchTrends: [] });
+                    }
+                })
+                .catch(() => {
+                    setAnalytics({ topProducts: [], searchTrends: [] });
+                });
         }
     }, [tab, isLoggedIn]);
 
@@ -761,7 +769,12 @@ export const SellerDashboard = () => {
             setProducts(myProds);
             setOrders((orderRes as any).orders || []);
             setCategories(catRes as any[]);
-            setAnalytics(analyticRes);
+            
+            if (analyticRes && !analyticRes.error) {
+                setAnalytics(analyticRes);
+            } else {
+                setAnalytics({ topProducts: [], searchTrends: [] });
+            }
         } catch (err: any) {
             console.error('SellerHub: Unexpected error in loadData:', err);
         }

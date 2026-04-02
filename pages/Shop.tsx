@@ -318,8 +318,10 @@ export const ProductDetail = () => {
                     setSelectedOptions(defaults);
                 }
 
-                // Log browsing behavior
-                api.logBrowse(prod.id, prod.category_id).catch(() => {});
+                // Log browsing behavior (no auth check needed now)
+                if (prod) {
+                    api.logBrowse(prod.id, prod.category_id).catch(() => {});
+                }
 
                 // Check for review parameter
                 const params = new URLSearchParams(location.search);

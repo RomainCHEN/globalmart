@@ -105,28 +105,90 @@ router.patch('/:id/toggle-online', requireAuth, async (req, res) => {
 // GET /api/stores/me/analytics — seller analytics (popularity & trends)
 router.get('/me/analytics', requireAuth, async (req, res) => {
     try {
-        // EMERGENCY RESTORATION: Return a simple structure to ensure server stability
-        const { data: store } = await supabaseAdmin.from('stores').select('id').eq('seller_id', req.user.id).single();
-        if (!store) return res.status(404).json({ error: 'Store not found' });
-
-        const { data: products } = await supabaseAdmin.from('products').select('id, name, name_zh, price, image').eq('store_id', store.id).limit(10);
+        // 1. Get seller's store and products
+        const { data: store, error: storeError } = await supabaseAdmin
+            .from('stores')
+            .select('id')
+            .eq('seller_id', req.user.id)
+            .single();
         
-        const topProducts = (products || []).map(p => ({
-            id: p.id,
-            name: p.name,
-            name_zh: p.name_zh,
-            price: p.price,
-            image: p.image,
-            views: 0
-        }));
+        if (storeError || !store) return res.status(404).json({ error: 'Store not found' });
+
+        const { data: products, error: prodError } = await supabaseAdmin
+            .from('products')
+            .select('id, name, name_zh, price, image, tags')
+            .eq('store_id', store.id);
+        
+        if (prodError || !products || products.length === 0) {
+            return res.json({ topProducts: [], searchTrends: [] });
+        }
+
+        const productIds = products.map(p => p.id);
+
+        // 2. Get top products by browse count (Aggregated)
+        // We use a manual grouping to avoid complex SQL that might fail on different Supabase setups
+        const { data: browseStats, error: browseError } = await supabaseAdmin
+            .from('browse_logs')
+            .select('product_id')
+            .in('product_id', productIds);
+        
+        const counts = (browseStats || []).reduce((acc, log) => {
+            acc[log.product_id] = (acc[log.product_id] || 0) + 1;
+            return acc;
+        }, {});
+
+        const topProducts = products
+            .map(p => ({
+                id: p.id,
+                name: p.name,
+                name_zh: p.name_zh,
+                price: p.price,
+                image: p.image,
+                views: counts[p.id] || 0
+            }))
+            .sort((a, b) => b.views - a.views)
+            .slice(0, 5);
+
+        // 3. Get search trends related to seller's products
+        // Create a list of keywords from product names to filter global search logs
+        const sellerKeywords = new Set();
+        products.forEach(p => {
+            const parts = [p.name, p.name_zh, p.tags ? p.tags.join(' ') : ''];
+            parts.join(' ').toLowerCase().split(/[\s,.\-\/]+/).forEach(word => {
+                if (word.length > 2) sellerKeywords.add(word);
+            });
+        });
+
+        const { data: searchLogs } = await supabaseAdmin
+            .from('search_logs')
+            .select('query')
+            .order('created_at', { ascending: false })
+            .limit(1000);
+        
+        const trendCounts = {};
+        (searchLogs || []).forEach(log => {
+            const q = log.query.toLowerCase().trim();
+            if (!q) return;
+            
+            // Check if search query contains any seller keywords
+            const isRelevant = Array.from(sellerKeywords).some(sk => q.includes(sk));
+            if (isRelevant) {
+                trendCounts[q] = (trendCounts[q] || 0) + 1;
+            }
+        });
+
+        const searchTrends = Object.entries(trendCounts)
+            .map(([query, count]) => ({ query, count: Number(count) }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10);
 
         res.json({ 
-            topProducts: topProducts, 
-            searchTrends: [] 
+            topProducts: topProducts || [], 
+            searchTrends: searchTrends || [] 
         });
     } catch (err) {
-        console.error('Analytics Error:', err);
-        res.status(500).json({ error: err.message });
+        console.error('Analytics Error:', err.message);
+        res.status(500).json({ error: 'Failed to load analytics' });
     }
 });
 

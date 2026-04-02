@@ -289,7 +289,8 @@ router.post('/log/search', optionalAuth, async (req, res) => {
         if (error) return res.status(400).json({ error: error.message });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Search logging failed:', err.message);
+        res.json({ success: true, warning: 'Log skipped' });
     }
 });
 
@@ -311,7 +312,8 @@ router.post('/log/browse', optionalAuth, async (req, res) => {
         if (error) return res.status(400).json({ error: error.message });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Browse logging failed:', err.message);
+        res.json({ success: true, warning: 'Log skipped' });
     }
 });
 

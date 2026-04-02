@@ -237,9 +237,9 @@ export const api = {
         return data;
     },
     logSearch: (query: string) =>
-        request('/products/search/log', { method: 'POST', body: JSON.stringify({ query }) }),
+        request('/products/log/search', { method: 'POST', body: JSON.stringify({ query }) }),
     logBrowse: (productId: string, categoryId?: string) =>
-        request('/products/browse/log', { method: 'POST', body: JSON.stringify({ product_id: productId, category_id: categoryId }) }),
+        request('/products/log/browse', { method: 'POST', body: JSON.stringify({ product_id: productId, category_id: categoryId }) }),
     getStoreAnalytics: () =>
         request('/stores/me/analytics'),
     getNotifications: () =>

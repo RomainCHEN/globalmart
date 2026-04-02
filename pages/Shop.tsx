@@ -319,9 +319,7 @@ export const ProductDetail = () => {
                 }
 
                 // Log browsing behavior
-                if (isLoggedIn) {
-                    api.logBrowse(prod.id, prod.category_id).catch(() => {});
-                }
+                api.logBrowse(prod.id, prod.category_id).catch(() => {});
 
                 // Check for review parameter
                 const params = new URLSearchParams(location.search);
@@ -743,6 +741,15 @@ export const StoreDetailPage = () => {
             .catch(() => { })
             .finally(() => setIsSearching(false));
     }, [id, storeSearch]);
+
+    // Log search trends in store
+    useEffect(() => {
+        if (!storeSearch || storeSearch.trim().length < 2) return;
+        const timer = setTimeout(() => {
+            api.logSearch(storeSearch.trim()).catch(() => {});
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, [storeSearch]);
 
     if (loading) {
         return (

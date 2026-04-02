@@ -116,35 +116,45 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
         const categoryIds = [...new Set(products.map(p => p.category_id).filter(Boolean))];
 
         // 2. Get top products by browse count
-        // Grouping by product_id manually from browse_logs
-        const { data: browseLogs } = await supabaseAdmin
-            .from('browse_logs')
-            .select('product_id')
-            .in('product_id', productIds);
-        
-        const counts = (browseLogs || []).reduce((acc, log) => {
-            acc[log.product_id] = (acc[log.product_id] || 0) + 1;
-            return acc;
-        }, {});
+        // Using count for each product
+        const topProductsData = await Promise.all(products.map(async (p) => {
+            const { count } = await supabaseAdmin
+                .from('browse_logs')
+                .select('*', { count: 'exact', head: true })
+                .eq('product_id', p.id);
+            return { ...p, views: count || 0 };
+        }));
 
-        const topProducts = products
-            .map(p => ({ ...p, views: counts[p.id] || 0 }))
+        const topProducts = topProductsData
             .sort((a, b) => b.views - a.views)
             .slice(0, 5);
 
-        // 3. Get search trends related to seller's categories
+        // 3. Get search trends related to seller's products/categories
+        // Extract relevant keywords from seller's products to filter trends
+        const sellerKeywords = new Set();
+        products.forEach(p => {
+            p.name.split(/\s+/).forEach(word => {
+                const clean = word.toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (clean.length > 2) sellerKeywords.add(clean);
+            });
+        });
+
         const { data: searchLogs } = await supabaseAdmin
             .from('search_logs')
             .select('query')
             .order('created_at', { ascending: false })
-            .limit(100);
+            .limit(500);
         
-        // Find keywords that appear frequently
-        const keywords = (searchLogs || []).map(l => l.query.toLowerCase());
-        const trendCounts = keywords.reduce((acc, k) => {
-            acc[k] = (acc[k] || 0) + 1;
-            return acc;
-        }, {});
+        const keywords = (searchLogs || []).map(l => l.query.toLowerCase().trim());
+        const trendCounts = {};
+        
+        keywords.forEach(k => {
+            // Check if this search query is relevant to the seller
+            const isRelevant = Array.from(sellerKeywords).some(sk => k.includes(sk));
+            if (isRelevant) {
+                trendCounts[k] = (trendCounts[k] || 0) + 1;
+            }
+        });
 
         const searchTrends = Object.entries(trendCounts)
             .map(([query, count]) => ({ query, count }))

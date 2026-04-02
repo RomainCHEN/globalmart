@@ -9,15 +9,14 @@ router.get('/', async (req, res) => {
     try {
         const { search, category, min_price, max_price, sort, page = 1, limit = 20, tag, include_disabled } = req.query;
 
-        // A21: Only show enabled products for the public storefront
+        // A21: Only show enabled products from online stores for the public storefront
         let query = supabaseAdmin
             .from('products')
-            .select('*, categories(name, slug), product_images(url, sort_order), stores(id, name, logo, verified, is_online)', { count: 'exact' });
+            .select('*, categories(name, slug), product_images(url, sort_order), stores!inner(id, name, logo, verified, is_online)', { count: 'exact' });
 
         if (include_disabled !== 'true') {
             query = query.eq('enabled', true);
-            // We can still filter for online stores if desired, but let's be careful not to hide everything.
-            // For restoration, we'll just check if product is enabled.
+            query = query.eq('stores.is_online', true);
         }
 
         if (search) {

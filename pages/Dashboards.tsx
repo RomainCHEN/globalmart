@@ -1328,71 +1328,58 @@ export const SellerDashboard = () => {
 
                                                             {/* Order Timeline */}
                                                             <div className="border-t-2 border-black/10 pt-6">
-                                                                <h4 className="font-black uppercase text-xs text-gray-400 mb-4">{lang === 'zh' ? '订单时间线' : 'Order Timeline'}</h4>
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="size-8 bg-brutal-yellow border-2 border-black flex items-center justify-center shrink-0">
-                                                                            <span className="material-symbols-outlined text-sm font-black">add_shopping_cart</span>
-                                                                        </div>
-                                                                        <div>
-                                                                            <p className="text-[10px] font-black uppercase text-gray-400">{lang === 'zh' ? '创建日期' : 'Created Date'}</p>
-                                                                            <p className="text-xs font-bold">{new Date(o.created_at).toLocaleString()}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                    {o.ticket_issued_at && (
+                                                                <h4 className="font-black uppercase text-xs text-gray-400 mb-4">{lang === 'zh' ? '订单操作记录' : 'Order Status Records'}</h4>
+                                                                <div className="space-y-4">
+                                                                    {(!o.status_history || o.status_history.length === 0) ? (
                                                                         <div className="flex items-center gap-3">
-                                                                            <div className="size-8 bg-brutal-blue border-2 border-black flex items-center justify-center shrink-0 text-white">
-                                                                                <span className="material-symbols-outlined text-sm font-black">confirmation_number</span>
+                                                                            <div className="size-8 bg-brutal-yellow border-2 border-black flex items-center justify-center shrink-0">
+                                                                                <span className="material-symbols-outlined text-sm font-black">add_shopping_cart</span>
                                                                             </div>
                                                                             <div>
-                                                                                <p className="text-[10px] font-black uppercase text-gray-400">{lang === 'zh' ? '发卡日期' : 'Ticket Issue Date'}</p>
-                                                                                <p className="text-xs font-bold">{new Date(o.ticket_issued_at).toLocaleString()}</p>
+                                                                                <p className="text-[10px] font-black uppercase text-gray-400">{lang === 'zh' ? '创建日期' : 'Created Date'}</p>
+                                                                                <p className="text-xs font-bold">{new Date(o.created_at).toLocaleString()}</p>
                                                                             </div>
                                                                         </div>
-                                                                    )}
-                                                                    {o.shipped_at && (
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className="size-8 bg-brutal-orange border-2 border-black flex items-center justify-center shrink-0 text-white">
-                                                                                <span className="material-symbols-outlined text-sm font-black">local_shipping</span>
+                                                                    ) : (
+                                                                        o.status_history.map((record: any, idx: number) => (
+                                                                            <div key={idx} className="flex items-start gap-4 relative">
+                                                                                {idx !== o.status_history.length - 1 && (
+                                                                                    <div className="absolute left-4 top-8 bottom-[-16px] w-0.5 bg-black/10" />
+                                                                                )}
+                                                                                <div className={`size-8 border-2 border-black flex items-center justify-center shrink-0 z-10 ${
+                                                                                    record.status === 'delivered' ? 'bg-brutal-green' : 
+                                                                                    record.status === 'cancelled' ? 'bg-brutal-red text-white' : 
+                                                                                    record.status === 'shipped' ? 'bg-brutal-blue text-white' : 
+                                                                                    record.status === 'hold' ? 'bg-orange-400' : 'bg-brutal-yellow'
+                                                                                }`}>
+                                                                                    <span className="material-symbols-outlined text-sm font-black">
+                                                                                        {record.status === 'delivered' ? 'task_alt' : 
+                                                                                         record.status === 'cancelled' ? 'cancel' : 
+                                                                                         record.status === 'shipped' ? 'local_shipping' : 
+                                                                                         record.status === 'hold' ? 'pause_circle' : 'history'}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="flex-1">
+                                                                                    <div className="flex justify-between items-start">
+                                                                                        <p className="text-xs font-black uppercase tracking-tight">
+                                                                                            {t(`order.${record.status}`)}
+                                                                                        </p>
+                                                                                        <p className="text-[10px] font-bold text-gray-400">
+                                                                                            {new Date(record.timestamp).toLocaleString()}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                    <p className="text-[10px] font-bold mt-0.5">
+                                                                                        <span className="text-gray-500 uppercase">{lang === 'zh' ? '操作人' : 'By'}:</span>{' '}
+                                                                                        <span className="text-black">{record.actor_name}</span>{' '}
+                                                                                        <span className="bg-gray-100 px-1 border border-black/10 rounded text-[8px] uppercase">
+                                                                                            {record.actor_role === 'seller' ? (lang === 'zh' ? '卖家' : 'Seller') : 
+                                                                                             record.actor_role === 'admin' ? (lang === 'zh' ? '管理员' : 'Admin') : 
+                                                                                             (lang === 'zh' ? '买家' : 'Customer')}
+                                                                                        </span>
+                                                                                    </p>
+                                                                                </div>
                                                                             </div>
-                                                                            <div>
-                                                                                <p className="text-[10px] font-black uppercase text-gray-400">{lang === 'zh' ? '发货日期' : 'Shipment Date'}</p>
-                                                                                <p className="text-xs font-bold">{new Date(o.shipped_at).toLocaleString()}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                    {o.delivered_at && (
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className="size-8 bg-brutal-green border-2 border-black flex items-center justify-center shrink-0">
-                                                                                <span className="material-symbols-outlined text-sm font-black">task_alt</span>
-                                                                            </div>
-                                                                            <div>
-                                                                                <p className="text-[10px] font-black uppercase text-gray-400">{lang === 'zh' ? '送达日期' : 'Delivery Date'}</p>
-                                                                                <p className="text-xs font-bold">{new Date(o.delivered_at).toLocaleString()}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                    {o.cancelled_at && (
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className="size-8 bg-brutal-red border-2 border-black flex items-center justify-center shrink-0 text-white">
-                                                                                <span className="material-symbols-outlined text-sm font-black">cancel</span>
-                                                                            </div>
-                                                                            <div>
-                                                                                <p className="text-[10px] font-black uppercase text-gray-400">{lang === 'zh' ? '取消日期' : 'Cancel Date'}</p>
-                                                                                <p className="text-xs font-bold">{new Date(o.cancelled_at).toLocaleString()}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                    {o.refunded_at && (
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className="size-8 bg-brutal-pink border-2 border-black flex items-center justify-center shrink-0 text-white">
-                                                                                <span className="material-symbols-outlined text-sm font-black">payments</span>
-                                                                            </div>
-                                                                            <div>
-                                                                                <p className="text-[10px] font-black uppercase text-gray-400">{lang === 'zh' ? '退款日期' : 'Refund Date'}</p>
-                                                                                <p className="text-xs font-bold">{new Date(o.refunded_at).toLocaleString()}</p>
-                                                                            </div>
-                                                                        </div>
+                                                                        ))
                                                                     )}
                                                                 </div>
                                                             </div>

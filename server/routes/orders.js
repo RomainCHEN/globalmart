@@ -23,6 +23,15 @@ router.post('/', requireAuth, async (req, res) => {
             total += Number(item.price) * Number(item.quantity);
         }
 
+        const { data: profile } = await supabaseAdmin.from('profiles').select('name, role').eq('id', req.user.id).single();
+
+        const initialHistory = [{
+            status: 'pending',
+            timestamp: new Date().toISOString(),
+            actor_name: profile?.name || 'Customer',
+            actor_role: profile?.role || 'user'
+        }];
+
         const { data: order, error: orderError } = await supabaseAdmin
             .from('orders')
             .insert({
@@ -35,7 +44,8 @@ router.post('/', requireAuth, async (req, res) => {
                 shipping_zip: shipping?.zip || '',
                 shipping_country: shipping?.country || '',
                 payment_method: payment_method || 'credit_card',
-                status: 'pending'
+                status: 'pending',
+                status_history: initialHistory
             })
             .select()
             .single();
@@ -75,14 +85,12 @@ router.post('/', requireAuth, async (req, res) => {
                 .eq('user_id', req.user.id);
         } catch (cartErr) {
             console.warn('Failed to clear cart after order:', cartErr.message);
-            // Don't fail the whole request just because cart cleanup failed
         }
 
         res.status(201).json(order);
     } catch (err) {
         console.error('Unexpected order creation error:', err);
         if (createdOrderId) {
-            // Attempt cleanup if something else failed after order creation
             await supabaseAdmin.from('orders').delete().eq('id', createdOrderId);
         }
         res.status(500).json({ error: err.message });
@@ -178,7 +186,6 @@ router.get('/seller', requireAuth, async (req, res) => {
 // GET /api/orders/:id — get order detail (for customer or seller)
 router.get('/:id', requireAuth, async (req, res) => {
     try {
-        // First try as customer
         let { data, error } = await supabaseAdmin
             .from('orders')
             .select('*, order_items(*), stores(id, name, logo)')
@@ -187,7 +194,6 @@ router.get('/:id', requireAuth, async (req, res) => {
 
         if (error) return res.status(404).json({ error: 'Order not found' });
 
-        // Allow access if user is the customer, a seller, or admin
         const { data: profile } = await supabaseAdmin
             .from('profiles')
             .select('role')
@@ -209,7 +215,7 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
     try {
         const { data: profile } = await supabaseAdmin
             .from('profiles')
-            .select('role')
+            .select('name, role')
             .eq('id', req.user.id)
             .single();
 
@@ -218,14 +224,28 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
         }
 
         const { status } = req.body;
-        const validStatuses = ['pending', 'ordered', 'shipped', 'delivered', 'hold', 'cancelled', 'refund_requested', 'refunded'];
+        const validStatuses = ['pending', 'shipped', 'delivered', 'hold', 'cancelled', 'refund_requested', 'refunded'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ error: 'Invalid status' });
         }
 
-        // Build update with date tracking
-        const updates = { status, updated_at: new Date().toISOString() };
-        if (status === 'ordered') updates.ticket_issued_at = new Date().toISOString();
+        // Get current history
+        const { data: currentOrder } = await supabaseAdmin.from('orders').select('status_history').eq('id', req.params.id).single();
+        const history = currentOrder?.status_history || [];
+        
+        const newRecord = {
+            status,
+            timestamp: new Date().toISOString(),
+            actor_name: profile.name || 'Unknown',
+            actor_role: profile.role
+        };
+
+        const updates = { 
+            status, 
+            updated_at: new Date().toISOString(),
+            status_history: [...history, newRecord]
+        };
+        
         if (status === 'shipped') updates.shipped_at = new Date().toISOString();
         if (status === 'delivered') updates.delivered_at = new Date().toISOString();
         if (status === 'hold') updates.hold_at = new Date().toISOString();
@@ -248,26 +268,32 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
 // PATCH /api/orders/:id/cancel — customer cancels order (only if pending or hold)
 router.patch('/:id/cancel', requireAuth, async (req, res) => {
     try {
-        // Get current order
-        const { data: order, error: getErr } = await supabaseAdmin
-            .from('orders')
-            .select('*')
-            .eq('id', req.params.id)
-            .eq('user_id', req.user.id)
-            .single();
+        const [{ data: order }, { data: profile }] = await Promise.all([
+            supabaseAdmin.from('orders').select('*').eq('id', req.params.id).eq('user_id', req.user.id).single(),
+            supabaseAdmin.from('profiles').select('name, role').eq('id', req.user.id).single()
+        ]);
 
-        if (getErr || !order) return res.status(404).json({ error: 'Order not found' });
+        if (!order) return res.status(404).json({ error: 'Order not found' });
 
         if (order.status !== 'pending' && order.status !== 'hold') {
             return res.status(400).json({ error: 'Only pending or hold orders can be cancelled' });
         }
+
+        const history = order.status_history || [];
+        const newRecord = {
+            status: 'cancelled',
+            timestamp: new Date().toISOString(),
+            actor_name: profile?.name || 'Customer',
+            actor_role: profile?.role || 'user'
+        };
 
         const { data, error } = await supabaseAdmin
             .from('orders')
             .update({
                 status: 'cancelled',
                 cancelled_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+                status_history: [...history, newRecord]
             })
             .eq('id', req.params.id)
             .select();
@@ -282,25 +308,32 @@ router.patch('/:id/cancel', requireAuth, async (req, res) => {
 // PATCH /api/orders/:id/refund — customer requests refund (only if delivered)
 router.patch('/:id/refund', requireAuth, async (req, res) => {
     try {
-        const { data: order, error: getErr } = await supabaseAdmin
-            .from('orders')
-            .select('*')
-            .eq('id', req.params.id)
-            .eq('user_id', req.user.id)
-            .single();
+        const [{ data: order }, { data: profile }] = await Promise.all([
+            supabaseAdmin.from('orders').select('*').eq('id', req.params.id).eq('user_id', req.user.id).single(),
+            supabaseAdmin.from('profiles').select('name, role').eq('id', req.user.id).single()
+        ]);
 
-        if (getErr || !order) return res.status(404).json({ error: 'Order not found' });
+        if (!order) return res.status(404).json({ error: 'Order not found' });
 
         if (order.status !== 'delivered') {
             return res.status(400).json({ error: 'Only delivered orders can request refund' });
         }
+
+        const history = order.status_history || [];
+        const newRecord = {
+            status: 'refund_requested',
+            timestamp: new Date().toISOString(),
+            actor_name: profile?.name || 'Customer',
+            actor_role: profile?.role || 'user'
+        };
 
         const { data, error } = await supabaseAdmin
             .from('orders')
             .update({
                 status: 'refund_requested',
                 refund_requested_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+                status_history: [...history, newRecord]
             })
             .eq('id', req.params.id)
             .select();
@@ -317,7 +350,7 @@ router.patch('/:id/approve-refund', requireAuth, async (req, res) => {
     try {
         const { data: profile } = await supabaseAdmin
             .from('profiles')
-            .select('role')
+            .select('name, role')
             .eq('id', req.user.id)
             .single();
 
@@ -335,12 +368,21 @@ router.patch('/:id/approve-refund', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'Order is not in refund_requested status' });
         }
 
+        const history = order.status_history || [];
+        const newRecord = {
+            status: 'refunded',
+            timestamp: new Date().toISOString(),
+            actor_name: profile.name || 'Seller',
+            actor_role: profile.role
+        };
+
         const { data, error } = await supabaseAdmin
             .from('orders')
             .update({
                 status: 'refunded',
                 refunded_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+                status_history: [...history, newRecord]
             })
             .eq('id', req.params.id)
             .select();

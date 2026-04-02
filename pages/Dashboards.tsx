@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AddressSelector } from '../components/AddressSelector';
 import { useApp } from '../context';
 import { useI18n, localized } from '../i18n';
@@ -13,24 +13,36 @@ export const UserDashboard = () => {
     const { user, isLoggedIn, logout, formatPrice } = useApp();
     const { t, lang } = useI18n();
     const navigate = useNavigate();
+    const location = useLocation();
+
     const [orders, setOrders] = useState<Order[]>([]);
     const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
     const [isBirthday, setIsBirthday] = useState(false);
     const [profile, setProfile] = useState<any>(null);
     const [editProfile, setEditProfile] = useState(false);
-    const [profileForm, setProfileForm] = useState({ 
-        name: '', 
-        contact_person: '', 
-        contact_phone: '', 
+    const [profileForm, setProfileForm] = useState({
+        name: '',
+        contact_person: '',
+        contact_phone: '',
         birthday_month: '',
         birthday_day: '',
-        shipping_address: { street: '', city: '', state: '', zip: '', country: '' } 
+        shipping_address: { street: '', city: '', state: '', zip: '', country: '' }
     });
 
     const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'profile'>(() => {
-        const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(location.search);
         return (params.get('tab') as 'orders' | 'wishlist' | 'profile') || 'orders';
     });
+
+    // Sync activeTab with URL
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const tab = params.get('tab') as 'orders' | 'wishlist' | 'profile';
+        if (tab && tab !== activeTab) {
+            setActiveTab(tab);
+        }
+    }, [location.search]);
+
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('all');
 

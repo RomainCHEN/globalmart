@@ -88,10 +88,6 @@ export const MainLayout = () => {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            // Log search query
-            if (isLoggedIn) {
-                api.logSearch(searchQuery.trim()).catch(() => {});
-            }
             navigate(`/?search=${encodeURIComponent(searchQuery.trim())}`);
             setSearchOpen(false);
         }

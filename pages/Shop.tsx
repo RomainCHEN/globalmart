@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useApp } from '../context';
 import { useI18n, localized } from '../i18n';
 import { api } from '../api';
@@ -9,9 +9,10 @@ export const ShopHome = () => {
     const { categories, addToCart, toggleWishlist, isInWishlist, isLoggedIn, formatPrice } = useApp();
     const { t, lang } = useI18n();
     const navigate = useNavigate();
+    const location = useLocation();
     
     // Get search from URL on mount
-    const initialSearch = new URLSearchParams(window.location.search).get('search') || '';
+    const initialSearch = new URLSearchParams(location.search).get('search') || '';
     const [search, setSearch] = useState(initialSearch);
     
     const [selectedCategory, setSelectedCategory] = useState('');
@@ -65,7 +66,7 @@ export const ShopHome = () => {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(location.search);
         if (search.trim()) {
             params.set('search', search.trim());
         } else {
@@ -76,11 +77,11 @@ export const ShopHome = () => {
 
     // Sync search state with URL query parameter changes
     useEffect(() => {
-        const urlSearch = new URLSearchParams(window.location.search).get('search') || '';
+        const urlSearch = new URLSearchParams(location.search).get('search') || '';
         if (urlSearch !== search) {
             setSearch(urlSearch);
         }
-    }, [window.location.search]);
+    }, [location.search]);
 
     const handleLoadMore = () => {
         fetchProducts(page + 1, true);
@@ -279,6 +280,7 @@ export const ProductDetail = () => {
     const { addToCart, toggleWishlist, isInWishlist, isLoggedIn, formatPrice } = useApp();
     const { t, lang } = useI18n();
     const navigate = useNavigate();
+    const location = useLocation();
     const [product, setProduct] = useState<Product | null>(null);
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
@@ -322,7 +324,7 @@ export const ProductDetail = () => {
                 }
 
                 // Check for review parameter
-                const params = new URLSearchParams(window.location.search);
+                const params = new URLSearchParams(location.search);
                 if (params.get('review') === 'true') {
                     setShowReviewForm(true);
                     // Scroll to review form after a short delay
@@ -334,7 +336,7 @@ export const ProductDetail = () => {
             })
             .catch(() => { })
             .finally(() => setLoading(false));
-    }, [id]);
+    }, [id, location.search]);
 
     const handleAddToCart = () => {
         if (!product) return;

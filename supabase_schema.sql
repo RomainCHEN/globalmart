@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS orders (
   shipping_zip TEXT DEFAULT '',
   shipping_country TEXT DEFAULT '',
   payment_method TEXT DEFAULT 'credit_card',
+  ticket_issued_at TIMESTAMPTZ,
   shipped_at TIMESTAMPTZ,
   delivered_at TIMESTAMPTZ,
   hold_at TIMESTAMPTZ,

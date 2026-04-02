@@ -218,17 +218,19 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
         }
 
         const { status } = req.body;
-        const validStatuses = ['pending', 'shipped', 'delivered', 'hold', 'cancelled', 'refund_requested', 'refunded'];
+        const validStatuses = ['pending', 'ordered', 'shipped', 'delivered', 'hold', 'cancelled', 'refund_requested', 'refunded'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ error: 'Invalid status' });
         }
 
         // Build update with date tracking
         const updates = { status, updated_at: new Date().toISOString() };
+        if (status === 'ordered') updates.ticket_issued_at = new Date().toISOString();
         if (status === 'shipped') updates.shipped_at = new Date().toISOString();
         if (status === 'delivered') updates.delivered_at = new Date().toISOString();
         if (status === 'hold') updates.hold_at = new Date().toISOString();
         if (status === 'cancelled') updates.cancelled_at = new Date().toISOString();
+        if (status === 'refunded') updates.refunded_at = new Date().toISOString();
 
         const { data, error } = await supabaseAdmin
             .from('orders')

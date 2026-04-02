@@ -1326,10 +1326,81 @@ export const SellerDashboard = () => {
                                                                 </div>
                                                             </div>
 
+                                                            {/* Order Timeline */}
+                                                            <div className="border-t-2 border-black/10 pt-6">
+                                                                <h4 className="font-black uppercase text-xs text-gray-400 mb-4">{lang === 'zh' ? '订单时间线' : 'Order Timeline'}</h4>
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="size-8 bg-brutal-yellow border-2 border-black flex items-center justify-center shrink-0">
+                                                                            <span className="material-symbols-outlined text-sm font-black">add_shopping_cart</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="text-[10px] font-black uppercase text-gray-400">{lang === 'zh' ? '创建日期' : 'Created Date'}</p>
+                                                                            <p className="text-xs font-bold">{new Date(o.created_at).toLocaleString()}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    {o.ticket_issued_at && (
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="size-8 bg-brutal-blue border-2 border-black flex items-center justify-center shrink-0 text-white">
+                                                                                <span className="material-symbols-outlined text-sm font-black">confirmation_number</span>
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className="text-[10px] font-black uppercase text-gray-400">{lang === 'zh' ? '发卡日期' : 'Ticket Issue Date'}</p>
+                                                                                <p className="text-xs font-bold">{new Date(o.ticket_issued_at).toLocaleString()}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                    {o.shipped_at && (
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="size-8 bg-brutal-orange border-2 border-black flex items-center justify-center shrink-0 text-white">
+                                                                                <span className="material-symbols-outlined text-sm font-black">local_shipping</span>
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className="text-[10px] font-black uppercase text-gray-400">{lang === 'zh' ? '发货日期' : 'Shipment Date'}</p>
+                                                                                <p className="text-xs font-bold">{new Date(o.shipped_at).toLocaleString()}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                    {o.delivered_at && (
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="size-8 bg-brutal-green border-2 border-black flex items-center justify-center shrink-0">
+                                                                                <span className="material-symbols-outlined text-sm font-black">task_alt</span>
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className="text-[10px] font-black uppercase text-gray-400">{lang === 'zh' ? '送达日期' : 'Delivery Date'}</p>
+                                                                                <p className="text-xs font-bold">{new Date(o.delivered_at).toLocaleString()}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                    {o.cancelled_at && (
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="size-8 bg-brutal-red border-2 border-black flex items-center justify-center shrink-0 text-white">
+                                                                                <span className="material-symbols-outlined text-sm font-black">cancel</span>
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className="text-[10px] font-black uppercase text-gray-400">{lang === 'zh' ? '取消日期' : 'Cancel Date'}</p>
+                                                                                <p className="text-xs font-bold">{new Date(o.cancelled_at).toLocaleString()}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                    {o.refunded_at && (
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="size-8 bg-brutal-pink border-2 border-black flex items-center justify-center shrink-0 text-white">
+                                                                                <span className="material-symbols-outlined text-sm font-black">payments</span>
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className="text-[10px] font-black uppercase text-gray-400">{lang === 'zh' ? '退款日期' : 'Refund Date'}</p>
+                                                                                <p className="text-xs font-bold">{new Date(o.refunded_at).toLocaleString()}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
                                                             <div className="bg-gray-100 p-4 border-2 border-black">
                                                                 <h4 className="font-black uppercase text-xs mb-3">{t('seller.updateStatus')}</h4>
                                                                 <div className="flex flex-wrap gap-2">
-                                                                    {['pending', 'shipped', 'delivered', 'hold', 'cancelled'].map(s => (
+                                                                    {['pending', 'ordered', 'shipped', 'delivered', 'hold', 'cancelled'].map(s => (
                                                                         <button 
                                                                             key={s} 
                                                                             disabled={o.status === s}

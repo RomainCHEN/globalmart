@@ -720,6 +720,15 @@ export const SellerDashboard = () => {
         }
     }, [isLoggedIn, user]);
 
+    // Refresh analytics when tab changes
+    useEffect(() => {
+        if (tab === 'analytics' && isLoggedIn) {
+            api.getStoreAnalytics()
+                .then(data => setAnalytics(data))
+                .catch(() => {});
+        }
+    }, [tab, isLoggedIn]);
+
     const loadData = async () => {
         if (!user) return;
         setLoading(true);
@@ -1347,54 +1356,99 @@ export const SellerDashboard = () => {
 
                         {/* ANALYTICS */}
                         {tab === 'analytics' && (
-                            <div className="space-y-8">
-                                <h1 className="text-5xl font-black uppercase tracking-tighter">{t('seller.analytics')}</h1>
-                                <p className="text-xl font-bold bg-white border-4 border-black p-4 shadow-brutal inline-block">
-                                    {t('seller.analytics.desc')}
-                                </p>
+                            <div className="space-y-8 pb-12">
+                                <div className="bg-brutal-pink border-4 border-black p-8 shadow-brutal flex items-center gap-8 mb-12">
+                                    <div className="size-24 border-8 border-black bg-white flex items-center justify-center rotate-3 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                                        <span className="material-symbols-outlined text-6xl font-black">monitoring</span>
+                                    </div>
+                                    <div>
+                                        <h1 className="text-6xl font-black uppercase tracking-tighter italic drop-shadow-[4px_4px_0px_rgba(255,255,255,1)]">Analytics</h1>
+                                        <p className="font-bold text-xl uppercase bg-black text-white px-3 py-1 mt-2 inline-block">
+                                            {lang === 'zh' ? '洞察您的店铺表现' : 'Insights into your store performance'}
+                                        </p>
+                                    </div>
+                                </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                    <div className="bg-white border-4 border-black shadow-brutal p-6">
-                                        <h2 className="text-2xl font-black uppercase mb-6 flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-brutal-pink">trending_up</span>
-                                            {t('seller.analytics.popular')}
-                                        </h2>
-                                        <div className="space-y-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                    {/* Top Products */}
+                                    <div className="bg-white border-4 border-black shadow-brutal p-8 flex flex-col h-full">
+                                        <div className="flex items-center gap-4 mb-8 border-b-4 border-black pb-4">
+                                            <span className="material-symbols-outlined text-4xl bg-brutal-blue text-white p-2 border-2 border-black">visibility</span>
+                                            <h2 className="text-3xl font-black uppercase italic tracking-tighter">{lang === 'zh' ? '最受欢迎商品' : 'Top Products'}</h2>
+                                        </div>
+                                        
+                                        <div className="space-y-6 flex-1">
                                             {analytics.topProducts.length === 0 ? (
-                                                <p className="text-gray-500 font-bold py-8 text-center italic">{t('seller.analytics.noBrowse')}</p>
-                                            ) : analytics.topProducts.map((p, idx) => (
-                                                <div key={p.id} className="flex items-center justify-between border-b-2 border-black pb-3 last:border-0">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="font-black text-2xl text-gray-300">#{idx + 1}</span>
-                                                        <span className="font-bold">{localized(p, 'name', lang)}</span>
-                                                    </div>
-                                                    <div className="bg-brutal-blue text-white px-3 py-1 border-2 border-black font-black text-sm uppercase">
-                                                        {p.views} {t('seller.analytics.views')}
-                                                    </div>
+                                                <div className="h-full flex flex-col items-center justify-center py-20 text-gray-400 border-4 border-dashed border-gray-100">
+                                                    <span className="material-symbols-outlined text-6xl mb-4">analytics</span>
+                                                    <p className="font-black uppercase">{lang === 'zh' ? '暂无浏览数据' : 'No view data yet'}</p>
                                                 </div>
-                                            ))}
+                                            ) : (
+                                                analytics.topProducts.map((p, idx) => (
+                                                    <div key={p.id} className="group flex items-center gap-6 p-4 border-4 border-black bg-[#f9f9f9] hover:bg-brutal-yellow transition-all hover:-translate-y-1 relative">
+                                                        <div className="absolute -top-3 -left-3 size-10 bg-black text-white flex items-center justify-center font-black italic border-2 border-white rotate-12 group-hover:rotate-0 transition-transform z-10">
+                                                            {idx + 1}
+                                                        </div>
+                                                        <div className="w-20 h-20 border-4 border-black overflow-hidden bg-white shrink-0">
+                                                            <img src={p.image} alt="" className="w-full h-full object-contain" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h3 className="font-black uppercase text-lg truncate mb-1">{localized(p, 'name', lang)}</h3>
+                                                            <div className="flex items-center gap-4">
+                                                                <span className="text-2xl font-black tracking-tighter">{formatPrice(p.price)}</span>
+                                                                <span className="text-xs font-bold bg-black text-white px-2 py-0.5 rounded uppercase">
+                                                                    {p.views || 0} {lang === 'zh' ? '次访问' : 'Views'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <Link to={`/product/${p.id}`} className="size-12 border-4 border-black bg-white flex items-center justify-center hover:bg-brutal-blue hover:text-white transition-colors">
+                                                            <span className="material-symbols-outlined font-black">open_in_new</span>
+                                                        </Link>
+                                                    </div>
+                                                ))
+                                            )}
                                         </div>
                                     </div>
 
-                                    <div className="bg-white border-4 border-black shadow-brutal p-6">
-                                        <h2 className="text-2xl font-black uppercase mb-6 flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-brutal-blue">search_insights</span>
-                                            {t('seller.analytics.trends')}
-                                        </h2>
-                                        <div className="flex flex-wrap gap-3">
-                                            {analytics.searchTrends.length === 0 ? (
-                                                <p className="text-gray-500 font-bold py-8 text-center w-full italic">{t('seller.analytics.noSearch')}</p>
-                                            ) : analytics.searchTrends.map((t_item, idx) => (
-                                                <div key={idx} className="bg-brutal-yellow border-2 border-black px-4 py-2 flex items-center gap-2 hover:-translate-y-1 transition-all cursor-default">
-                                                    <span className="font-black text-sm uppercase">{t_item.query}</span>
-                                                    <span className="bg-black text-white px-1.5 py-0.5 rounded text-[10px] font-black">{t_item.count}</span>
-                                                </div>
-                                            ))}
+                                    {/* Search Trends */}
+                                    <div className="bg-white border-4 border-black shadow-brutal p-8 flex flex-col h-full">
+                                        <div className="flex items-center gap-4 mb-8 border-b-4 border-black pb-4">
+                                            <span className="material-symbols-outlined text-4xl bg-brutal-orange text-white p-2 border-2 border-black">search_insights</span>
+                                            <h2 className="text-3xl font-black uppercase italic tracking-tighter">{lang === 'zh' ? '关联搜索趋势' : 'Search Trends'}</h2>
                                         </div>
-                                        <div className="mt-8 bg-brutal-green/10 border-2 border-dashed border-black p-4">
-                                            <p className="text-xs font-bold leading-relaxed italic">
-                                                <strong>{lang === 'zh' ? '提示：' : 'Tip:'}</strong> {t('seller.analytics.tip')}
-                                            </p>
+
+                                        <div className="flex-1">
+                                            {analytics.searchTrends.length === 0 ? (
+                                                <div className="h-full flex flex-col items-center justify-center py-20 text-gray-400 border-4 border-dashed border-gray-100">
+                                                    <span className="material-symbols-outlined text-6xl mb-4">search_off</span>
+                                                    <p className="font-black uppercase">{lang === 'zh' ? '暂无相关搜索' : 'No related searches'}</p>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-wrap gap-4">
+                                                    {analytics.searchTrends.map((t_item, idx) => (
+                                                        <div key={idx} className="flex items-center border-4 border-black bg-white shadow-brutal-sm hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all overflow-hidden">
+                                                            <span className="bg-brutal-orange text-white px-4 py-3 font-black uppercase italic border-r-4 border-black">
+                                                                {t_item.query}
+                                                            </span>
+                                                            <span className="px-4 py-3 font-black text-2xl">
+                                                                {t_item.count}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            
+                                            <div className="mt-12 bg-brutal-green p-6 border-4 border-black shadow-brutal relative">
+                                                <div className="absolute -top-4 -right-4 size-12 bg-white border-4 border-black flex items-center justify-center rotate-12">
+                                                    <span className="material-symbols-outlined font-black">lightbulb</span>
+                                                </div>
+                                                <h4 className="font-black uppercase mb-2 italic underline decoration-2">{lang === 'zh' ? '专业建议' : 'Pro Tip'}</h4>
+                                                <p className="font-bold leading-relaxed">
+                                                    {lang === 'zh' 
+                                                        ? '这些关键词是用户在查找与您类似的产品时经常搜索的内容。尝试将高频搜索词加入您的商品名称或标签中，以提高曝光率！' 
+                                                        : 'These keywords are what users search for when looking for products like yours. Try including top keywords in your product titles or tags to increase visibility!'}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

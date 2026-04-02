@@ -1399,7 +1399,7 @@ export const SellerDashboard = () => {
                                                             <div className="bg-gray-100 p-4 border-2 border-black">
                                                                 <h4 className="font-black uppercase text-xs mb-3">{t('seller.updateStatus')}</h4>
                                                                 <div className="flex flex-wrap gap-2">
-                                                                    {['pending', 'shipped', 'delivered', 'hold', 'cancelled', 'ticket_issued', 'completed'].map(s => (
+                                                                    {['pending', 'shipped', 'delivered', 'hold', 'cancelled'].map(s => (
                                                                         <button 
                                                                             key={s} 
                                                                             disabled={o.status === s}

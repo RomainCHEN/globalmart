@@ -479,6 +479,25 @@ export const OrderDetails = () => {
                             </p>
                         </div>
                     )}
+                    {(order.status === 'shipped' || order.status === 'delivered') && (
+                        <div className="bg-brutal-blue text-white border-4 border-black p-4 mb-6 shadow-brutal flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <span className="material-symbols-outlined text-3xl font-black">local_shipping</span>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase opacity-80">{lang === 'zh' ? '物流单号' : 'Tracking Number'}</p>
+                                    <p className="text-xl font-black tracking-widest">{order.tracking_number || (lang === 'zh' ? '待更新' : 'Pending Update')}</p>
+                                </div>
+                            </div>
+                            {order.tracking_number && (
+                                <button 
+                                    onClick={() => { navigator.clipboard.writeText(order.tracking_number!); alert(lang === 'zh' ? '单号已复制' : 'Tracking number copied'); }}
+                                    className="bg-white text-black border-2 border-black px-3 py-1 text-xs font-black uppercase hover:bg-brutal-yellow transition-colors"
+                                >
+                                    {lang === 'zh' ? '复制' : 'Copy'}
+                                </button>
+                            )}
+                        </div>
+                    )}
                     <div className="flex items-center gap-3 mb-4">
                         <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none font-display">{t('order.title')} #{order.id.slice(0, 8)}</h2>
                         {order.stores && (

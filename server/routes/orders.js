@@ -168,7 +168,14 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
         const validStatuses = ['pending', 'shipped', 'delivered', 'hold', 'cancelled', 'refund_requested', 'refunded', 'ticket_issued', 'completed'];
         if (!validStatuses.includes(status)) return res.status(400).json({ error: 'Invalid status' });
 
-        const { data: currentOrder } = await supabaseAdmin.from('orders').select('status_history').eq('id', req.params.id).single();
+        const { data: currentOrder } = await supabaseAdmin.from('orders').select('status, status_history').eq('id', req.params.id).single();
+        if (!currentOrder) return res.status(404).json({ error: 'Order not found' });
+
+        // Logic check: Can't deliver if not shipped
+        if (status === 'delivered' && currentOrder.status !== 'shipped') {
+            return res.status(400).json({ error: 'Order must be shipped before it can be marked as delivered' });
+        }
+
         const history = currentOrder?.status_history || [];
         
         const newRecord = {

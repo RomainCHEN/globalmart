@@ -1402,7 +1402,7 @@ export const SellerDashboard = () => {
                                                                     {['pending', 'shipped', 'delivered', 'hold', 'cancelled'].map(s => (
                                                                         <button 
                                                                             key={s} 
-                                                                            disabled={o.status === s}
+                                                                            disabled={o.status === s || (s === 'delivered' && o.status !== 'shipped')}
                                                                             onClick={async () => {
                                                                                 try {
                                                                                     let tracking = undefined;

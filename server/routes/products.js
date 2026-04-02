@@ -65,41 +65,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// POST /api/products/search/log — log a search query
-router.post('/search/log', optionalAuth, async (req, res) => {
-    try {
-        const { query } = req.body;
-        if (!query) return res.status(400).json({ error: 'Query required' });
-
-        await supabaseAdmin.from('search_logs').insert({
-            user_id: req.user?.id || null,
-            query: query.trim()
-        });
-
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// POST /api/products/browse/log — log a product view
-router.post('/browse/log', optionalAuth, async (req, res) => {
-    try {
-        const { product_id, category_id } = req.body;
-        if (!product_id) return res.status(400).json({ error: 'Product ID required' });
-
-        await supabaseAdmin.from('browse_logs').insert({
-            user_id: req.user?.id || null,
-            product_id,
-            category_id
-        });
-
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 // GET /api/products/:id — single product
 router.get('/:id', async (req, res) => {
     try {
@@ -303,6 +268,49 @@ router.delete('/:id/images/:imageId', requireAuth, async (req, res) => {
         }
 
         await supabaseAdmin.from('product_images').delete().eq('id', req.params.imageId);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/products/log/search — log a search query (no auth required)
+router.post('/log/search', optionalAuth, async (req, res) => {
+    try {
+        const { query } = req.body;
+        if (!query) return res.status(400).json({ error: 'Query is required' });
+
+        const { error } = await supabaseAdmin
+            .from('search_logs')
+            .insert({
+                query: query.trim().toLowerCase(),
+                user_id: req.user?.id || null,
+                created_at: new Date().toISOString()
+            });
+
+        if (error) return res.status(400).json({ error: error.message });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/products/log/browse — log a product view (no auth required)
+router.post('/log/browse', optionalAuth, async (req, res) => {
+    try {
+        const { product_id, category_id } = req.body;
+        if (!product_id) return res.status(400).json({ error: 'Product ID is required' });
+
+        const { error } = await supabaseAdmin
+            .from('browse_logs')
+            .insert({
+                product_id,
+                category_id: category_id || null,
+                user_id: req.user?.id || null,
+                created_at: new Date().toISOString()
+            });
+
+        if (error) return res.status(400).json({ error: error.message });
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });

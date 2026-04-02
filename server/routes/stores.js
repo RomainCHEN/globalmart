@@ -105,6 +105,8 @@ router.patch('/:id/toggle-online', requireAuth, async (req, res) => {
 // GET /api/stores/me/analytics — seller analytics (popularity & trends)
 router.get('/me/analytics', requireAuth, async (req, res) => {
     try {
+        console.log(`[Analytics] Starting for user: ${req.user.id}`);
+        
         // 1. Get seller's store and products
         const { data: store, error: storeError } = await supabaseAdmin
             .from('stores')
@@ -112,7 +114,10 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
             .eq('seller_id', req.user.id)
             .single();
         
-        if (storeError || !store) return res.status(404).json({ error: 'Store not found' });
+        if (storeError || !store) {
+            console.error('[Analytics] Store not found for user:', req.user.id);
+            return res.status(404).json({ error: 'Store not found' });
+        }
 
         const { data: products, error: prodError } = await supabaseAdmin
             .from('products')
@@ -120,20 +125,29 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
             .eq('store_id', store.id);
         
         if (prodError || !products || products.length === 0) {
+            console.log('[Analytics] No products found for store:', store.id);
             return res.json({ topProducts: [], searchTrends: [] });
         }
 
-        const productIds = products.map(p => p.id);
+        const productIds = products.map(p => String(p.id));
+        console.log(`[Analytics] Found ${productIds.length} products:`, productIds);
 
         // 2. Get top products by browse count (Aggregated)
-        // We use a manual grouping to avoid complex SQL that might fail on different Supabase setups
         const { data: browseStats, error: browseError } = await supabaseAdmin
             .from('browse_logs')
             .select('product_id')
             .in('product_id', productIds);
         
+        if (browseError) {
+            console.error('[Analytics] Error fetching browse logs:', browseError);
+            throw browseError;
+        }
+
+        console.log(`[Analytics] Fetched ${browseStats?.length || 0} browse logs`);
+
         const counts = (browseStats || []).reduce((acc, log) => {
-            acc[log.product_id] = (acc[log.product_id] || 0) + 1;
+            const pid = String(log.product_id);
+            acc[pid] = (acc[pid] || 0) + 1;
             return acc;
         }, {});
 
@@ -144,13 +158,14 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
                 name_zh: p.name_zh,
                 price: p.price,
                 image: p.image,
-                views: counts[p.id] || 0
+                views: counts[String(p.id)] || 0
             }))
             .sort((a, b) => b.views - a.views)
             .slice(0, 5);
 
+        console.log('[Analytics] Top products calculated:', topProducts.map(p => `${p.name}: ${p.views}`));
+
         // 3. Get search trends related to seller's products
-        // Create a list of keywords from product names to filter global search logs
         const sellerKeywords = new Set();
         products.forEach(p => {
             const parts = [p.name, p.name_zh, p.tags ? p.tags.join(' ') : ''];
@@ -159,18 +174,22 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
             });
         });
 
-        const { data: searchLogs } = await supabaseAdmin
+        const { data: searchLogs, error: searchError } = await supabaseAdmin
             .from('search_logs')
             .select('query')
             .order('created_at', { ascending: false })
             .limit(1000);
         
+        if (searchError) {
+            console.error('[Analytics] Error fetching search logs:', searchError);
+        }
+        
         const trendCounts = {};
         (searchLogs || []).forEach(log => {
-            const q = log.query.toLowerCase().trim();
+            if (!log.query) return;
+            const q = String(log.query).toLowerCase().trim();
             if (!q) return;
             
-            // Check if search query contains any seller keywords
             const isRelevant = Array.from(sellerKeywords).some(sk => q.includes(sk));
             if (isRelevant) {
                 trendCounts[q] = (trendCounts[q] || 0) + 1;
@@ -182,12 +201,14 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
             .sort((a, b) => b.count - a.count)
             .slice(0, 10);
 
+        console.log(`[Analytics] Success. Found ${searchTrends.length} relevant trends.`);
+
         res.json({ 
             topProducts: topProducts || [], 
             searchTrends: searchTrends || [] 
         });
     } catch (err) {
-        console.error('Analytics Error:', err.message);
+        console.error('[Analytics] Critical failure:', err.message);
         res.status(500).json({ error: 'Failed to load analytics' });
     }
 });

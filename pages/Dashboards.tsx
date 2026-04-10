@@ -171,7 +171,7 @@ export const UserDashboard = () => {
                                                 <label className="text-sm font-black uppercase">{t('auth.birthdayHint')}</label>
                                                 <button 
                                                     type="button"
-                                                    onClick={() => alert(lang === 'zh' ? '生日特惠详细规则：\n1. 账号需注册满 30 天方可激活特惠。\n2. 需至少拥有一笔“已送达”的历史订单。\n3. 生日信息一旦设定，出于安全考虑将无法再次修改。' : 'Birthday Promotion Rules:\n1. Account must be at least 30 days old.\n2. Must have at least one "Delivered" order history.\n3. Birthday info is locked once set to prevent abuse.')}
+                                                    onClick={() => alert(lang === 'zh' ? '生日特惠详细规则：\n1. 账号需注册满 30 天方可激活特惠 (Demo 账号除外)。\n2. 需至少拥有一笔“已送达”的历史订单 (Demo 账号除外)。\n3. 生日信息一旦设定，出于安全考虑将无法再次修改。' : 'Birthday Promotion Rules:\n1. Account must be at least 30 days old (Except for Demo account).\n2. Must have at least one "Delivered" order history (Except for Demo account).\n3. Birthday info is locked once set to prevent abuse.')}
                                                     className="text-[10px] font-black uppercase underline text-brutal-blue flex items-center gap-1"
                                                 >
                                                     <span className="material-symbols-outlined text-xs">info</span>
@@ -926,7 +926,7 @@ export const SellerDashboard = () => {
 
     const handleSaveProduct = async () => {
         try {
-            const body: any = { name: pf.name, name_zh: pf.name_zh || undefined, description: pf.description, description_zh: pf.description_zh || undefined, price: parseFloat(pf.price) || 0, original_price: pf.original_price ? parseFloat(pf.original_price) : undefined, category_id: pf.category_id || undefined, stock: parseInt(pf.stock) || 0, image: pf.image, tags: pf.tags ? pf.tags.split(',').map(t => t.trim()) : [] };
+            const body: any = { name: pf.name, name_zh: pf.name_zh || undefined, description: pf.description, description_zh: pf.description_zh || undefined, price: parseFloat(pf.price) || 0, original_price: pf.original_price ? parseFloat(pf.original_price) : undefined, category_id: pf.category_id || undefined, stock: parseInt(pf.stock) || 0, image: pf.image, tags: pf.tags ? pf.tags.split(',').map(t => t.trim()) : [], is_birthday_promo_enabled: pf.is_birthday_promo_enabled, birthday_promo_discount: parseInt(pf.birthday_promo_discount) || 0 };
             if (editingProduct) { await api.updateProduct(editingProduct.id, body); } else { await api.createProduct(body); }
             setShowAddProduct(false); setEditingProduct(null); resetPf(); await loadData();
         } catch { }
@@ -952,7 +952,7 @@ export const SellerDashboard = () => {
     const handleOrderStatus = async (orderId: string, status: string) => { await api.updateOrderStatus(orderId, status); await loadData(); };
     const openEdit = async (p: Product) => {
         setEditingProduct(p);
-        setPf({ name: p.name, name_zh: (p as any).name_zh || '', description: p.description || '', description_zh: (p as any).description_zh || '', price: String(p.price), original_price: String(p.original_price || ''), category_id: p.category_id || '', stock: String(p.stock || 0), image: p.image || '', tags: (p.tags || []).join(', ') });
+        setPf({ name: p.name, name_zh: (p as any).name_zh || '', description: p.description || '', description_zh: (p as any).description_zh || '', price: String(p.price), original_price: String(p.original_price || ''), category_id: p.category_id || '', stock: String(p.stock || 0), image: p.image || '', tags: (p.tags || []).join(', '), is_birthday_promo_enabled: !!(p as any).is_birthday_promo_enabled, birthday_promo_discount: String((p as any).birthday_promo_discount || '10') });
         setShowAddProduct(true);
         // Load product images
         try {

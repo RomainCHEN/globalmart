@@ -269,7 +269,6 @@ router.patch('/:id/refund', requireAuth, async (req, res) => {
 
         const { data, error } = await supabaseAdmin.from('orders').update({
             status: 'refund_requested',
-            refund_requested_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             status_history: [...history, newRecord]
         }).eq('id', req.params.id).select();

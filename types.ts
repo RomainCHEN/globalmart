@@ -54,6 +54,8 @@ export interface Order {
     delivered_at?: string;
     refund_requested_at?: string;
     refunded_at?: string;
+    refund_reason?: string;
+    refund_reject_reason?: string;
     order_items?: OrderItem[];
     profiles?: { name: string; email: string };
 }

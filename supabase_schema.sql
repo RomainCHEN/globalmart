@@ -138,6 +138,8 @@ CREATE TABLE IF NOT EXISTS orders (
   refund_requested_at TIMESTAMPTZ,
   refunded_at TIMESTAMPTZ,
   completed_at TIMESTAMPTZ,
+  refund_reason TEXT,
+  refund_reject_reason TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

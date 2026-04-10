@@ -275,7 +275,7 @@ export const ShopHome = () => {
     );
 };
 
-const ReviewItem = ({ review, lang }: { review: any, lang: string }) => {
+const ReviewItem: React.FC<{ review: any; lang: string; }> = ({ review, lang }) => {
     const [isExpanded, setIsExpanded] = useState(!review.is_risk_flagged);
     
     return (

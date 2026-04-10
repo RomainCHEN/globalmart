@@ -159,10 +159,10 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
         // 3. Get top rated products for this seller
         const { data: ratedProducts, error: ratingError } = await supabaseAdmin
             .from('products')
-            .select('id, name, name_zh, price, image, rating, rating_count')
+            .select('id, name, name_zh, price, image, rating, review_count')
             .eq('store_id', store.id)
             .order('rating', { ascending: false })
-            .order('rating_count', { ascending: false })
+            .order('review_count', { ascending: false })
             .limit(5);
 
         if (ratingError) {
@@ -179,7 +179,7 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
                 const views = counts[String(p.id)] || 0;
                 const rProd = ratedProducts?.find(rp => String(rp.id) === String(p.id));
                 const rating = rProd?.rating || 0;
-                const rCount = rProd?.rating_count || 0;
+                const rCount = rProd?.review_count || 0;
                 
                 let reason = '';
                 if (rating >= 4.0 && views < medianViews) {

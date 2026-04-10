@@ -34,6 +34,9 @@ export const UserDashboard = () => {
         return (params.get('tab') as 'orders' | 'wishlist' | 'profile') || 'orders';
     });
 
+    const [refundOrder, setRefundOrder] = useState<any>(null);
+    const [refundReason, setRefundReason] = useState('');
+
     // Sync activeTab with URL
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -314,19 +317,17 @@ export const UserDashboard = () => {
                                             <span className="text-2xl font-black">{formatPrice(order.total)}</span>
                                             
                                             {order.status === 'delivered' && (
-                                                <button 
+                                                <button
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
-                                                        const reason = prompt(lang === 'zh' ? '请输入退货原因：' : 'Please enter refund reason:');
-                                                        if (reason) api.requestRefund(order.id, reason).then(() => loadData());
+                                                        setRefundOrder(order);
                                                     }}
                                                     className="mt-2 text-[10px] font-black uppercase bg-white border-2 border-black px-2 py-1 shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
                                                 >
                                                     {lang === 'zh' ? '申请退货' : 'Request Refund'}
                                                 </button>
-                                            )}
-                                        </div>
+                                            )}                                        </div>
                                     </div>
                                 </Link>
                             ))}
@@ -398,6 +399,42 @@ export const UserDashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {refundOrder && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4">
+                    <div className="bg-white border-4 border-black shadow-[8px_8px_0_0_#000] p-6 max-w-md w-full animate-in fade-in slide-in-from-bottom-4">
+                        <h2 className="text-2xl font-black uppercase mb-4">{lang === 'zh' ? '申请退货' : 'Request Refund'}</h2>
+                        <p className="mb-2 font-bold">{lang === 'zh' ? '请填写退货原因：' : 'Please provide a reason for the refund:'}</p>
+                        <textarea
+                            value={refundReason}
+                            onChange={e => setRefundReason(e.target.value)}
+                            className="w-full border-4 border-black p-2 mb-4 font-bold focus:outline-none focus:border-brutal-blue"
+                            rows={4}
+                            placeholder={lang === 'zh' ? '收到商品破损...' : 'Item arrived damaged...'}
+                        />
+                        <div className="flex gap-4">
+                            <button 
+                                onClick={async () => {
+                                    if (!refundReason.trim()) return alert(lang === 'zh' ? '请填写原因' : 'Reason is required');
+                                    await api.requestRefund(refundOrder.id, refundReason);
+                                    setRefundOrder(null);
+                                    setRefundReason('');
+                                    loadOrders(statusFilter);
+                                }}
+                                className="flex-1 bg-brutal-green text-black border-4 border-black font-black uppercase py-2 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all shadow-[4px_4px_0_0_#000]"
+                            >
+                                {lang === 'zh' ? '提交申请' : 'Submit'}
+                            </button>
+                            <button 
+                                onClick={() => { setRefundOrder(null); setRefundReason(''); }}
+                                className="flex-1 bg-white text-black border-4 border-black font-black uppercase py-2 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all shadow-[4px_4px_0_0_#000]"
+                            >
+                                {lang === 'zh' ? '取消' : 'Cancel'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -761,6 +798,9 @@ export const SellerDashboard = () => {
     const [productSearch, setProductSearch] = useState('');
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [productImages, setProductImages] = useState<any[]>([]);
+
+    const [denyRefundOrder, setDenyRefundOrder] = useState<any>(null);
+    const [denyReason, setDenyReason] = useState('');
 
     useEffect(() => { 
         if (isLoggedIn && user) { 
@@ -1564,12 +1604,17 @@ export const SellerDashboard = () => {
                                                                     ))}
                                                                 </div>
                                                                 {o.status === 'refund_requested' && (
-                                                                    <div className="mt-4 p-4 bg-brutal-pink/10 border-4 border-black flex flex-col md:flex-row items-center justify-between gap-4">
+                                                                    <div className="mt-4 p-4 bg-brutal-pink/10 border-4 border-black flex flex-col items-start gap-4">
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="material-symbols-outlined text-brutal-pink animate-pulse">warning</span>
                                                                             <p className="text-sm font-black uppercase italic">{t('order.refundRequested')}</p>
                                                                         </div>
-                                                                        <div className="flex gap-3 w-full md:w-auto">
+                                                                        <div className="w-full">
+                                                                            <p className="text-sm font-bold text-gray-700 bg-white border-2 border-black p-2 mb-2 break-words">
+                                                                                <span className="font-black text-black">{lang === 'zh' ? '退款原因:' : 'Reason:'}</span> {o.refund_reason || 'No reason provided'}
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="flex gap-3 w-full md:w-auto mt-2">
                                                                             <button 
                                                                                 onClick={async () => {
                                                                                     if (confirm(t('order.approveRefundConfirm') || 'Approve this refund?')) {
@@ -1582,12 +1627,8 @@ export const SellerDashboard = () => {
                                                                                 {t('order.approveRefund') || 'Approve'}
                                                                             </button>
                                                                             <button 
-                                                                                onClick={async () => {
-                                                                                    const reason = prompt(lang === 'zh' ? '请输入拒绝退款的原因：' : 'Please enter reason for denying refund:');
-                                                                                    if (reason) {
-                                                                                        await api.denyRefund(o.id, reason);
-                                                                                        loadData();
-                                                                                    }
+                                                                                onClick={() => {
+                                                                                    setDenyRefundOrder(o);
                                                                                 }}
                                                                                 className="flex-1 md:flex-none bg-brutal-red text-white border-4 border-black px-6 py-2 text-xs font-black uppercase shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
                                                                             >
@@ -1791,7 +1832,7 @@ export const SellerDashboard = () => {
                                                                 <div className="flex items-center gap-1 text-brutal-pink">
                                                                     <span className="material-symbols-outlined text-sm font-black">star</span>
                                                                     <span className="font-black text-xl">{p_item.rating?.toFixed(1)}</span>
-                                                                    <span className="text-[10px] text-black/40 font-black">({p_item.rating_count} reviews)</span>
+                                                                    <span className="text-[10px] text-black/40 font-black">({p_item.review_count || 0} reviews)</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1819,7 +1860,7 @@ export const SellerDashboard = () => {
                                                                        const p = products.find(prod => String(prod.id) === String(tip.product_id));
                                                                        if (p) {
                                                                            setEditingProduct(p);
-                                                                           setActiveTab('products');
+                                                                           setTab('products');
                                                                        }
                                                                    }}
                                                                    className="mt-2 text-[10px] font-black uppercase underline hover:text-brutal-pink"
@@ -1842,6 +1883,41 @@ export const SellerDashboard = () => {
                     </>
                 )}
             </div>
+
+            {denyRefundOrder && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4">
+                    <div className="bg-white border-4 border-black shadow-[8px_8px_0_0_#000] p-6 max-w-md w-full animate-in fade-in slide-in-from-bottom-4">
+                        <h2 className="text-2xl font-black uppercase mb-4 text-brutal-red">{lang === 'zh' ? '拒绝退款' : 'Deny Refund'}</h2>
+                        <p className="mb-2 font-bold">{lang === 'zh' ? '请填写拒绝原因：' : 'Please provide a reason for denial:'}</p>
+                        <textarea
+                            value={denyReason}
+                            onChange={e => setDenyReason(e.target.value)}
+                            className="w-full border-4 border-black p-2 mb-4 font-bold focus:outline-none focus:border-brutal-blue"
+                            rows={4}
+                            placeholder={lang === 'zh' ? '商品不符合退款条件...' : 'Item does not meet refund criteria...'}
+                        />
+                        <div className="flex gap-4">
+                            <button 
+                                onClick={async () => {
+                                    if (!denyReason.trim()) return alert(lang === 'zh' ? '请填写原因' : 'Reason is required');
+                                    await handleDenyRefund(denyRefundOrder.id, denyReason);
+                                    setDenyRefundOrder(null);
+                                    setDenyReason('');
+                                }}
+                                className="flex-1 bg-brutal-red text-white border-4 border-black font-black uppercase py-2 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all shadow-[4px_4px_0_0_#000]"
+                            >
+                                {lang === 'zh' ? '确认拒绝' : 'Confirm Denial'}
+                            </button>
+                            <button 
+                                onClick={() => { setDenyRefundOrder(null); setDenyReason(''); }}
+                                className="flex-1 bg-white text-black border-4 border-black font-black uppercase py-2 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all shadow-[4px_4px_0_0_#000]"
+                            >
+                                {lang === 'zh' ? '取消' : 'Cancel'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

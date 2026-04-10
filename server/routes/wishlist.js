@@ -71,8 +71,8 @@ router.get('/', requireAuth, async (req, res) => {
                 });
             } else {
                 // If they are birthday but fail abuse checks, we can add a flag to tell the UI why
-                (data as any).abuse_prevented = true;
-                (data as any).abuse_reason = !isMatureAccount ? 'new_account' : 'no_history';
+                data.abuse_prevented = true;
+                data.abuse_reason = !isMatureAccount ? 'new_account' : 'no_history';
             }
         }
 

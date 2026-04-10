@@ -219,7 +219,7 @@ router.put('/me', requireAuth, async (req, res) => {
             .eq('id', req.user.id)
             .single();
 
-        const updates: any = {};
+        const updates = {};
         if (name !== undefined) updates.name = name;
         if (avatar !== undefined) updates.avatar = avatar;
         if (shipping_address !== undefined) updates.shipping_address = shipping_address;

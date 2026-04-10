@@ -120,10 +120,12 @@ export const api = {
         request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, tracking_number }) }),
     cancelOrder: (id: string) =>
         request(`/orders/${id}/cancel`, { method: 'PATCH' }),
-    requestRefund: (id: string) =>
-        request(`/orders/${id}/refund`, { method: 'PATCH' }),
+    requestRefund: (id: string, reason?: string) =>
+        request(`/orders/${id}/refund`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
     approveRefund: (id: string) =>
         request(`/orders/${id}/approve-refund`, { method: 'PATCH' }),
+    denyRefund: (id: string, reason: string) =>
+        request(`/orders/${id}/deny-refund`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
 
 
     // Cart (server-side)
@@ -140,6 +142,11 @@ export const api = {
 
     // Reviews
     getReviews: (productId: string) => request(`/reviews?product_id=${productId}`),
+    getSellerReviews: () => request('/reviews/seller'),
+    replyToReview: (id: string, reply: string) =>
+        request(`/reviews/${id}/reply`, { method: 'PATCH', body: JSON.stringify({ reply }) }),
+    flagReview: (id: string, is_flagged: boolean) =>
+        request(`/reviews/${id}/flag`, { method: 'PATCH', body: JSON.stringify({ is_flagged }) }),
     createReview: (data: { product_id: string; rating: number; title?: string; body?: string }) =>
         request('/reviews', { method: 'POST', body: JSON.stringify(data) }),
     deleteReview: (id: string) => request(`/reviews/${id}`, { method: 'DELETE' }),

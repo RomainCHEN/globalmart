@@ -305,4 +305,36 @@ router.patch('/:id/approve-refund', requireAuth, async (req, res) => {
     }
 });
 
+// PATCH /api/orders/:id/deny-refund — vendor/admin deny
+router.patch('/:id/deny-refund', requireAuth, async (req, res) => {
+    try {
+        const { data: profile } = await supabaseAdmin.from('profiles').select('name, role').eq('id', req.user.id).single();
+        if (!profile || (profile.role !== 'admin' && profile.role !== 'seller')) return res.status(403).json({ error: 'Not authorized' });
+
+        const { reason } = req.body;
+        const { data: order } = await supabaseAdmin.from('orders').select('*').eq('id', req.params.id).single();
+        if (!order || order.status !== 'refund_requested') return res.status(400).json({ error: 'Order is not in refund_requested status' });
+
+        const history = order.status_history || [];
+        const newRecord = { 
+            status: 'delivered', 
+            timestamp: new Date().toISOString(), 
+            actor_name: profile.name || 'Seller', 
+            actor_role: profile.role,
+            notes: `Refund denied: ${reason || 'No reason provided'}`
+        };
+
+        const { data, error } = await supabaseAdmin.from('orders').update({
+            status: 'delivered', // Revert to delivered
+            updated_at: new Date().toISOString(),
+            status_history: [...history, newRecord]
+        }).eq('id', req.params.id).select();
+
+        if (error) return res.status(400).json({ error: error.message });
+        res.json(data && data.length > 0 ? data[0] : null);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 export default router;

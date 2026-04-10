@@ -132,19 +132,12 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
         const productIds = products.map(p => String(p.id));
         console.log(`[Analytics] Found ${productIds.length} products:`, productIds);
 
-        // 2. Get top products by browse count (Aggregated)
+        // 2. Get top products by browse count
         const { data: browseStats, error: browseError } = await supabaseAdmin
             .from('browse_logs')
             .select('product_id')
             .in('product_id', productIds);
         
-        if (browseError) {
-            console.error('[Analytics] Error fetching browse logs:', browseError);
-            throw browseError;
-        }
-
-        console.log(`[Analytics] Fetched ${browseStats?.length || 0} browse logs`);
-
         const counts = (browseStats || []).reduce((acc, log) => {
             const pid = String(log.product_id);
             acc[pid] = (acc[pid] || 0) + 1;
@@ -163,49 +156,47 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
             .sort((a, b) => b.views - a.views)
             .slice(0, 5);
 
-        console.log('[Analytics] Top products calculated:', topProducts.map(p => `${p.name}: ${p.views}`));
+        // 3. Get top rated products for this seller
+        const { data: ratedProducts, error: ratingError } = await supabaseAdmin
+            .from('products')
+            .select('id, name, name_zh, price, image, rating, rating_count')
+            .eq('store_id', store.id)
+            .gt('rating_count', 0)
+            .order('rating', { ascending: false })
+            .limit(5);
 
-        // 3. Get search trends related to seller's products
-        const sellerKeywords = new Set();
-        products.forEach(p => {
-            const parts = [p.name, p.name_zh, p.tags ? p.tags.join(' ') : ''];
-            parts.join(' ').toLowerCase().split(/[\s,.\-\/]+/).forEach(word => {
-                if (word.length > 2) sellerKeywords.add(word);
-            });
-        });
-
-        const { data: searchLogs, error: searchError } = await supabaseAdmin
-            .from('search_logs')
-            .select('query')
-            .order('created_at', { ascending: false })
-            .limit(1000);
-        
-        if (searchError) {
-            console.error('[Analytics] Error fetching search logs:', searchError);
+        if (ratingError) {
+            console.error('[Analytics] Error fetching ratings:', ratingError);
         }
-        
-        const trendCounts = {};
-        (searchLogs || []).forEach(log => {
-            if (!log.query) return;
-            const q = String(log.query).toLowerCase().trim();
-            if (!q) return;
-            
-            const isRelevant = Array.from(sellerKeywords).some(sk => q.includes(sk));
-            if (isRelevant) {
-                trendCounts[q] = (trendCounts[q] || 0) + 1;
-            }
-        });
 
-        const searchTrends = Object.entries(trendCounts)
-            .map(([query, count]) => ({ query, count: Number(count) }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 10);
+        // 4. Generate Promo Recommendations
+        // Rule: High rating (>4.0) but low views (lower 50th percentile of seller's products)
+        // Or: High views but low rating_count
+        const medianViews = topProducts.length > 0 ? topProducts[Math.floor(topProducts.length / 2)].views : 0;
+        const recommendations = products
+            .map(p => {
+                const views = counts[String(p.id)] || 0;
+                const rating = ratedProducts?.find(rp => rp.id === p.id)?.rating || 0;
+                
+                let reason = '';
+                let type = '';
+                if (rating >= 4.5 && views < medianViews) {
+                    reason = 'High rating but low visibility. Promo could boost sales.';
+                    type = 'visibility_boost';
+                } else if (views > medianViews * 2 && rating === 0) {
+                    reason = 'Highly viewed! Encourage reviews with a small discount.';
+                    type = 'review_incentive';
+                }
 
-        console.log(`[Analytics] Success. Found ${searchTrends.length} relevant trends.`);
+                return reason ? { product_id: p.id, name: p.name, name_zh: p.name_zh, reason, type } : null;
+            })
+            .filter(Boolean)
+            .slice(0, 3);
 
         res.json({ 
             topProducts: topProducts || [], 
-            searchTrends: searchTrends || [] 
+            topRatedProducts: ratedProducts || [],
+            promoTips: recommendations
         });
     } catch (err) {
         console.error('[Analytics] Critical failure:', err.message);

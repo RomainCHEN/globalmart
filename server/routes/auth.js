@@ -219,19 +219,34 @@ router.put('/me', requireAuth, async (req, res) => {
             .eq('id', req.user.id)
             .single();
 
-        const updates = {};
+        const updates: any = {};
         if (name !== undefined) updates.name = name;
         if (avatar !== undefined) updates.avatar = avatar;
         if (shipping_address !== undefined) updates.shipping_address = shipping_address;
         if (contact_person !== undefined) updates.contact_person = contact_person;
         if (contact_phone !== undefined) updates.contact_phone = contact_phone;
 
-        // A21: Only allow setting birthday if it was NULL (one-time supplement)
-        if (birthday_month !== undefined && (!currentProfile?.birthday_month)) {
-            updates.birthday_month = birthday_month;
-        }
-        if (birthday_day !== undefined && (!currentProfile?.birthday_day)) {
-            updates.birthday_day = birthday_day;
+        // Strict Birthday Locking Logic
+        // If they already have a birthday set, but the incoming data tries to change it
+        const hasExistingBirthday = currentProfile?.birthday_month && currentProfile?.birthday_day;
+        const isDemoAccount = req.user.email === 'demo@globalmart.com';
+        
+        if (birthday_month !== undefined || birthday_day !== undefined) {
+            if (hasExistingBirthday && !isDemoAccount) {
+                // Check if they are actually trying to change it (not just resending same values)
+                const isChangingMonth = birthday_month !== undefined && birthday_month !== currentProfile.birthday_month;
+                const isChangingDay = birthday_day !== undefined && birthday_day !== currentProfile.birthday_day;
+                
+                if (isChangingMonth || isChangingDay) {
+                    return res.status(403).json({ 
+                        error: 'Birthday information is locked and cannot be changed after initial setting to prevent discount abuse.' 
+                    });
+                }
+            } else {
+                // If not set yet OR is demo account, allow setting both
+                if (birthday_month !== undefined) updates.birthday_month = birthday_month;
+                if (birthday_day !== undefined) updates.birthday_day = birthday_day;
+            }
         }
 
         const { data, error } = await supabaseAdmin

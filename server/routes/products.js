@@ -92,7 +92,7 @@ router.post('/', requireAuth, async (req, res) => {
             return res.status(403).json({ error: 'Only sellers can create products' });
         }
 
-        const { name, description, price, original_price, category_id, stock, tags, specs, image, images } = req.body;
+        const { name, description, price, original_price, category_id, stock, tags, specs, image, images, is_birthday_promo_enabled, birthday_promo_discount } = req.body;
 
         // Get seller's store
         const { data: store } = await supabaseAdmin
@@ -114,7 +114,9 @@ router.post('/', requireAuth, async (req, res) => {
                 stock: stock || 0,
                 tags: tags || [],
                 specs: specs || {},
-                image: image || ''
+                image: image || '',
+                is_birthday_promo_enabled: is_birthday_promo_enabled || false,
+                birthday_promo_discount: birthday_promo_discount || 0
             })
             .select()
             .single();

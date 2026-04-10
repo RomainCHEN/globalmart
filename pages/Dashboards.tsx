@@ -164,7 +164,17 @@ export const UserDashboard = () => {
                                             <input type="text" value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} className="w-full p-3 border-4 border-black font-bold focus:ring-0 focus:border-brutal-pink" required />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-sm font-black uppercase">{t('auth.birthdayHint')}</label>
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-sm font-black uppercase">{t('auth.birthdayHint')}</label>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => alert(lang === 'zh' ? '生日特惠详细规则：\n1. 账号需注册满 30 天方可激活特惠。\n2. 需至少拥有一笔“已送达”的历史订单。\n3. 生日信息一旦设定，出于安全考虑将无法再次修改。' : 'Birthday Promotion Rules:\n1. Account must be at least 30 days old.\n2. Must have at least one "Delivered" order history.\n3. Birthday info is locked once set to prevent abuse.')}
+                                                    className="text-[10px] font-black uppercase underline text-brutal-blue flex items-center gap-1"
+                                                >
+                                                    <span className="material-symbols-outlined text-xs">info</span>
+                                                    {lang === 'zh' ? '查看详细规则' : 'View Detailed Rules'}
+                                                </button>
+                                            </div>
                                             <div className="flex gap-4">
                                                 <input 
                                                     type="number" 
@@ -291,8 +301,31 @@ export const UserDashboard = () => {
                                             )}
                                         </div>
                                         <div className="flex flex-col items-end gap-2">
-                                            <span className={`px-3 py-1 border-2 border-black font-black uppercase text-sm ${order.status === 'delivered' ? 'bg-brutal-green' : order.status === 'cancelled' ? 'bg-brutal-red text-white' : order.status === 'hold' ? 'bg-orange-400' : order.status === 'shipped' ? 'bg-brutal-blue text-white' : 'bg-brutal-yellow'}`}>{t(`order.${order.status}`)}</span>
+                                            <span className={`px-3 py-1 border-2 border-black font-black uppercase text-sm ${
+                                                order.status === 'delivered' ? 'bg-brutal-green' : 
+                                                order.status === 'cancelled' ? 'bg-brutal-red text-white' : 
+                                                order.status === 'refund_requested' ? 'bg-orange-400 text-white animate-pulse' :
+                                                order.status === 'refunded' ? 'bg-brutal-pink text-white' :
+                                                order.status === 'hold' ? 'bg-orange-400' : 
+                                                order.status === 'shipped' ? 'bg-brutal-blue text-white' : 'bg-brutal-yellow'
+                                            }`}>
+                                                {t(`order.${order.status}`)}
+                                            </span>
                                             <span className="text-2xl font-black">{formatPrice(order.total)}</span>
+                                            
+                                            {order.status === 'delivered' && (
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        const reason = prompt(lang === 'zh' ? '请输入退货原因：' : 'Please enter refund reason:');
+                                                        if (reason) api.requestRefund(order.id, reason).then(() => loadData());
+                                                    }}
+                                                    className="mt-2 text-[10px] font-black uppercase bg-white border-2 border-black px-2 py-1 shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
+                                                >
+                                                    {lang === 'zh' ? '申请退货' : 'Request Refund'}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </Link>
@@ -333,9 +366,11 @@ export const UserDashboard = () => {
                                                         <div className="flex flex-wrap items-center gap-2">
                                                             <span className="text-2xl font-black text-brutal-red">{formatPrice(p.price)}</span>
                                                             <span className="text-sm font-bold line-through text-gray-500">{formatPrice(p.original_price)}</span>
-                                                            {isBirthday && (
+                                                            {isBirthday && p.is_birthday_promo_enabled && (
                                                                 <span className="bg-brutal-pink text-white text-[10px] font-black px-2 py-0.5 border-2 border-black animate-bounce block w-fit">
-                                                                    {lang === 'zh' ? '生日特惠 9 折!' : 'BIRTHDAY 10% OFF!'}
+                                                                    {lang === 'zh' 
+                                                                        ? `生日特惠 ${10 - (p.birthday_promo_discount / 10)} 折!` 
+                                                                        : `BIRTHDAY ${p.birthday_promo_discount}% OFF!`}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -702,8 +737,20 @@ export const SellerDashboard = () => {
     const [storeDescZh, setStoreDescZh] = useState('');
     const [storeLogo, setStoreLogo] = useState('');
     const [shopPhoto, setShopPhoto] = useState('');
-    const [pf, setPf] = useState({ name: '', name_zh: '', description: '', description_zh: '', price: '', original_price: '', category_id: '', stock: '', image: '', tags: '' });
-    const resetPf = () => setPf({ name: '', name_zh: '', description: '', description_zh: '', price: '', original_price: '', category_id: '', stock: '', image: '', tags: '' });
+    const [pf, setPf] = useState({ 
+        name: '', name_zh: '', description: '', description_zh: '', 
+        price: '', original_price: '', category_id: '', stock: '', 
+        image: '', tags: '',
+        is_birthday_promo_enabled: false,
+        birthday_promo_discount: '10'
+    });
+    const resetPf = () => setPf({ 
+        name: '', name_zh: '', description: '', description_zh: '', 
+        price: '', original_price: '', category_id: '', stock: '', 
+        image: '', tags: '',
+        is_birthday_promo_enabled: false,
+        birthday_promo_discount: '10'
+    });
     const [translating, setTranslating] = useState<string | null>(null);
     const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload');
     const [uploading, setUploading] = useState(false);
@@ -861,6 +908,7 @@ export const SellerDashboard = () => {
         { key: 'store', icon: 'storefront', label: t('seller.myStore') },
         { key: 'products', icon: 'inventory_2', label: t('seller.products') },
         { key: 'orders', icon: 'shopping_bag', label: t('seller.orders') },
+        { key: 'reviews', icon: 'rate_review', label: lang === 'zh' ? '评价管理' : 'Reviews' },
     ] as const;
 
     return (
@@ -1204,6 +1252,45 @@ export const SellerDashboard = () => {
                                                 </button>
                                             </div>
                                         </div>
+                                        {/* Birthday Promotion Settings */}
+                                        <div className="border-4 border-black p-4 bg-brutal-pink/10 space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-brutal-pink font-black">cake</span>
+                                                    <span className="font-black text-xs uppercase">{lang === 'zh' ? '开启生日特惠' : 'Enable Birthday Promo'}</span>
+                                                </div>
+                                                <button 
+                                                    onClick={() => setPf({ ...pf, is_birthday_promo_enabled: !pf.is_birthday_promo_enabled })}
+                                                    className={`w-14 h-8 border-4 border-black relative transition-colors ${pf.is_birthday_promo_enabled ? 'bg-brutal-green' : 'bg-gray-300'}`}
+                                                >
+                                                    <div className={`absolute top-0.5 size-5 bg-white border-2 border-black transition-all ${pf.is_birthday_promo_enabled ? 'left-6' : 'left-0.5'}`} />
+                                                </button>
+                                            </div>
+                                            
+                                            {pf.is_birthday_promo_enabled && (
+                                                <div className="flex items-center gap-4 animate-in fade-in slide-in-from-top-2">
+                                                    <div className="flex-1">
+                                                        <label className="block font-black text-[10px] uppercase mb-1">{lang === 'zh' ? '生日折扣力度 (%)' : 'Birthday Discount %'}</label>
+                                                        <div className="flex items-center">
+                                                            <input 
+                                                                type="range" min="5" max="95" step="5"
+                                                                value={pf.birthday_promo_discount} 
+                                                                onChange={e => setPf({ ...pf, birthday_promo_discount: e.target.value })}
+                                                                className="flex-1 h-2 bg-black appearance-none cursor-pointer"
+                                                            />
+                                                            <span className="ml-4 font-black text-xl w-16 text-right">{pf.birthday_promo_discount}%</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-1/3 bg-white border-2 border-black p-2 text-center">
+                                                        <p className="text-[10px] font-black uppercase text-gray-500 mb-1">{lang === 'zh' ? '预估生日价' : 'Est. Birthday Price'}</p>
+                                                        <p className="font-black text-brutal-pink">
+                                                            {formatPrice((parseFloat(pf.price) || 0) * (1 - (parseInt(pf.birthday_promo_discount) || 0) / 100))}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <div><label className="block font-black text-xs uppercase mb-1">{t('seller.tags')}</label><input value={pf.tags} onChange={e => setPf({ ...pf, tags: e.target.value })} className="w-full border-3 border-black p-2 font-bold" placeholder="sports, premium" /></div>
                                         <button onClick={handleSaveProduct} className="w-full border-4 border-black bg-brutal-green py-3 font-black uppercase shadow-brutal hover:-translate-y-1 transition-all">{editingProduct ? t('seller.saveChanges') : t('seller.createProduct')}</button>
                                     </div>
@@ -1423,19 +1510,36 @@ export const SellerDashboard = () => {
                                                                     ))}
                                                                 </div>
                                                                 {o.status === 'refund_requested' && (
-                                                                    <div className="mt-4 p-3 bg-brutal-red/10 border-2 border-brutal-red flex items-center justify-between">
-                                                                        <p className="text-xs font-black uppercase text-brutal-red italic">⚠️ {t('order.refundRequested')}</p>
-                                                                        <button 
-                                                                            onClick={async () => {
-                                                                                if (confirm(t('order.approveRefundConfirm'))) {
-                                                                                    await api.approveRefund(o.id);
-                                                                                    loadData();
-                                                                                }
-                                                                            }}
-                                                                            className="bg-brutal-red text-white border-2 border-black px-4 py-1 text-xs font-black uppercase shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
-                                                                        >
-                                                                            {t('order.approveRefund')}
-                                                                        </button>
+                                                                    <div className="mt-4 p-4 bg-brutal-pink/10 border-4 border-black flex flex-col md:flex-row items-center justify-between gap-4">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="material-symbols-outlined text-brutal-pink animate-pulse">warning</span>
+                                                                            <p className="text-sm font-black uppercase italic">{t('order.refundRequested')}</p>
+                                                                        </div>
+                                                                        <div className="flex gap-3 w-full md:w-auto">
+                                                                            <button 
+                                                                                onClick={async () => {
+                                                                                    if (confirm(t('order.approveRefundConfirm') || 'Approve this refund?')) {
+                                                                                        await api.approveRefund(o.id);
+                                                                                        loadData();
+                                                                                    }
+                                                                                }}
+                                                                                className="flex-1 md:flex-none bg-brutal-green border-4 border-black px-6 py-2 text-xs font-black uppercase shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
+                                                                            >
+                                                                                {t('order.approveRefund') || 'Approve'}
+                                                                            </button>
+                                                                            <button 
+                                                                                onClick={async () => {
+                                                                                    const reason = prompt(lang === 'zh' ? '请输入拒绝退款的原因：' : 'Please enter reason for denying refund:');
+                                                                                    if (reason) {
+                                                                                        await api.denyRefund(o.id, reason);
+                                                                                        loadData();
+                                                                                    }
+                                                                                }}
+                                                                                className="flex-1 md:flex-none bg-brutal-red text-white border-4 border-black px-6 py-2 text-xs font-black uppercase shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
+                                                                            >
+                                                                                {lang === 'zh' ? '拒绝退款' : 'Deny Refund'}
+                                                                            </button>
+                                                                        </div>
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -1444,6 +1548,98 @@ export const SellerDashboard = () => {
                                                 </div>
                                             ))}
                                         </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* REVIEWS MANAGEMENT */}
+                        {tab === 'reviews' && (
+                            <div className="space-y-6">
+                                <h1 className="text-5xl font-black uppercase tracking-tighter">{lang === 'zh' ? '评价管理' : 'Reviews Management'}</h1>
+                                <div className="grid grid-cols-1 gap-6">
+                                    {sellerReviews.length === 0 ? (
+                                        <div className="border-4 border-black border-dashed p-20 text-center bg-white">
+                                            <span className="material-symbols-outlined text-6xl text-gray-300 mb-4 block">rate_review</span>
+                                            <p className="text-2xl font-black uppercase text-gray-400">No reviews received yet</p>
+                                        </div>
+                                    ) : (
+                                        sellerReviews.map(review => (
+                                            <div key={review.id} className={`border-4 border-black shadow-brutal p-6 bg-white flex flex-col md:flex-row gap-6 transition-opacity ${review.is_risk_flagged ? 'opacity-60 grayscale hover:opacity-100 hover:grayscale-0' : ''}`}>
+                                                <div className="w-full md:w-1/4 shrink-0 border-r-4 border-black pr-6">
+                                                    <div className="flex items-center gap-3 mb-4">
+                                                        <img src={review.products?.image} alt="" className="size-12 object-cover border-2 border-black" />
+                                                        <div className="min-w-0">
+                                                            <p className="font-black text-xs truncate uppercase">{lang === 'zh' ? review.products?.name_zh || review.products?.name : review.products?.name}</p>
+                                                            <div className="flex gap-0.5 mt-1">
+                                                                {[...Array(5)].map((_, i) => (
+                                                                    <span key={i} className={`material-symbols-outlined text-xs ${i < review.rating ? 'filled text-brutal-yellow' : 'text-gray-200'}`}>star</span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-[10px] font-black uppercase text-gray-400 space-y-1">
+                                                        <p>Customer: {review.profiles?.name || 'Anonymous'}</p>
+                                                        <p>Date: {new Date(review.created_at).toLocaleDateString()}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex-1 space-y-4">
+                                                    <div>
+                                                        {review.is_risk_flagged && (
+                                                            <span className="bg-brutal-red text-white text-[10px] font-black px-2 py-0.5 border-2 border-black uppercase mb-2 inline-block italic animate-bounce">⚠️ RISK FLAGGED</span>
+                                                        )}
+                                                        <h4 className="font-black text-xl mb-1">{review.title || 'No Title'}</h4>
+                                                        <p className="font-bold text-gray-700">{review.body || 'No content'}</p>
+                                                    </div>
+
+                                                    {review.seller_reply ? (
+                                                        <div className="bg-brutal-blue/10 border-l-4 border-brutal-blue p-3 mt-4 relative">
+                                                            <p className="text-[10px] font-black uppercase text-brutal-blue mb-1">Your Reply</p>
+                                                            <p className="font-bold text-sm italic">"{review.seller_reply}"</p>
+                                                            <button 
+                                                                onClick={() => { setReplyingTo(review.id); setReplyText(review.seller_reply); }} 
+                                                                className="absolute top-2 right-2 material-symbols-outlined text-sm font-black hover:text-brutal-blue transition-colors"
+                                                            >
+                                                                edit
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        replyingTo === review.id ? (
+                                                            <div className="space-y-3 mt-4 animate-in fade-in slide-in-from-top-2">
+                                                                <textarea 
+                                                                    autoFocus
+                                                                    value={replyText} 
+                                                                    onChange={e => setReplyText(e.target.value)}
+                                                                    placeholder="Write your professional reply..."
+                                                                    className="w-full border-4 border-black p-3 font-bold text-sm focus:outline-none focus:border-brutal-blue h-24"
+                                                                />
+                                                                <div className="flex gap-3">
+                                                                    <button onClick={() => handleReply(review.id)} className="bg-brutal-blue text-white border-2 border-black px-4 py-2 font-black uppercase text-xs hover:shadow-brutal transition-all">Post Reply</button>
+                                                                    <button onClick={() => { setReplyingTo(null); setReplyText(''); }} className="bg-white border-2 border-black px-4 py-2 font-black uppercase text-xs">Cancel</button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <button onClick={() => setReplyingTo(review.id)} className="mt-4 border-2 border-black bg-white px-4 py-2 font-black uppercase text-xs shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center gap-2">
+                                                                <span className="material-symbols-outlined text-sm">reply</span>
+                                                                Reply to Review
+                                                            </button>
+                                                        )
+                                                    )}
+                                                </div>
+
+                                                <div className="w-full md:w-1/6 flex flex-col gap-3">
+                                                    <button 
+                                                        onClick={() => handleFlagReview(review.id, !!review.is_risk_flagged)}
+                                                        className={`w-full py-3 border-2 border-black font-black uppercase text-[10px] flex items-center justify-center gap-2 transition-all ${review.is_risk_flagged ? 'bg-black text-white' : 'bg-white hover:bg-brutal-red hover:text-white'}`}
+                                                    >
+                                                        <span className="material-symbols-outlined text-sm">{review.is_risk_flagged ? 'check' : 'report'}</span>
+                                                        {review.is_risk_flagged ? 'Unflag Risk' : 'Flag as Risk'}
+                                                    </button>
+                                                    <p className="text-[9px] font-bold text-gray-400 italic text-center leading-tight">Flagged reviews are collapsed for customers by default.</p>
+                                                </div>
+                                            </div>
+                                        ))
                                     )}
                                 </div>
                             </div>
@@ -1516,51 +1712,75 @@ export const SellerDashboard = () => {
                                         </div>
                                     </div>
 
-                                    {/* Search Trends */}
+                                    {/* High Rated Products */}
                                     <div className="bg-white border-4 border-black shadow-brutal p-8 flex flex-col h-full">
                                         <div className="flex items-center gap-4 mb-8 border-b-4 border-black pb-4">
-                                            <span className="material-symbols-outlined text-4xl bg-brutal-orange text-white p-2 border-2 border-black">search_insights</span>
-                                            <h2 className="text-3xl font-black uppercase italic tracking-tighter">{lang === 'zh' ? '关联搜索趋势' : 'Search Trends'}</h2>
+                                            <span className="material-symbols-outlined text-4xl bg-brutal-pink text-white p-2 border-2 border-black">star</span>
+                                            <h2 className="text-3xl font-black uppercase italic tracking-tighter">{lang === 'zh' ? '高分商品榜' : 'Top Rated Products'}</h2>
                                         </div>
 
-                                        <div className="flex-1">
-                                            {(!analytics || !analytics.searchTrends || analytics.searchTrends.length === 0) ? (
+                                        <div className="flex-1 space-y-4">
+                                            {(!analytics || !analytics.topRatedProducts || analytics.topRatedProducts.length === 0) ? (
                                                 <div className="h-full flex flex-col items-center justify-center py-20 text-gray-400 border-4 border-dashed border-gray-100">
-                                                    <span className="material-symbols-outlined text-6xl mb-4">search_off</span>
-                                                    <p className="font-black uppercase">{lang === 'zh' ? '暂无相关搜索' : 'No related searches'}</p>
+                                                    <span className="material-symbols-outlined text-6xl mb-4">grade</span>
+                                                    <p className="font-black uppercase">{lang === 'zh' ? '暂无评分' : 'No ratings yet'}</p>
                                                 </div>
                                             ) : (
-                                                <div className="flex flex-wrap gap-4">
-                                                    {analytics.searchTrends.map((t_item, idx) => {
-                                                        if (!t_item) return null;
-                                                        return (
-                                                            <div key={idx} className="flex items-center border-4 border-black bg-white shadow-brutal-sm hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all overflow-hidden">
-                                                                <span className="bg-brutal-orange text-white px-4 py-3 font-black uppercase italic border-r-4 border-black">
-                                                                    {t_item.query || '---'}
-                                                                </span>
-                                                                <span className="px-4 py-3 font-black text-2xl">
-                                                                    {t_item.count || 0}
-                                                                </span>
+                                                <div className="space-y-4">
+                                                    {analytics.topRatedProducts.map((p_item: any) => (
+                                                        <div key={p_item.id} className="flex items-center gap-4 p-4 border-4 border-black bg-white shadow-brutal-sm">
+                                                            <img src={p_item.image} alt={p_item.name} className="size-16 object-cover border-2 border-black" />
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-black truncate uppercase tracking-tighter">{lang === 'zh' ? p_item.name_zh || p_item.name : p_item.name}</p>
+                                                                <div className="flex items-center gap-1 text-brutal-pink">
+                                                                    <span className="material-symbols-outlined text-sm font-black">star</span>
+                                                                    <span className="font-black text-xl">{p_item.rating?.toFixed(1)}</span>
+                                                                    <span className="text-[10px] text-black/40 font-black">({p_item.rating_count} reviews)</span>
+                                                                </div>
                                                             </div>
-                                                        );
-                                                    })}
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             )}
-                                            
-                                            <div className="mt-12 bg-brutal-green p-6 border-4 border-black shadow-brutal relative">
+
+                                            {/* Smart Promo Tips */}
+                                            <div className="mt-12 bg-brutal-yellow p-6 border-4 border-black shadow-brutal relative">
                                                 <div className="absolute -top-4 -right-4 size-12 bg-white border-4 border-black flex items-center justify-center rotate-12">
-                                                    <span className="material-symbols-outlined font-black">lightbulb</span>
+                                                    <span className="material-symbols-outlined font-black text-brutal-pink">auto_awesome</span>
                                                 </div>
-                                                <h4 className="font-black uppercase mb-2 italic underline decoration-2">{lang === 'zh' ? '专业建议' : 'Pro Tip'}</h4>
-                                                <p className="font-bold leading-relaxed">
-                                                    {lang === 'zh' 
-                                                        ? '这些关键词是用户在查找与您类似的产品时经常搜索的内容。尝试将高频搜索词加入您的商品名称或标签中，以提高曝光率！' 
-                                                        : 'These keywords are what users search for when looking for products like yours. Try including top keywords in your product titles or tags to increase visibility!'}
-                                                </p>
+                                                <h4 className="font-black uppercase mb-4 italic underline decoration-4 flex items-center gap-2">
+                                                    <span className="material-symbols-outlined">lightbulb</span>
+                                                    {lang === 'zh' ? '促销决策建议' : 'Promo Decision Tips'}
+                                                </h4>
+                                                <div className="space-y-4">
+                                                    {analytics.promoTips && analytics.promoTips.length > 0 ? (
+                                                        analytics.promoTips.map((tip: any, idx: number) => (
+                                                            <div key={idx} className="p-3 border-2 border-black bg-white/50 text-sm">
+                                                                <p className="font-black uppercase text-xs mb-1">PROMO TARGET: {lang === 'zh' ? tip.name_zh || tip.name : tip.name}</p>
+                                                                <p className="font-bold">{tip.reason}</p>
+                                                                <button 
+                                                                   onClick={() => {
+                                                                       const p = products.find(prod => String(prod.id) === String(tip.product_id));
+                                                                       if (p) {
+                                                                           setEditingProduct(p);
+                                                                           setActiveTab('products');
+                                                                       }
+                                                                   }}
+                                                                   className="mt-2 text-[10px] font-black uppercase underline hover:text-brutal-pink"
+                                                                >
+                                                                    Configure Now →
+                                                                </button>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <p className="font-bold text-sm italic opacity-60">
+                                                            {lang === 'zh' ? '您的店铺目前运行良好，暂无紧急促销建议。' : 'Your store is performing optimally! No urgent promo suggestions.'}
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
+                                    </div>                                </div>
                             </div>
                         )}
                     </>

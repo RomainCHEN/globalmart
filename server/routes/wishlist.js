@@ -39,18 +39,41 @@ router.get('/', requireAuth, async (req, res) => {
 
         if (error) return res.status(400).json({ error: error.message });
 
-        // 3. Apply discount if it's birthday
+        // 3. Apply discount if it's birthday WITH ANTI-ABUSE CHECKS
         if (isBirthday && data) {
-            data.forEach(item => {
-                if (item.products) {
-                    // Only set original_price if it doesn't already exist or hasn't been set by this logic
-                    if (!item.products.original_price) {
-                        item.products.original_price = item.products.price;
+            const isDemoAccount = req.user.email === 'demo@globalmart.com';
+
+            // Anti-Abuse Check A: Account Age (Must be > 30 days old)
+            const accountAgeDays = (new Date().getTime() - new Date(req.user.created_at).getTime()) / (1000 * 3600 * 24);
+            const isMatureAccount = isDemoAccount || (accountAgeDays >= 30);
+
+            // Anti-Abuse Check B: Purchase History (Must have at least 1 delivered order)
+            let hasPurchaseHistory = isDemoAccount;
+            if (!isDemoAccount) {
+                const { count: deliveredOrderCount } = await supabaseAdmin
+                    .from('orders')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_id', req.user.id)
+                    .eq('status', 'delivered');
+                hasPurchaseHistory = (deliveredOrderCount || 0) > 0;
+            }
+
+            if (isMatureAccount && hasPurchaseHistory) {
+                data.forEach(item => {
+                    const p = item.products;
+                    if (p && p.is_birthday_promo_enabled) {
+                        const discountPercent = p.birthday_promo_discount || 10;
+                        if (!p.original_price) p.original_price = p.price;
+                        p.price = Math.round(p.price * (1 - discountPercent / 100) * 100) / 100;
+                        item.is_birthday_discount = true;
+                        item.birthday_discount_percent = discountPercent;
                     }
-                    item.products.price = Math.round(item.products.price * 0.9 * 100) / 100;
-                    item.is_birthday_discount = true;
-                }
-            });
+                });
+            } else {
+                // If they are birthday but fail abuse checks, we can add a flag to tell the UI why
+                (data as any).abuse_prevented = true;
+                (data as any).abuse_reason = !isMatureAccount ? 'new_account' : 'no_history';
+            }
         }
 
         res.json({ data, isBirthday });

@@ -189,10 +189,6 @@ export const MainLayout = () => {
                         <span className="material-symbols-outlined text-sm">language</span>
                         {lang === 'en' ? '中文简体' : 'ENGLISH'}
                     </button>
-                    <button onClick={() => setSeniorMode(!seniorMode)} className={`flex items-center gap-1 transition-colors px-2 py-1 border border-white/30 hover:border-white ${seniorMode ? 'bg-white text-black' : ''}`} aria-label="Toggle Senior Mode">
-                        <span className="material-symbols-outlined text-sm">visibility</span>
-                        {seniorMode ? (lang === 'en' ? 'STANDARD MODE' : '标准模式') : (lang === 'en' ? 'SENIOR MODE' : '长辈模式')}
-                    </button>
                 </div>
                 <span className="hidden sm:inline">Free Shipping Worldwide • 30 Day Returns</span>
             </div>
@@ -230,7 +226,21 @@ export const MainLayout = () => {
                         </nav>
 
                         {/* Right Actions */}
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1 sm:gap-3">
+                            {/* Prominent Senior Mode Toggle */}
+                            <button 
+                                onClick={() => setSeniorMode(!seniorMode)} 
+                                className={`flex items-center gap-2 px-3 py-1.5 border-4 border-black shadow-brutal hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all ${seniorMode ? 'bg-brutal-pink text-white animate-pulse' : 'bg-brutal-yellow'}`}
+                                aria-label="Toggle Senior Mode"
+                            >
+                                <span className={`material-symbols-outlined text-2xl font-black ${seniorMode ? 'filled' : ''}`}>
+                                    {seniorMode ? 'settings_accessibility' : 'visibility'}
+                                </span>
+                                <span className="font-black text-[10px] md:text-xs uppercase tracking-tighter leading-tight text-left hidden sm:block">
+                                    {seniorMode ? (lang === 'en' ? 'STANDARD\nMODE' : '标准模式') : (lang === 'en' ? 'SENIOR\nMODE' : '长辈模式')}
+                                </span>
+                            </button>
+
                             <button 
                                 onClick={() => {
                                     if (searchOpen && searchQuery.trim()) {

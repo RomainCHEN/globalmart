@@ -227,15 +227,18 @@ router.put('/me', requireAuth, async (req, res) => {
         if (contact_phone !== undefined) updates.contact_phone = contact_phone;
 
         // Strict Birthday Locking Logic
-        // If they already have a birthday set, but the incoming data tries to change it
+        // Robustly check for demo account using the fresh profile data
+        const { data: profileForEmail } = await supabaseAdmin.from('profiles').select('email').eq('id', req.user.id).single();
+        const userEmail = profileForEmail?.email || '';
+        const isDemoAccount = userEmail === 'demo@globalmart.com';
+        
         const hasExistingBirthday = currentProfile?.birthday_month && currentProfile?.birthday_day;
-        const isDemoAccount = req.user.email === 'demo@globalmart.com';
         
         if (birthday_month !== undefined || birthday_day !== undefined) {
             if (hasExistingBirthday && !isDemoAccount) {
                 // Check if they are actually trying to change it (not just resending same values)
-                const isChangingMonth = birthday_month !== undefined && birthday_month !== currentProfile.birthday_month;
-                const isChangingDay = birthday_day !== undefined && birthday_day !== currentProfile.birthday_day;
+                const isChangingMonth = birthday_month !== undefined && parseInt(birthday_month) !== currentProfile.birthday_month;
+                const isChangingDay = birthday_day !== undefined && parseInt(birthday_day) !== currentProfile.birthday_day;
                 
                 if (isChangingMonth || isChangingDay) {
                     return res.status(403).json({ 
@@ -243,9 +246,9 @@ router.put('/me', requireAuth, async (req, res) => {
                     });
                 }
             } else {
-                // If not set yet OR is demo account, allow setting both
-                if (birthday_month !== undefined) updates.birthday_month = birthday_month;
-                if (birthday_day !== undefined) updates.birthday_day = birthday_day;
+                // If not set yet OR is demo account, allow setting/updating both
+                if (birthday_month !== undefined) updates.birthday_month = parseInt(birthday_month);
+                if (birthday_day !== undefined) updates.birthday_day = parseInt(birthday_day);
             }
         }
 

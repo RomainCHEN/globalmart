@@ -162,7 +162,7 @@ const translations: Record<Lang, Record<string, string>> = {
         'notif.markRead': 'Mark all as read',
         'notif.clear': 'Clear all',
         'notif.birthday.title': 'Happy Birthday! 🎉',
-        'notif.birthday.msg': 'Today is your birthday! Enjoy a 10% discount on all items in your wishlist.',
+        'notif.birthday.msg': 'Today is your birthday! Enjoy exclusive birthday discounts on selected items in your wishlist.',
         'notif.priceDrop.title': 'Price Drop Alert!',
         'notif.priceDrop.msg': 'An item in your wishlist is now on sale!',
         'notif.shipped.title': 'Order Shipped',

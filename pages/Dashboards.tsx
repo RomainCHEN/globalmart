@@ -179,31 +179,30 @@ export const UserDashboard = () => {
                                                 </button>
                                             </div>
                                             <div className="flex gap-4">
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="1" max="12"
-                                                    value={profileForm.birthday_month} 
+                                                    value={profileForm.birthday_month}
                                                     onChange={e => setProfileForm({ ...profileForm, birthday_month: e.target.value })}
-                                                    disabled={!!profile?.birthday_month} 
+                                                    disabled={!!profile?.birthday_month && profile?.email !== 'demo@globalmart.com'}
                                                     placeholder="MM"
-                                                    className={`flex-1 p-3 border-4 border-black font-bold focus:ring-0 ${!!profile?.birthday_month ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:border-brutal-pink'}`} 
+                                                    className={`flex-1 p-3 border-4 border-black font-bold focus:ring-0 ${!!profile?.birthday_month && profile?.email !== 'demo@globalmart.com' ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:border-brutal-pink'}`}
                                                 />
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     min="1" max="31"
-                                                    value={profileForm.birthday_day} 
+                                                    value={profileForm.birthday_day}
                                                     onChange={e => setProfileForm({ ...profileForm, birthday_day: e.target.value })}
-                                                    disabled={!!profile?.birthday_day} 
+                                                    disabled={!!profile?.birthday_day && profile?.email !== 'demo@globalmart.com'}
                                                     placeholder="DD"
-                                                    className={`flex-1 p-3 border-4 border-black font-bold focus:ring-0 ${!!profile?.birthday_day ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:border-brutal-pink'}`} 
+                                                    className={`flex-1 p-3 border-4 border-black font-bold focus:ring-0 ${!!profile?.birthday_day && profile?.email !== 'demo@globalmart.com' ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:border-brutal-pink'}`}
                                                 />
-                                            </div>
-                                            {profile?.birthday_month ? (
+                                                </div>
+                                                {profile?.birthday_month && profile?.email !== 'demo@globalmart.com' ? (
                                                 <p className="text-[10px] font-bold text-brutal-red italic">{t('dash.birthdayLocked')}</p>
-                                            ) : (
+                                                ) : (
                                                 <p className="text-[10px] font-bold text-brutal-blue italic">{lang === 'zh' ? '* 生日设定后将无法修改' : '* Birthday cannot be changed once set'}</p>
-                                            )}
-                                        </div>
+                                                )}                                        </div>
                                         <div className="space-y-2">
                                             <label className="text-sm font-black uppercase">{lang === 'zh' ? '联系人' : 'Contact Person'}</label>
                                             <input type="text" value={profileForm.contact_person} onChange={e => setProfileForm({ ...profileForm, contact_person: e.target.value })} className="w-full p-3 border-4 border-black font-bold focus:ring-0 focus:border-brutal-pink" />

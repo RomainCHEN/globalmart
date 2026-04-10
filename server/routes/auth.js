@@ -152,7 +152,7 @@ router.post('/login', async (req, res) => {
                         user_id: profile.id,
                         type: 'birthday_reminder',
                         title: 'Happy Birthday! 🎂',
-                        message: 'Enjoy a special 10% discount on all items in your wishlist today ONLY!',
+                        message: 'Enjoy exclusive birthday discounts on selected items in your wishlist today ONLY!',
                         link: '/dashboard?tab=wishlist'
                     });
                 }

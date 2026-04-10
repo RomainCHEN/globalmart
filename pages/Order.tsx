@@ -607,12 +607,25 @@ const statusLabels: Record<string, string> = {
                 <div className="border-4 border-black shadow-brutal p-6 bg-white">
                     <h3 className="text-lg font-black uppercase mb-4 border-b-4 border-black pb-2 flex items-center gap-2">
                         <span className="material-symbols-outlined">schedule</span>
-                        {t('order.statusDates')}
+                        {lang === 'zh' ? '状态时间线' : 'Status Timeline'}
                     </h3>
-                    <div className="space-y-2 text-sm font-bold uppercase">
-                        <p><span className="opacity-60">{t('order.pending')}:</span> {new Date(order.created_at).toLocaleDateString()}</p>
-                        {order.shipped_at && <p><span className="opacity-60">{t('order.shipped')}:</span> {new Date(order.shipped_at).toLocaleDateString()}</p>}
-                        {order.delivered_at && <p><span className="opacity-60">{t('order.delivered')}:</span> {new Date(order.delivered_at).toLocaleDateString()}</p>}
+                    <div className="space-y-4 text-sm font-bold">
+                        {order.status_history && order.status_history.length > 0 ? (
+                            order.status_history.map((record: any, idx: number) => (
+                                <div key={idx} className="relative pl-6 border-l-4 border-black pb-4 last:pb-0 last:border-l-transparent">
+                                    <div className="absolute w-4 h-4 bg-brutal-yellow border-4 border-black rounded-full -left-[10px] top-0"></div>
+                                    <p className="uppercase font-black">{statusLabels[record.status] || record.status}</p>
+                                    <p className="text-xs text-gray-600 mt-1">{new Date(record.timestamp).toLocaleString()}</p>
+                                    {record.notes && <p className="mt-2 p-2 bg-gray-100 border-2 border-black font-normal break-words">{record.notes}</p>}
+                                </div>
+                            ))
+                        ) : (
+                            <div className="space-y-2 uppercase">
+                                <p><span className="opacity-60">{t('order.pending')}:</span> {new Date(order.created_at).toLocaleDateString()}</p>
+                                {order.shipped_at && <p><span className="opacity-60">{t('order.shipped')}:</span> {new Date(order.shipped_at).toLocaleDateString()}</p>}
+                                {order.delivered_at && <p><span className="opacity-60">{t('order.delivered')}:</span> {new Date(order.delivered_at).toLocaleDateString()}</p>}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

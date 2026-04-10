@@ -416,10 +416,14 @@ export const UserDashboard = () => {
                             <button 
                                 onClick={async () => {
                                     if (!refundReason.trim()) return alert(lang === 'zh' ? '请填写原因' : 'Reason is required');
-                                    await api.requestRefund(refundOrder.id, refundReason);
-                                    setRefundOrder(null);
-                                    setRefundReason('');
-                                    loadOrders(statusFilter);
+                                    try {
+                                        await api.requestRefund(refundOrder.id, refundReason);
+                                        setRefundOrder(null);
+                                        setRefundReason('');
+                                        loadOrders(statusFilter);
+                                    } catch (err: any) {
+                                        alert(err.message || 'Refund request failed');
+                                    }
                                 }}
                                 className="flex-1 bg-brutal-green text-black border-4 border-black font-black uppercase py-2 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all shadow-[4px_4px_0_0_#000]"
                             >
@@ -1611,7 +1615,7 @@ export const SellerDashboard = () => {
                                                                         </div>
                                                                         <div className="w-full">
                                                                             <p className="text-sm font-bold text-gray-700 bg-white border-2 border-black p-2 mb-2 break-words">
-                                                                                <span className="font-black text-black">{lang === 'zh' ? '退款原因:' : 'Reason:'}</span> {o.refund_reason || 'No reason provided'}
+                                                                                <span className="font-black text-black">{lang === 'zh' ? '退款原因:' : 'Reason:'}</span> {(o.status_history?.find((h: any) => h.status === 'refund_requested')?.notes) || 'No reason provided'}
                                                                             </p>
                                                                         </div>
                                                                         <div className="flex gap-3 w-full md:w-auto mt-2">

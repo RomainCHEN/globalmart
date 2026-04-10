@@ -471,7 +471,7 @@ export const OrderDetails = () => {
             
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
                 <div>
-                    {order.refund_reject_reason && (
+                    {(order.status_history?.find((h: any) => h.notes?.startsWith('Refund denied:'))) && (
                         <div className="bg-brutal-red text-white border-4 border-black p-4 mb-6 shadow-brutal flex items-start gap-4">
                             <span className="material-symbols-outlined text-3xl font-black">error</span>
                             <div>
@@ -480,12 +480,12 @@ export const OrderDetails = () => {
                                 </p>
                                 <p className="font-bold">
                                     {lang === 'zh' ? '拒绝原因：' : 'Reason: '}
-                                    <span className="italic text-gray-200">"{order.refund_reject_reason}"</span>
+                                    <span className="italic text-gray-200">"{(order.status_history?.find((h: any) => h.notes?.startsWith('Refund denied:'))?.notes?.replace('Refund denied: ', ''))}"</span>
                                 </p>
                             </div>
                         </div>
                     )}
-                    {order.status === 'delivered' && !order.refund_reject_reason && (
+                    {order.status === 'delivered' && !(order.status_history?.find((h: any) => h.notes?.startsWith('Refund denied:'))) && (
                         <div className="bg-brutal-green border-4 border-black p-4 mb-6 shadow-brutal flex items-center gap-4 animate-bounce-slow">
                             <span className="material-symbols-outlined text-3xl font-black">celebration</span>
                             <p className="font-black uppercase italic">

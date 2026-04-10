@@ -230,12 +230,15 @@ router.put('/me', requireAuth, async (req, res) => {
         // Robustly check for demo account using the fresh profile data
         const { data: profileForEmail } = await supabaseAdmin.from('profiles').select('email').eq('id', req.user.id).single();
         const userEmail = profileForEmail?.email || '';
-        const isDemoAccount = userEmail === 'demo@globalmart.com';
+        const isDemoAccount = userEmail.toLowerCase() === 'demo@globalmart.com';
         
         const hasExistingBirthday = currentProfile?.birthday_month && currentProfile?.birthday_day;
         
         if (birthday_month !== undefined || birthday_day !== undefined) {
-            if (hasExistingBirthday && !isDemoAccount) {
+            if (isDemoAccount) {
+                if (birthday_month !== undefined && birthday_month !== "") updates.birthday_month = parseInt(birthday_month);
+                if (birthday_day !== undefined && birthday_day !== "") updates.birthday_day = parseInt(birthday_day);
+            } else if (hasExistingBirthday) {
                 // Check if they are actually trying to change it (not just resending same values)
                 const isChangingMonth = birthday_month !== undefined && parseInt(birthday_month) !== currentProfile.birthday_month;
                 const isChangingDay = birthday_day !== undefined && parseInt(birthday_day) !== currentProfile.birthday_day;
@@ -246,9 +249,9 @@ router.put('/me', requireAuth, async (req, res) => {
                     });
                 }
             } else {
-                // If not set yet OR is demo account, allow setting/updating both
-                if (birthday_month !== undefined) updates.birthday_month = parseInt(birthday_month);
-                if (birthday_day !== undefined) updates.birthday_day = parseInt(birthday_day);
+                // If not set yet, allow setting both
+                if (birthday_month !== undefined && birthday_month !== "") updates.birthday_month = parseInt(birthday_month);
+                if (birthday_day !== undefined && birthday_day !== "") updates.birthday_day = parseInt(birthday_day);
             }
         }
 

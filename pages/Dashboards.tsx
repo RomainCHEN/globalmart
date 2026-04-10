@@ -1402,12 +1402,18 @@ export const SellerDashboard = () => {
                                     ) : (
                                         <div className="divide-y-4 divide-black">
                                             {orders.map((o: any) => (
-                                                <div key={o.id} className="p-6 hover:bg-brutal-yellow/5 transition-colors">
+                                                <div key={o.id} className={`p-6 hover:bg-brutal-yellow/5 transition-colors border-b-4 last:border-0 border-black ${o.status === 'refund_requested' ? 'bg-brutal-pink/10 border-dashed border-brutal-red animate-pulse-subtle' : ''}`}>
                                                     <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
                                                         <div>
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <h3 className="font-black text-xl uppercase italic">#{o.id.slice(0, 8)}</h3>
-                                                                <span className={`px-2 py-0.5 border-2 border-black text-[10px] font-black uppercase ${o.status === 'delivered' ? 'bg-brutal-green' : o.status === 'shipped' ? 'bg-brutal-blue text-white' : o.status === 'cancelled' ? 'bg-brutal-red text-white' : 'bg-brutal-yellow'}`}>
+                                                                <span className={`px-2 py-0.5 border-2 border-black text-[10px] font-black uppercase ${
+                                                                    o.status === 'delivered' ? 'bg-brutal-green' : 
+                                                                    o.status === 'shipped' ? 'bg-brutal-blue text-white' : 
+                                                                    o.status === 'cancelled' ? 'bg-brutal-red text-white' : 
+                                                                    o.status === 'refund_requested' ? 'bg-brutal-pink text-white animate-pulse' :
+                                                                    o.status === 'refunded' ? 'bg-black text-white' : 'bg-brutal-yellow'
+                                                                }`}>
                                                                     {t(`order.${o.status}`)}
                                                                 </span>
                                                             </div>
@@ -1417,6 +1423,12 @@ export const SellerDashboard = () => {
                                                             <p className="text-sm font-black uppercase mt-1">
                                                                 {lang === 'zh' ? '购买者' : 'Buyer'}: {o.profiles?.name || o.profiles?.email || '—'}
                                                             </p>
+                                                            {o.status === 'refund_requested' && (
+                                                                <div className="mt-3 flex items-center gap-2 bg-brutal-red text-white px-3 py-1 border-2 border-black w-fit animate-bounce">
+                                                                    <span className="material-symbols-outlined text-sm font-black">warning</span>
+                                                                    <span className="font-black text-[10px] uppercase">{lang === 'zh' ? '收到退款申请！请立即处理' : 'REFUND REQUEST RECEIVED! ACTION REQUIRED'}</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         <div className="text-right">
                                                             <p className="text-3xl font-black font-display tracking-tight">{formatPrice(o.total)}</p>

@@ -249,6 +249,7 @@ router.patch('/:id/cancel', requireAuth, async (req, res) => {
 // PATCH /api/orders/:id/refund — customer request
 router.patch('/:id/refund', requireAuth, async (req, res) => {
     try {
+        const { reason } = req.body;
         const [{ data: order }, { data: profile }] = await Promise.all([
             supabaseAdmin.from('orders').select('*').eq('id', req.params.id).eq('user_id', req.user.id).single(),
             supabaseAdmin.from('profiles').select('name, role').eq('id', req.user.id).single()
@@ -262,7 +263,8 @@ router.patch('/:id/refund', requireAuth, async (req, res) => {
             status: 'refund_requested',
             timestamp: new Date().toISOString(),
             actor_name: profile?.name || 'Customer',
-            actor_role: profile?.role || 'user'
+            actor_role: profile?.role || 'user',
+            notes: reason || 'No reason provided'
         };
 
         const { data, error } = await supabaseAdmin.from('orders').update({

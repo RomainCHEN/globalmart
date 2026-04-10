@@ -161,8 +161,8 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
             .from('products')
             .select('id, name, name_zh, price, image, rating, rating_count')
             .eq('store_id', store.id)
-            .gt('rating_count', 0)
             .order('rating', { ascending: false })
+            .order('rating_count', { ascending: false })
             .limit(5);
 
         if (ratingError) {
@@ -170,25 +170,25 @@ router.get('/me/analytics', requireAuth, async (req, res) => {
         }
 
         // 4. Generate Promo Recommendations
-        // Rule: High rating (>4.0) but low views (lower 50th percentile of seller's products)
-        // Or: High views but low rating_count
+        // Ensure we have products to compare against
+        const validProducts = products || [];
         const medianViews = topProducts.length > 0 ? topProducts[Math.floor(topProducts.length / 2)].views : 0;
-        const recommendations = products
+        
+        const recommendations = validProducts
             .map(p => {
                 const views = counts[String(p.id)] || 0;
-                const rating = ratedProducts?.find(rp => rp.id === p.id)?.rating || 0;
+                const rProd = ratedProducts?.find(rp => String(rp.id) === String(p.id));
+                const rating = rProd?.rating || 0;
+                const rCount = rProd?.rating_count || 0;
                 
                 let reason = '';
-                let type = '';
-                if (rating >= 4.5 && views < medianViews) {
+                if (rating >= 4.0 && views < medianViews) {
                     reason = 'High rating but low visibility. Promo could boost sales.';
-                    type = 'visibility_boost';
-                } else if (views > medianViews * 2 && rating === 0) {
+                } else if (views > medianViews * 1.5 && rCount === 0) {
                     reason = 'Highly viewed! Encourage reviews with a small discount.';
-                    type = 'review_incentive';
                 }
 
-                return reason ? { product_id: p.id, name: p.name, name_zh: p.name_zh, reason, type } : null;
+                return reason ? { product_id: p.id, name: p.name, name_zh: p.name_zh, reason } : null;
             })
             .filter(Boolean)
             .slice(0, 3);

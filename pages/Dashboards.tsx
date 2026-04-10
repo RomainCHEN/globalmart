@@ -1621,18 +1621,20 @@ export const SellerDashboard = () => {
                                         sellerReviews.map(review => (
                                             <div key={review.id} className={`border-4 border-black shadow-brutal p-6 bg-white flex flex-col md:flex-row gap-6 transition-opacity ${review.is_risk_flagged ? 'opacity-60 grayscale hover:opacity-100 hover:grayscale-0' : ''}`}>
                                                 <div className="w-full md:w-1/4 shrink-0 border-r-4 border-black pr-6">
-                                                    <div className="flex items-center gap-3 mb-4">
-                                                        <img src={review.products?.image} alt="" className="size-12 object-cover border-2 border-black" />
-                                                        <div className="min-w-0">
-                                                            <p className="font-black text-xs truncate uppercase">{lang === 'zh' ? review.products?.name_zh || review.products?.name : review.products?.name}</p>
-                                                            <div className="flex gap-0.5 mt-1">
-                                                                {[...Array(5)].map((_, i) => (
-                                                                    <span key={i} className={`material-symbols-outlined text-xs ${i < review.rating ? 'filled text-brutal-yellow' : 'text-gray-200'}`}>star</span>
-                                                                ))}
-                                                            </div>
+                                                    <div className="mb-4">
+                                                        <p className="font-black text-xs uppercase text-brutal-blue mb-1">
+                                                            {lang === 'zh' ? '商品' : 'Product'}
+                                                        </p>
+                                                        <p className="font-black text-sm uppercase leading-tight">
+                                                            {lang === 'zh' ? review.products?.name_zh || review.products?.name : review.products?.name}
+                                                        </p>
+                                                        <div className="flex gap-0.5 mt-2">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <span key={i} className={`material-symbols-outlined text-xs ${i < review.rating ? 'filled text-brutal-yellow' : 'text-gray-200'}`}>star</span>
+                                                            ))}
                                                         </div>
                                                     </div>
-                                                    <div className="text-[10px] font-black uppercase text-gray-400 space-y-1">
+                                                    <div className="text-[10px] font-black uppercase text-gray-400 space-y-1 pt-4 border-t-2 border-dashed border-gray-100">
                                                         <p>Customer: {review.profiles?.name || 'Anonymous'}</p>
                                                         <p>Date: {new Date(review.created_at).toLocaleDateString()}</p>
                                                     </div>

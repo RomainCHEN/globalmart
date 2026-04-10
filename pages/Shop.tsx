@@ -616,64 +616,9 @@ export const ProductDetail = () => {
                                 <div className="border-4 border-black border-dashed p-8 text-center">
                                     <p className="text-xl font-bold text-gray-500">{t('product.noReviews')}</p>
                                 </div>
-                            ) : reviews.map(review => {
-                                const [isExpanded, setIsExpanded] = useState(!(review as any).is_risk_flagged);
-                                
-                                return (
-                                    <div key={review.id} className="bg-white border-4 border-black p-6 shadow-brutal space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-brutal-blue border-2 border-black flex items-center justify-center text-white font-black text-lg">
-                                                    {(review.profiles?.name || 'U').charAt(0).toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <p className="font-black">{review.profiles?.name || 'Anonymous'}</p>
-                                                    <div className="flex gap-0.5">
-                                                        {[...Array(5)].map((_, i) => (
-                                                            <span key={i} className={`material-symbols-outlined text-sm ${i < review.rating ? 'filled text-brutal-yellow' : 'text-gray-300'}`}>star</span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <span className="text-sm font-bold text-gray-500">{new Date(review.created_at).toLocaleDateString()}</span>
-                                        </div>
-
-                                        {(review as any).is_risk_flagged && !isExpanded ? (
-                                            <div className="bg-brutal-yellow/20 border-2 border-black p-4 flex items-center justify-between">
-                                                <div className="flex items-center gap-2 text-brutal-red font-black text-sm italic">
-                                                    <span className="material-symbols-outlined">warning</span>
-                                                    {lang === 'zh' ? '该评论已被商家标注为风险，内容已隐藏。' : 'This review was flagged as risky by the seller and is hidden.'}
-                                                </div>
-                                                <button onClick={() => setIsExpanded(true)} className="text-xs font-black uppercase underline hover:text-brutal-blue">
-                                                    {lang === 'zh' ? '展开内容' : 'Expand Content'}
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="animate-in fade-in slide-in-from-top-1 duration-300">
-                                                {review.title && <h4 className="font-black text-lg mb-2">{review.title}</h4>}
-                                                {review.body && <p className="font-bold text-gray-700 leading-relaxed">{review.body}</p>}
-                                                {(review as any).is_risk_flagged && (
-                                                    <button onClick={() => setIsExpanded(false)} className="mt-4 text-[10px] font-black uppercase text-gray-400 underline hover:text-black">
-                                                        {lang === 'zh' ? '收起风险评论' : 'Collapse Risky Review'}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* Seller Reply */}
-                                        {(review as any).seller_reply && (
-                                            <div className="ml-8 border-l-4 border-brutal-blue pl-4 py-2 bg-gray-50">
-                                                <p className="text-[10px] font-black uppercase text-brutal-blue mb-1">
-                                                    {lang === 'zh' ? '商家回复' : 'Seller Reply'}
-                                                </p>
-                                                <p className="font-bold italic text-sm text-gray-800">
-                                                    "{(review as any).seller_reply}"
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                            ) : reviews.map(review => (
+                                <ReviewItem key={review.id} review={review} lang={lang} />
+                            ))}
                         </div>
                     </section>
                 </div>

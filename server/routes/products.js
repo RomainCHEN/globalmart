@@ -53,7 +53,11 @@ router.get('/', async (req, res) => {
         if (error) return res.status(400).json({ error: error.message });
 
         res.json({
-            products: data,
+            products: data.map(p => ({
+                ...p,
+                is_birthday_promo_enabled: p.specs?.is_birthday_promo_enabled || false,
+                birthday_promo_discount: p.specs?.birthday_promo_discount || 0
+            })),
             total: count,
             page: parseInt(page),
             totalPages: Math.ceil(count / parseInt(limit))
@@ -72,7 +76,11 @@ router.get('/:id', async (req, res) => {
             .eq('id', req.params.id)
             .single();
         if (error) return res.status(404).json({ error: 'Product not found' });
-        res.json(data);
+        res.json({
+            ...data,
+            is_birthday_promo_enabled: data.specs?.is_birthday_promo_enabled || false,
+            birthday_promo_discount: data.specs?.birthday_promo_discount || 0
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -101,6 +109,12 @@ router.post('/', requireAuth, async (req, res) => {
             .eq('seller_id', req.user.id)
             .single();
 
+        const mergedSpecs = {
+            ...(specs || {}),
+            is_birthday_promo_enabled: is_birthday_promo_enabled || false,
+            birthday_promo_discount: birthday_promo_discount || 0
+        };
+
         const { data, error } = await supabaseAdmin
             .from('products')
             .insert({
@@ -113,10 +127,8 @@ router.post('/', requireAuth, async (req, res) => {
                 original_price,
                 stock: stock || 0,
                 tags: tags || [],
-                specs: specs || {},
-                image: image || '',
-                is_birthday_promo_enabled: is_birthday_promo_enabled || false,
-                birthday_promo_discount: birthday_promo_discount || 0
+                specs: mergedSpecs,
+                image: image || ''
             })
             .select()
             .single();
@@ -157,6 +169,18 @@ router.put('/:id', requireAuth, async (req, res) => {
         delete updates.seller_id;
         delete updates.images;
 
+        if ('is_birthday_promo_enabled' in updates || 'birthday_promo_discount' in updates) {
+            const { data: prodData } = await supabaseAdmin.from('products').select('specs').eq('id', req.params.id).single();
+            updates.specs = {
+                ...(prodData?.specs || {}),
+                ...(updates.specs || {}),
+                is_birthday_promo_enabled: updates.is_birthday_promo_enabled !== undefined ? updates.is_birthday_promo_enabled : prodData?.specs?.is_birthday_promo_enabled,
+                birthday_promo_discount: updates.birthday_promo_discount !== undefined ? updates.birthday_promo_discount : prodData?.specs?.birthday_promo_discount
+            };
+            delete updates.is_birthday_promo_enabled;
+            delete updates.birthday_promo_discount;
+        }
+
         const { data, error } = await supabaseAdmin
             .from('products')
             .update(updates)
@@ -165,7 +189,12 @@ router.put('/:id', requireAuth, async (req, res) => {
             .single();
 
         if (error) return res.status(400).json({ error: error.message });
-        res.json(data);
+        
+        res.json({
+            ...data,
+            is_birthday_promo_enabled: data.specs?.is_birthday_promo_enabled || false,
+            birthday_promo_discount: data.specs?.birthday_promo_discount || 0
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

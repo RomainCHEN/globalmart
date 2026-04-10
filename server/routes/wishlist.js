@@ -77,6 +77,9 @@ router.get('/', requireAuth, async (req, res) => {
         if (isEligible && data) {
             data.forEach(item => {
                 const p = item.products;
+                p.is_birthday_promo_enabled = p.specs?.is_birthday_promo_enabled || false;
+                p.birthday_promo_discount = p.specs?.birthday_promo_discount || 0;
+
                 if (p && p.is_birthday_promo_enabled) {
                     const discountPercent = p.birthday_promo_discount || 10;
                     if (!p.original_price) p.original_price = p.price;

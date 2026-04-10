@@ -108,6 +108,9 @@ CREATE TABLE IF NOT EXISTS reviews (
   rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
   title TEXT DEFAULT '',
   body TEXT DEFAULT '',
+  seller_reply TEXT DEFAULT '',
+  replied_at TIMESTAMPTZ,
+  is_risk_flagged BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(product_id, user_id)
 );
@@ -223,10 +226,17 @@ CREATE POLICY "Sellers can manage product images" ON product_images FOR ALL USIN
 CREATE POLICY "Stores are public" ON stores FOR SELECT USING (true);
 CREATE POLICY "Sellers manage own store" ON stores FOR ALL USING (auth.uid() = seller_id);
 
--- Reviews: public read, users manage own
+-- Reviews: public read, users manage own, sellers reply
 CREATE POLICY "Reviews are public" ON reviews FOR SELECT USING (true);
 CREATE POLICY "Users can insert reviews" ON reviews FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own reviews" ON reviews FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Sellers can reply to own product reviews" ON reviews FOR UPDATE USING (
+  EXISTS (
+    SELECT 1 FROM products 
+    WHERE products.id = reviews.product_id 
+    AND products.seller_id = auth.uid()
+  )
+);
 CREATE POLICY "Users can delete own reviews" ON reviews FOR DELETE USING (auth.uid() = user_id);
 
 -- Orders: users see own

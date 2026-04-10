@@ -425,15 +425,14 @@ const statusLabels: Record<string, string> = {
     refund_requested: lang === 'zh' ? '退款审核中' : 'Refund Requested',
     refunded: lang === 'zh' ? '已退款' : 'Refunded'
 };
-const statusIcons: Record<string, string> = {
-    pending: 'hourglass_top',
-    shipped: 'local_shipping',
-    delivered: 'check_circle',
-    refund_requested: 'currency_exchange',
-    refunded: 'payments'
-};
+    const statusIcons: Record<string, string> = {
+        pending: 'hourglass_top',
+        shipped: 'local_shipping',
+        delivered: 'check_circle',
         hold: 'pause_circle',
         cancelled: 'cancel',
+        refund_requested: 'currency_exchange',
+        refunded: 'payments'
     };
 
     if (loading) {

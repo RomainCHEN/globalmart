@@ -415,19 +415,23 @@ export const OrderDetails = () => {
         }
         setCancelling(false);
     };
-
-    const statusSteps = ['pending', 'shipped', 'delivered'];
-    const statusLabels: Record<string, string> = {
-        pending: t('order.pending'),
-        shipped: t('order.shipped'),
-        delivered: t('order.delivered'),
-        hold: t('order.hold'),
-        cancelled: t('order.cancelled'),
-    };
-    const statusIcons: Record<string, string> = {
-        pending: 'hourglass_top',
-        shipped: 'local_shipping',
-        delivered: 'check_circle',
+const statusSteps = ['pending', 'shipped', 'delivered', 'refund_requested', 'refunded'];
+const statusLabels: Record<string, string> = {
+    pending: t('order.pending'),
+    shipped: t('order.shipped'),
+    delivered: t('order.delivered'),
+    hold: t('order.hold'),
+    cancelled: t('order.cancelled'),
+    refund_requested: lang === 'zh' ? '退款审核中' : 'Refund Requested',
+    refunded: lang === 'zh' ? '已退款' : 'Refunded'
+};
+const statusIcons: Record<string, string> = {
+    pending: 'hourglass_top',
+    shipped: 'local_shipping',
+    delivered: 'check_circle',
+    refund_requested: 'currency_exchange',
+    refunded: 'payments'
+};
         hold: 'pause_circle',
         cancelled: 'cancel',
     };

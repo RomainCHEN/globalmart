@@ -721,12 +721,15 @@ export const SellerDashboard = () => {
     const { isLoggedIn, user, formatPrice } = useApp();
     const { t, lang } = useI18n();
     const navigate = useNavigate();
-    const [tab, setTab] = useState<'dashboard' | 'store' | 'products' | 'orders' | 'analytics'>('dashboard');
+    const [tab, setTab] = useState<'dashboard' | 'store' | 'products' | 'orders' | 'analytics' | 'reviews'>('dashboard');
     const [products, setProducts] = useState<Product[]>([]);
     const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<any[]>([]);
     const [store, setStore] = useState<any>(null);
-    const [analytics, setAnalytics] = useState<{ topProducts: any[], searchTrends: any[] }>({ topProducts: [], searchTrends: [] });
+    const [analytics, setAnalytics] = useState<{ topProducts: any[], topRatedProducts?: any[], promoTips?: any[] }>({ topProducts: [] });
+    const [sellerReviews, setSellerReviews] = useState<any[]>([]);
+    const [replyingTo, setReplyingTo] = useState<string | null>(null);
+    const [replyText, setReplyText] = useState('');
     const [loading, setLoading] = useState(true);
     const [showAddProduct, setShowAddProduct] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -787,6 +790,11 @@ export const SellerDashboard = () => {
                 .then(res => setOrders((res as any).orders || []))
                 .catch(() => {});
         }
+        if (tab === 'reviews' && isLoggedIn) {
+            api.getSellerReviews()
+                .then(res => setSellerReviews(res as any[]))
+                .catch(() => {});
+        }
     }, [tab, isLoggedIn]);
 
     const loadData = async () => {
@@ -794,12 +802,13 @@ export const SellerDashboard = () => {
         setLoading(true);
         console.log('SellerHub: Loading data for user', user.id);
         try {
-            const [storeRes, prodRes, orderRes, catRes, analyticRes] = await Promise.all([
+            const [storeRes, prodRes, orderRes, catRes, analyticRes, reviewRes] = await Promise.all([
                 api.getStores({ mine: 'true' }).catch(err => { console.error('Failed to fetch stores:', err); return []; }),
                 api.getProducts({ limit: '100', include_disabled: 'true' }).catch(() => ({ products: [] })),
                 api.getSellerOrders().catch(() => ({ orders: [] })),
                 api.getCategories().catch(() => []),
-                api.getStoreAnalytics().catch(() => ({ topProducts: [], searchTrends: [] }))
+                api.getStoreAnalytics().catch(() => ({ topProducts: [], searchTrends: [] })),
+                api.getSellerReviews().catch(() => [])
             ]);
 
             console.log('SellerHub: Stores received:', storeRes);
@@ -821,6 +830,7 @@ export const SellerDashboard = () => {
             setProducts(myProds);
             setOrders((orderRes as any).orders || []);
             setCategories(catRes as any[]);
+            setSellerReviews(reviewRes as any[]);
             
             if (analyticRes && !analyticRes.error) {
                 setAnalytics(analyticRes);
@@ -831,6 +841,38 @@ export const SellerDashboard = () => {
             console.error('SellerHub: Unexpected error in loadData:', err);
         }
         setLoading(false);
+    };
+
+    const handleReply = async (reviewId: string) => {
+        if (!replyText.trim()) return;
+        try {
+            await api.replyToReview(reviewId, replyText);
+            setReplyingTo(null);
+            setReplyText('');
+            await loadData();
+        } catch (err: any) { alert(err.message); }
+    };
+
+    const handleFlagReview = async (reviewId: string, currentFlag: boolean) => {
+        try {
+            await api.flagReview(reviewId, !currentFlag);
+            await loadData();
+        } catch (err: any) { alert(err.message); }
+    };
+
+    const handleApproveRefund = async (orderId: string) => {
+        if (!confirm(t('order.approveRefundConfirm') || 'Approve this refund?')) return;
+        try {
+            await api.approveRefund(orderId);
+            await loadData();
+        } catch (err: any) { alert(err.message); }
+    };
+
+    const handleDenyRefund = async (orderId: string, reason: string) => {
+        try {
+            await api.denyRefund(orderId, reason);
+            await loadData();
+        } catch (err: any) { alert(err.message); }
     };
     const handleCreateStore = async () => {
         if (!storeName.trim()) return;

@@ -456,15 +456,20 @@ export const AdminDashboard = () => {
     const [products, setProducts] = useState<any[]>([]);
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
 
-    useEffect(() => { if (!isLoggedIn) navigate('/login'); }, [isLoggedIn]);
+    useEffect(() => { 
+        if (!isLoggedIn) navigate('/login'); 
+        else if (user && user.role !== 'admin') setError('Access denied. Admin role required.');
+    }, [isLoggedIn, user]);
 
-    useEffect(() => { loadSection(); }, [section]);
+    useEffect(() => { if (user?.role === 'admin') loadSection(); }, [section, user]);
 
     const loadSection = async () => {
         setLoading(true);
+        setError(null);
         try {
             if (section === 'overview') {
                 const s = await api.getAdminStats();
@@ -485,7 +490,9 @@ export const AdminDashboard = () => {
                 const res = await api.getAdminOrders();
                 setOrders((res as any).orders || []);
             }
-        } catch { }
+        } catch (err: any) { 
+            setError(err?.message || 'Failed to load admin data. Please ensure you have admin privileges.');
+        }
         setLoading(false);
     };
 
@@ -567,7 +574,16 @@ export const AdminDashboard = () => {
 
             {/* Main */}
             <main className="flex-1 p-6 md:p-10 space-y-8 pb-24 lg:pb-10">
-                {loading ? (
+                {error ? (
+                    <div className="flex flex-col items-center justify-center h-64 space-y-6">
+                        <div className="border-4 border-black bg-brutal-red text-white p-8 shadow-brutal-lg text-center">
+                            <span className="material-symbols-outlined text-6xl mb-4 block">gpp_bad</span>
+                            <h2 className="font-black uppercase text-3xl mb-2">ACCESS DENIED</h2>
+                            <p className="font-bold text-lg">{error}</p>
+                        </div>
+                        <Link to="/" className="border-4 border-black bg-brutal-yellow px-8 py-3 font-black uppercase shadow-brutal hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">← Go Home</Link>
+                    </div>
+                ) : loading ? (
                     <div className="flex items-center justify-center h-64"><span className="font-black uppercase animate-pulse text-2xl">{t('general.loading')}</span></div>
                 ) : (
                     <>

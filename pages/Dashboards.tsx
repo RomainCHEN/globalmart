@@ -801,6 +801,7 @@ export const SellerDashboard = () => {
     const [productSearch, setProductSearch] = useState('');
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [productImages, setProductImages] = useState<any[]>([]);
+    const [imageList, setImageList] = useState<string[]>([]);
 
     const [denyRefundOrder, setDenyRefundOrder] = useState<any>(null);
     const [denyReason, setDenyReason] = useState('');
@@ -926,9 +927,11 @@ export const SellerDashboard = () => {
 
     const handleSaveProduct = async () => {
         try {
-            const body: any = { name: pf.name, name_zh: pf.name_zh || undefined, description: pf.description, description_zh: pf.description_zh || undefined, price: parseFloat(pf.price) || 0, original_price: pf.original_price ? parseFloat(pf.original_price) : undefined, category_id: pf.category_id || undefined, stock: parseInt(pf.stock) || 0, image: pf.image, tags: pf.tags ? pf.tags.split(',').map(t => t.trim()) : [], is_birthday_promo_enabled: pf.is_birthday_promo_enabled, birthday_promo_discount: parseInt(pf.birthday_promo_discount) || 0 };
+            const finalImages = [...imageList];
+            if (pf.image && !finalImages.includes(pf.image)) finalImages.unshift(pf.image);
+            const body: any = { name: pf.name, name_zh: pf.name_zh || undefined, description: pf.description, description_zh: pf.description_zh || undefined, price: parseFloat(pf.price) || 0, original_price: pf.original_price ? parseFloat(pf.original_price) : undefined, category_id: pf.category_id || undefined, stock: parseInt(pf.stock) || 0, image: finalImages[0] || '', images: finalImages, tags: pf.tags ? pf.tags.split(',').map(t => t.trim()) : [], is_birthday_promo_enabled: pf.is_birthday_promo_enabled, birthday_promo_discount: parseInt(pf.birthday_promo_discount) || 0 };
             if (editingProduct) { await api.updateProduct(editingProduct.id, body); } else { await api.createProduct(body); }
-            setShowAddProduct(false); setEditingProduct(null); resetPf(); await loadData();
+            setShowAddProduct(false); setEditingProduct(null); resetPf(); setImageList([]); await loadData();
         } catch { }
     };
 
@@ -1173,13 +1176,13 @@ export const SellerDashboard = () => {
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center">
                                     <h1 className="text-5xl font-black uppercase tracking-tighter">{t('seller.products')}</h1>
-                                    <button onClick={() => { resetPf(); setEditingProduct(null); setShowAddProduct(true); }} className="border-4 border-black bg-brutal-orange px-6 py-3 font-black uppercase shadow-brutal hover:-translate-y-1 transition-all">+ {t('seller.addProduct')}</button>
+                                    <button onClick={() => { resetPf(); setImageList([]); setProductImages([]); setEditingProduct(null); setShowAddProduct(true); }} className="border-4 border-black bg-brutal-orange px-6 py-3 font-black uppercase shadow-brutal hover:-translate-y-1 transition-all">+ {t('seller.addProduct')}</button>
                                 </div>
                                 {showAddProduct && (
                                     <div className="bg-white border-4 border-black shadow-brutal-lg p-6 space-y-4">
                                         <div className="flex justify-between items-center border-b-4 border-black pb-3">
                                             <h2 className="text-2xl font-black uppercase">{editingProduct ? t('seller.editProduct') : t('seller.addProduct')}</h2>
-                                            <button onClick={() => { setShowAddProduct(false); setEditingProduct(null); resetPf(); }} className="border-2 border-black px-3 py-1 font-black hover:bg-brutal-red hover:text-white">✕</button>
+                                            <button onClick={() => { setShowAddProduct(false); setEditingProduct(null); resetPf(); setImageList([]); }} className="border-2 border-black px-3 py-1 font-black hover:bg-brutal-red hover:text-white">✕</button>
                                         </div>
                                         <div className="border-2 border-dashed border-gray-300 p-4 space-y-3 bg-gray-50">
                                             <div className="flex items-center gap-2 mb-2">
@@ -1233,18 +1236,22 @@ export const SellerDashboard = () => {
                                                         onDrop={async e => {
                                                             e.preventDefault();
                                                             e.currentTarget.classList.remove('bg-brutal-yellow/20');
-                                                            const file = e.dataTransfer.files[0];
-                                                            if (!file) return;
+                                                            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+                                                            if (files.length === 0) return;
                                                             setUploading(true);
-                                                            try { const r = await api.uploadImage(file); setPf({ ...pf, image: r.url }); } catch (err: any) { alert(err.message || t('seller.uploadError')); }
+                                                            for (const file of files) {
+                                                                try { const r = await api.uploadImage(file); setImageList(prev => [...prev, r.url]); } catch (err: any) { alert(err.message || t('seller.uploadError')); }
+                                                            }
                                                             setUploading(false);
                                                         }}
                                                     >
-                                                        <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={async e => {
-                                                            const file = e.target.files?.[0];
-                                                            if (!file) return;
+                                                        <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={async e => {
+                                                            const files = Array.from(e.target.files || []);
+                                                            if (files.length === 0) return;
                                                             setUploading(true);
-                                                            try { const r = await api.uploadImage(file); setPf({ ...pf, image: r.url }); } catch (err: any) { alert(err.message || t('seller.uploadError')); }
+                                                            for (const file of files) {
+                                                                try { const r = await api.uploadImage(file); setImageList(prev => [...prev, r.url]); } catch (err: any) { alert(err.message || t('seller.uploadError')); }
+                                                            }
                                                             setUploading(false);
                                                             e.target.value = '';
                                                         }} />
@@ -1262,14 +1269,31 @@ export const SellerDashboard = () => {
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <input value={pf.image} onChange={e => setPf({ ...pf, image: e.target.value })} className="w-full border-3 border-black p-2 font-bold" placeholder="https://..." />
+                                                    <div className="flex gap-2">
+                                                        <input value={pf.image} onChange={e => setPf({ ...pf, image: e.target.value })} className="flex-1 border-3 border-black p-2 font-bold" placeholder="https://..." />
+                                                        <button type="button" onClick={() => { if (pf.image.trim()) { setImageList(prev => [...prev, pf.image.trim()]); setPf(prev => ({ ...prev, image: '' })); } }} className="px-4 border-3 border-black bg-brutal-green font-black text-sm uppercase hover:shadow-brutal transition-all">{lang === 'zh' ? '添加' : 'Add'}</button>
+                                                    </div>
                                                 )}
-                                                {pf.image && (
-                                                    <div className="mt-3 relative inline-block">
-                                                        <div className="w-24 h-24 border-3 border-black overflow-hidden bg-gray-100">
-                                                            <img src={pf.image} alt="Preview" className="w-full h-full object-contain" />
+                                                {imageList.length > 0 && (
+                                                    <div className="mt-3">
+                                                        <h4 className="font-black text-xs uppercase mb-2 flex items-center gap-1">
+                                                            <span className="material-symbols-outlined text-sm">photo_library</span>
+                                                            {lang === 'zh' ? '新添加图片' : 'New Images'} ({imageList.length})
+                                                        </h4>
+                                                        <div className="flex flex-wrap gap-3">
+                                                            {imageList.map((url, idx) => (
+                                                                <div key={`new-${idx}`} className={`relative group w-20 h-20 border-3 ${idx === 0 && !editingProduct ? 'border-brutal-blue ring-2 ring-brutal-blue' : 'border-black'} overflow-hidden bg-white`}>
+                                                                    <img src={url} alt="" className="w-full h-full object-contain" />
+                                                                    {idx === 0 && !editingProduct && <span className="absolute top-0 left-0 bg-brutal-blue text-white text-[8px] font-black px-1">{t('seller.primary')}</span>}
+                                                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                                                        {idx !== 0 && !editingProduct && (
+                                                                            <button type="button" onClick={() => setImageList(prev => [prev[idx], ...prev.filter((_, i) => i !== idx)])} className="text-[9px] font-black bg-brutal-blue text-white px-2 py-0.5 border border-white">★ {t('seller.setPrimary')}</button>
+                                                                        )}
+                                                                        <button type="button" onClick={() => setImageList(prev => prev.filter((_, i) => i !== idx))} className="text-[9px] font-black bg-brutal-red text-white px-2 py-0.5 border border-white">✕</button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                        <button type="button" onClick={() => setPf({ ...pf, image: '' })} className="absolute -top-2 -right-2 w-6 h-6 bg-brutal-red text-white border-2 border-black flex items-center justify-center font-black text-xs hover:scale-110 transition-transform">✕</button>
                                                     </div>
                                                 )}
                                                 {editingProduct && productImages.length > 0 && (

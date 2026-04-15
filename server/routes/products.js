@@ -164,6 +164,7 @@ router.put('/:id', requireAuth, async (req, res) => {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
+        const newImages = req.body.images || [];
         const updates = { ...req.body, updated_at: new Date().toISOString() };
         delete updates.id;
         delete updates.seller_id;
@@ -195,6 +196,23 @@ router.put('/:id', requireAuth, async (req, res) => {
             is_birthday_promo_enabled: data.specs?.is_birthday_promo_enabled || false,
             birthday_promo_discount: data.specs?.birthday_promo_discount || 0
         });
+
+        // Insert new images into product_images (de-duplicate against existing)
+        if (newImages && newImages.length > 0) {
+            const { data: existingImgs } = await supabaseAdmin.from('product_images')
+                .select('url').eq('product_id', req.params.id);
+            const existingUrls = new Set((existingImgs || []).map(i => i.url));
+            const { data: maxOrderData } = await supabaseAdmin.from('product_images')
+                .select('sort_order').eq('product_id', req.params.id)
+                .order('sort_order', { ascending: false }).limit(1);
+            let nextOrder = (maxOrderData?.[0]?.sort_order ?? -1) + 1;
+            const newRows = newImages
+                .filter(url => url && !existingUrls.has(url))
+                .map((url, i) => ({ product_id: req.params.id, url, sort_order: nextOrder + i }));
+            if (newRows.length > 0) {
+                await supabaseAdmin.from('product_images').insert(newRows);
+            }
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

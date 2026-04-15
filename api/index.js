@@ -13,6 +13,7 @@ import translateRoutes from '../server/routes/translate.js';
 import migrateRoutes from '../server/routes/migrate.js';
 import seedRoutes from '../server/routes/seed.js';
 import uploadRoutes from '../server/routes/upload.js';
+import cartRoutes from '../server/routes/cart.js';
 
 dotenv.config({ path: '.env.local' });
 
@@ -35,6 +36,7 @@ app.use('/api/translate', translateRoutes);
 app.use('/api/migrate', migrateRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/cart', cartRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 

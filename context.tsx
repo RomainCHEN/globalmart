@@ -68,14 +68,15 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
         if (seniorMode) document.documentElement.classList.add('senior-mode');
     }, []);
 
-    const formatPrice = (price: number) => {
+    const formatPrice = (price: number | string | null | undefined) => {
+        const p = Number(price) || 0;
         const lang = localStorage.getItem('gm_lang') || 'en';
         if (lang === 'zh') {
             // Demo conversion: 1 USD = 7.2 CNY
-            const rmb = price * 7.2;
+            const rmb = p * 7.2;
             return `￥${rmb.toFixed(seniorMode ? 0 : 2)}`;
         }
-        return `$${price.toFixed(seniorMode ? 0 : 2)}`;
+        return `$${p.toFixed(seniorMode ? 0 : 2)}`;
     };
 
     // Persist cart to localStorage

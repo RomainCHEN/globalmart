@@ -14,7 +14,12 @@ if (!supabaseServiceKey) {
 }
 
 // Admin client for server operations (bypasses RLS)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
+    auth: {
+        autoRefreshToken: false,
+        persistSession: false
+    }
+});
 
 // Create a client scoped to a user's JWT for RLS
 export function createUserClient(accessToken) {

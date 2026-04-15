@@ -231,15 +231,40 @@ export const api = {
 
     // Image Upload (uses FormData, not JSON)
     uploadImage: async (file: File): Promise<{ url: string; path: string }> => {
-        const token = getToken();
-        const formData = new FormData();
-        formData.append('file', file);
-        const res = await fetch(`${API_URL}/upload/image`, {
-            method: 'POST',
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-            body: formData,
-        });
-        const data = await res.json();
+        // Validate file size client-side before uploading (max 4.5MB for Vercel)
+        const MAX_SIZE = 4.5 * 1024 * 1024;
+        if (file.size > MAX_SIZE) {
+            throw new Error(`File size (${(file.size / 1024 / 1024).toFixed(1)}MB) exceeds the 4.5MB upload limit`);
+        }
+
+        const doUpload = async (authToken: string | null) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            return fetch(`${API_URL}/upload/image`, {
+                method: 'POST',
+                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+                body: formData,
+            });
+        };
+
+        let res = await doUpload(getToken());
+
+        // Auto-refresh on 401
+        if (res.status === 401) {
+            const refreshed = await tryRefreshToken();
+            if (refreshed) {
+                res = await doUpload(getToken());
+            }
+        }
+
+        // Safely parse response — server or proxy may return non-JSON (e.g. "Request Entity Too Large")
+        let data: any;
+        const text = await res.text();
+        try {
+            data = JSON.parse(text);
+        } catch {
+            throw new Error(text || `Upload failed with status ${res.status}`);
+        }
         if (!res.ok) throw new Error(data.error || 'Upload failed');
         return data;
     },

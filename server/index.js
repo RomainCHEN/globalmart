@@ -21,7 +21,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: '6mb' }));
 
 // Routes
 app.use('/api/auth', authRoutes);

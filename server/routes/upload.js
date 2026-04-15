@@ -22,18 +22,18 @@ const upload = multer({
 // POST /api/upload/image — upload a single image to Supabase Storage
 router.post('/image', requireAuth, (req, res) => {
     upload.single('file')(req, res, async (err) => {
-        if (err) {
-            if (err.code === 'LIMIT_FILE_SIZE') {
-                return res.status(400).json({ error: 'File size exceeds 5MB limit' });
-            }
-            return res.status(400).json({ error: err.message });
-        }
-
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file provided' });
-        }
-
         try {
+            if (err) {
+                if (err.code === 'LIMIT_FILE_SIZE') {
+                    return res.status(400).json({ error: 'File size exceeds 5MB limit' });
+                }
+                return res.status(400).json({ error: err.message });
+            }
+
+            if (!req.file) {
+                return res.status(400).json({ error: 'No file provided' });
+            }
+
             const ext = req.file.originalname.split('.').pop() || 'jpg';
             const fileName = `${req.user.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
@@ -54,8 +54,9 @@ router.post('/image', requireAuth, (req, res) => {
                 .getPublicUrl(data.path);
 
             res.json({ url: urlData.publicUrl, path: data.path });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
+        } catch (innerErr) {
+            console.error('Upload handler error:', innerErr);
+            res.status(500).json({ error: innerErr.message || 'Internal upload error' });
         }
     });
 });

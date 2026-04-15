@@ -20,7 +20,7 @@ const app = express();
 
 // CORS — allow all origins in production (Vercel handles domain security)
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: '6mb' }));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -39,3 +39,11 @@ app.use('/api/upload', uploadRoutes);
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 export default app;
+
+// Disable Vercel's built-in body parser so multer can handle multipart/form-data uploads
+export const config = {
+    api: {
+        bodyParser: false,
+    },
+};
+

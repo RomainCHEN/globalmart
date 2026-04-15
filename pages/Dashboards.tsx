@@ -446,7 +446,7 @@ export const UserDashboard = () => {
    ADMIN DASHBOARD
    ═══════════════════════════════════════════ */
 export const AdminDashboard = () => {
-    const { isLoggedIn, user, logout, formatPrice } = useApp();
+    const { isLoggedIn, user, logout, formatPrice, authLoading } = useApp();
     const { t, lang } = useI18n();
     const navigate = useNavigate();
     const [section, setSection] = useState<'overview' | 'users' | 'stores' | 'products' | 'orders' | 'settings'>('overview');
@@ -455,15 +455,16 @@ export const AdminDashboard = () => {
     const [stores, setStores] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [orders, setOrders] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
 
     useEffect(() => { 
+        if (authLoading) return; // Wait for auth to settle
         if (!isLoggedIn) navigate('/login'); 
         else if (user && user.role !== 'admin') setError('Access denied. Admin role required.');
-    }, [isLoggedIn, user]);
+    }, [isLoggedIn, user, authLoading]);
 
     useEffect(() => { if (user?.role === 'admin') loadSection(); }, [section, user]);
 
@@ -531,6 +532,15 @@ export const AdminDashboard = () => {
         { key: 'products', icon: 'inventory_2', label: t('admin.products') },
         { key: 'orders', icon: 'receipt_long', label: t('admin.orders') },
     ] as const;
+
+    // Show spinner while auth is still loading
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#f3f3f3]">
+                <div className="w-20 h-20 border-8 border-black border-t-brutal-blue animate-spin shadow-brutal"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen bg-[#f3f4f6]">
